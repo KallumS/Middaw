@@ -103,6 +103,8 @@ genre adds it to both at once.
 - **[docs/GENRES.md](docs/GENRES.md)** — every style it can write, how each
   one's notes are formulated, the devices they share, and the names it
   deliberately does not map
+- **[docs/APPROACH.md](docs/APPROACH.md)** — why the generator calculates a
+  piece rather than learning one, and what a corpus is actually for
 - **[docs/LABELLING.md](docs/LABELLING.md)** — how to label the dataset, and
   why the label schema is also the prompt vocabulary
 - **[docs/DATASET.md](docs/DATASET.md)** — sourcing MIDI you are actually

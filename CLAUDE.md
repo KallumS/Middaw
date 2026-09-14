@@ -212,6 +212,17 @@ Invariants, all of them load-bearing:
 Choose the *device* first, then its direction. Weighting the forms instead
 over-represents whichever device has two of them.
 
+## The renderer is a calculator
+
+`docs/APPROACH.md`. A piece is a parameter vector plus a deterministic
+procedure, and that is deliberate: it is what makes the output explainable,
+editable, small and clean of other people's material. A corpus exists to **fit
+the constants** that procedure uses and to **measure** how far its output sits
+from real music — not to be searched, recombined or memorised.
+
+So learning may replace how a spec is chosen; it may never replace how the
+notes are written. `MusicSpec` is the seam, and it is there for exactly this.
+
 ## Corpus discipline
 
 A MIDI file is a separate copyrightable work from the composition it

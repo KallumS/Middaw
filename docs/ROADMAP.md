@@ -3,6 +3,11 @@
 The order matters: each stage is useful on its own, and each one produces the
 thing the next stage needs.
 
+The principle underneath the order is in [APPROACH.md](APPROACH.md): the
+renderer stays a calculator, and learning is only ever allowed to choose the
+parameters it calculates from. Read that first — it also says what a corpus is
+for, which is not what most people assume.
+
 ## Stage 0 — where it is now
 
 Rules and music theory, no corpus. Answers any prompt immediately, sounds
@@ -20,6 +25,20 @@ blocked on sourcing, not on code**, which is why `DATASET.md` and
 Target: ~500 cleared, labelled files across 6–8 genres. Enough for phrasing to
 start sounding like the source material.
 
+## Stage 1b — the corpus as a test set
+
+Before any of it trains anything, real files can measure how wrong the current
+constants are. `middaw/corpus/analyse.py` reads MIDI back into the same
+vocabulary the generator writes from, so a folder of real music answers two
+questions Middaw currently only asks of itself: does the analysis recover what
+a human would say about a file, and do Middaw's own generations sit inside the
+distributions real files of that style occupy?
+
+Key detection is the standing example — it recovers the tonic about
+three-quarters of the time **against generated music**, which is a calibration
+set rather than a corpus. This stage needs no clearances, because nothing
+derived from the files is shipped.
+
 ## Stage 2 — n-gram / HMM conditioned on tags
 
 Melody as an order-3 model over (scale degree, duration) pairs, with chord
@@ -30,6 +49,15 @@ both.
 
 Target: ~2,000 segments. Expect it to beat the rules on phrasing and lose to
 them on long-range structure.
+
+## Stage 2b — prompt to spec, learned
+
+The step most worth taking, and the one that fits the architecture: train a
+model to predict the *parameter vector* from the prompt, and leave `render()`
+as the same deterministic function it is now. A spec is about thirty numbers,
+so this is regression and classification rather than sequence modelling — it
+trains on a few thousand labelled files, the prediction can be read and argued
+with, and it structurally cannot emit someone else's melody.
 
 ## Stage 3 — a small transformer
 
