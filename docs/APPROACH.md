@@ -122,6 +122,41 @@ generator:
   0.19 apart. "Mostly stepwise" was marked as implemented; it is implemented
   and it is set too low.
 
+Pointed at [When in Rome](https://github.com/MarkGotham/When-in-Rome) — 535
+scores with a human analysis, mostly nineteenth-century songs, string quartets
+and piano sonatas rather than chorales — the same tool says something harder:
+
+| | chorales | songs, quartets, sonatas |
+| --- | --- | --- |
+| key: tonic and mode | 74.9% of 410 | 53.4% of 761 |
+| harmony: same root as the analyst | 80.5% of 1,041 chords | 62.7% of 52,685 |
+| harmony: same root and quality | 78.7% | 56.6% |
+| analyst numerals we could not express | 0 | 72 (0.1%) |
+
+That is the honest shape of it. Four voices moving in crotchets is the easiest
+harmony there is to read; an arpeggiated piano accompaniment under a singer,
+modulating, is not, and our window-naming loses eighteen points when it meets
+one. Both numbers are worth having, and the second is the one to quote.
+
+The melody comparison had to be fixed before it meant anything: the top line of
+a piano staff is not a melody, it is whichever note happens to be highest, and
+measuring against it produced octave leaps and a stepwise share that meant
+nothing. Measured against the 396 scores that do have a named vocal line:
+
+| | Lieder voice | Middaw |
+| --- | --- | --- |
+| stepwise | 46.6% | 59.4% |
+| repeated note | 22.7% | 8.5% |
+| leap turns back | 91.8% | 77.0% |
+
+Which complicates the chorale finding rather than confirming it. A chorale
+melody steps 67% of the time; a nineteenth-century song melody steps 47% and
+repeats a note 23% of the time, because it is setting syllables. There is no
+one right amount of stepwise motion — it is a per-style constant, which is
+exactly what the generator's vocabulary is made of and exactly what a corpus is
+for. What does hold across both: real melodies turn back after a leap more
+reliably than ours do.
+
 Everything else the run touched was left alone on purpose. A sweep of the
 chord-window constants moved root accuracy between 80.4% and 81.4% across
 every setting, and the key-detection weights bought a point on the chorales for

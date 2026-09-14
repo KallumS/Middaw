@@ -267,10 +267,19 @@ dataset and a liability. See `docs/DATASET.md`.
   never state a tonic, where `i-bVII-i-bVII` is as much G mixolydian as D
   dorian. Harmonic analysis agrees with a human analyst's root on **80.5%** of
   1,041 chords.
-- **Middaw's melodies do not move by step enough.** Bach's chorale melodies
-  are 67% stepwise; ours are 49%, and we repeat a note 19% of the time against
-  his 15%. The interval distributions are 0.19 apart. That is the clearest
-  measured gap between what we write and what real music does.
+- Both of those are chorale numbers, and chorales are the easy case. Against
+  535 songs, quartets and sonatas with human analyses (When in Rome), key
+  detection drops to **53.4%** and harmonic analysis to **62.7%** of 52,685
+  chords. An arpeggiated accompaniment under a modulating song is a different
+  problem from four voices in crotchets, and the window-namer is not good at
+  it yet. Quote the harder number.
+- **How stepwise a melody should be is a per-style constant, and ours are not
+  measured.** Bach's chorale melodies step 67% of the time; a nineteenth-century
+  song steps 47% and repeats a note 23% of the time, because it is setting
+  syllables. Middaw writes 49% for a hymn and 59% for a romantic-era piece —
+  wrong in both directions, because the number was never a number. What holds
+  across both corpora: real melodies turn back after a leap more reliably than
+  ours (92% against our 77%).
 - The soundfont path (vendored file → CDN → built-in tone) has been exercised
   end to end against a locally built stand-in soundfont, but never against the
   real FluidR3 file, because the sandbox blocks both CDNs. Try it for real.

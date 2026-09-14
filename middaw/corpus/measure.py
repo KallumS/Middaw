@@ -28,6 +28,13 @@ from middaw.theory import NOTE_NAMES, parse_roman
 
 SCORE_SUFFIXES = (".mxl", ".musicxml", ".xml")
 
+#: Part names that mean "this staff carries one melodic line". The top line of
+#: a piano staff is not a melody - it is whichever note happens to be highest,
+#: which is why measuring a song's melody against the piano part produces
+#: octave leaps and a stepwise share that means nothing.
+MELODY_PART_NAMES = ("soprano", "voice", "singstimme", "gesang", "stimme",
+                     "chant", "canto", "melody", "vocal", "descant")
+
 #: Figured bass says which inversion, not which chord. Both are stripped for
 #: comparison, because a chord read from notes has no way to report one and
 #: naming the wrong inversion is a different mistake from naming the wrong
@@ -243,7 +250,7 @@ def profile_distance(left: Counter, right: Counter) -> float:
 def non_chord_tone_share(score: Score, analysis: Analysis) -> float | None:
     """How much of the top line is *not* in the chord the analyst named."""
     default_key = analysis.tonic_and_mode() or (score.tonic, score.mode)
-    soprano = score.parts.get("Soprano") or []
+    soprano = melody_part(score)
     if not soprano or not analysis.chords:
         return None
     placed = []
@@ -274,20 +281,45 @@ def non_chord_tone_share(score: Score, analysis: Analysis) -> float | None:
 # Running it over a folder
 # --------------------------------------------------------------------------
 
+def analysis_files(directory: Path) -> list[Path]:
+    """RomanText files written by a person.
+
+    `analysis_automatic.rntxt` is a machine's reading, and measuring ourselves
+    against another model's output would tell us how alike two guesses are,
+    not whether either is right.
+    """
+    found = [p for p in directory.rglob("*.rntxt")]
+    found += [p for p in directory.rglob("analysis.txt")]
+    return sorted(p for p in found if "automatic" not in p.name.lower())
+
+
 def pair_files(directory: Path) -> tuple[list[Path], dict[Path, Path]]:
-    """Find scores, and match any RomanText analyses to them by BWV number."""
+    """Find scores, and match the analyses to them.
+
+    Two conventions, because the corpora use two: an analysis sitting in the
+    same folder as its score (When in Rome), and one naming its score in a
+    catalogue header (the music21 chorale analyses, by BWV number).
+    """
     scores = sorted(p for p in directory.rglob("*")
                     if p.suffix.lower() in SCORE_SUFFIXES)
     by_stem = {p.stem.lower(): p for p in scores}
+    by_folder: dict[Path, list[Path]] = {}
+    for score in scores:
+        by_folder.setdefault(score.parent, []).append(score)
+
     analyses: dict[Path, Path] = {}
-    for text in sorted(directory.rglob("*.rntxt")):
-        header = read_romantext(text).headers
-        catalogue = (header.get("BWV") or "").strip()
-        match = by_stem.get(f"bwv{catalogue}".lower())
-        if match is None and catalogue:
-            match = by_stem.get(f"bwv{catalogue}.1".lower())
+    for text in analysis_files(directory):
+        beside = by_folder.get(text.parent)
+        if beside:
+            analyses.setdefault(beside[0], text)
+            continue
+        catalogue = (read_romantext(text).headers.get("BWV") or "").strip()
+        if not catalogue:
+            continue
+        match = by_stem.get(f"bwv{catalogue}".lower()) or \
+            by_stem.get(f"bwv{catalogue}.1".lower())
         if match is not None:
-            analyses[match] = text
+            analyses.setdefault(match, text)
     return scores, analyses
 
 
@@ -306,27 +338,32 @@ def run(directory, limit: int | None = None, style: str = "hymn",
     real_profiles: list[dict] = []
     nct: list[float] = []
     unreadable_scores: list[str] = []
+    without_melody = 0
 
     for path in scores:
         try:
             score = read_musicxml(path)
         except Exception as error:                     # noqa: BLE001
-            unreadable_scores.append(f"{path.name}: {error}")
+            unreadable_scores.append(f"{path.relative_to(directory)}: {error}")
             continue
         if not score.notes:
-            unreadable_scores.append(f"{path.name}: no notes")
+            unreadable_scores.append(f"{path.relative_to(directory)}: no notes")
             continue
 
+        name = str(path.relative_to(directory))
         analysis = read_romantext(analyses[path]) if path in analyses else None
-        keys.append(measure_key(score, analysis, path.name))
+        keys.append(measure_key(score, analysis, name))
 
-        soprano = score.parts.get("Soprano") or score.notes
-        profile = melodic_profile(soprano)
-        real_profiles.append(profile)
-        real_intervals += profile["intervals"]
+        line = melody_part(score)
+        if line:
+            profile = melodic_profile(line)
+            real_profiles.append(profile)
+            real_intervals += profile["intervals"]
+        else:
+            without_melody += 1
 
         if analysis is not None:
-            harmony.append(measure_harmony(score, analysis, path.name))
+            harmony.append(measure_harmony(score, analysis, name))
             share = non_chord_tone_share(score, analysis)
             if share is not None:
                 nct.append(share)
@@ -338,9 +375,23 @@ def run(directory, limit: int | None = None, style: str = "hymn",
         "keys": keys,
         "harmony": harmony,
         "real": _summarise_profiles(real_profiles, real_intervals),
+        "without_melody": without_melody,
         "real_nct": sum(nct) / len(nct) if nct else None,
         "generated": generated_profile(style, len(scores) or 20, seed),
     }
+
+
+def melody_part(score: Score) -> list[Note]:
+    """The one staff that carries a tune, or nothing.
+
+    Better to measure no melody than to measure the top of a piano texture and
+    call the result a melody.
+    """
+    for name, notes in score.parts.items():
+        plain = name.lower().replace("\n", " ")
+        if any(word in plain for word in MELODY_PART_NAMES) and notes:
+            return notes
+    return []
 
 
 def _summarise_profiles(profiles: list[dict], intervals: Counter) -> dict:
@@ -406,7 +457,7 @@ def format_report(report: dict) -> str:
         out(f"  relative error : {relative:4}/{len(keys)}  {relative / len(keys):6.1%}")
         wrong = [k for k in keys if not k.exact][:5]
         for k in wrong:
-            out(f"    {k.name}: wrote {NOTE_NAMES[k.expected[0]]} {k.expected[1]}, "
+            out(f"    {_short(k.name)}: wrote {NOTE_NAMES[k.expected[0]]} {k.expected[1]}, "
                 f"read {NOTE_NAMES[k.found[0]]} {k.found[1]} "
                 f"(confidence {k.confidence:.2f})")
 
@@ -429,10 +480,10 @@ def format_report(report: dict) -> str:
         moved = [h for h in harmony if h.transposed]
         if moved:
             out(f"  scores in a different key from their analysis: "
-                f"{len(moved)} ({', '.join(f'{h.name} {h.transposed:+d}' for h in moved)})")
+                f"{len(moved)} ({', '.join(f'{_short(h.name)} {h.transposed:+d}' for h in moved)})")
         worst = sorted((h for h in harmony if h.compared), key=lambda h: h.accuracy)[:3]
         out("  hardest pieces: "
-            + ", ".join(f"{h.name} {h.accuracy:.0%}" for h in worst))
+            + ", ".join(f"{_short(h.name)} {h.accuracy:.0%}" for h in worst))
         shown = [d for h in harmony for d in h.disagreements][:6]
         for wrote, read in shown:
             out(f"    analyst {wrote:16} we read {read}")
@@ -441,6 +492,9 @@ def format_report(report: dict) -> str:
     if real and made:
         out("")
         out(f"melody, real music vs Middaw's own ({made['style']})")
+        if report.get("without_melody"):
+            out(f"  {report['without_melody']} score(s) have no part that is a "
+                f"single melodic line, and are left out of this comparison")
         out(f"{'':17}{'real':>10}{'middaw':>10}")
         out(f"  pieces         {real['pieces']:>10}{made['pieces']:>10}")
         out(f"  stepwise       {real['stepwise']:>10.1%}{made['stepwise']:>10.1%}")
@@ -457,6 +511,13 @@ def format_report(report: dict) -> str:
         out(f"  notes outside the named chord: real {report['real_nct']:.1%}, "
             f"middaw {made.get('ornament_share', 0):.1%} decorated")
     return "\n".join(lines)
+
+
+def _short(name: str, width: int = 44) -> str:
+    """A path a reader can tell apart: every score in a corpus is score.mxl."""
+    if len(name) <= width:
+        return name
+    return "..." + name[-(width - 3):]
 
 
 def _top_intervals(intervals: Counter, count: int = 6) -> str:

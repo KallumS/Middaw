@@ -129,6 +129,48 @@ are all still there, which MIDI loses. It needs a converter, and using music21
 itself offline to do the conversion is fine: the no-dependency rule is about
 what Middaw *ships*, not about what a `tools/` script uses to prepare data.
 
+## MusicXML corpora, checked
+
+Notation beats MIDI for everything except playback: barlines, key signatures,
+separated voices and — where somebody has written one — a harmonic analysis
+lined up with the notes. These are the ones worth knowing about, with the
+licence as their own files state it rather than as the internet remembers it.
+Counted from the repositories, October 2026.
+
+| Corpus | Size | Licence | Use |
+| --- | --- | --- | --- |
+| **[OpenScore Lieder](https://github.com/OpenScore/Lieder)** | 1,462 `.mxl` songs, 100+ nineteenth-century composers | **CC0 1.0** — the repository ships the CC0 legal code | The cleanest thing available. Voice line plus piano, so the melody is separable |
+| **[OpenScore String Quartets](https://github.com/OpenScore/StringQuartets)** | 196 `.mxl` movements | **CC0 1.0** | Four independent parts — our exact texture |
+| **[When in Rome](https://github.com/MarkGotham/When-in-Rome)** | 761 scores, 1,494 human analyses, 535 of them lined up with a score | **CC BY-SA 4.0** for new content; analyses converted from elsewhere keep their original licences, which "vary" | Ground truth for harmonic analysis, thirty times what the music21 chorales gave us |
+| **[PDMX](https://github.com/pnlong/PDMX)** | 250,000+ MusicXML scraped from MuseScore's public-domain-tagged uploads | code MIT; the scores are whatever their uploaders claimed | See below |
+| **[Bach 370 chorales](https://github.com/craigsapp/bach-370-chorales)** (Craig Sapp) | 370 `**kern` chorales | **CC BY-NC-SA 4.0** — non-commercial | Measurement only |
+| **[DCML corpora](https://github.com/DCMLab)** (Beethoven quartets, Mozart sonatas, and more) | annotated scores with harmony labels | **CC BY-NC-SA 4.0** — non-commercial | Measurement only |
+
+**The OpenScore corpora are the find.** CC0 is a waiver, not a licence with
+conditions: the encoders gave up their rights in the encodings, and the
+compositions are nineteenth-century. Both clearances, settled, in the format
+that keeps the most information. They ask to be credited and it costs nothing
+to do it.
+
+**When in Rome is the measuring stick.** 535 scores with a human analyst's
+roman numerals beside them, against the eighteen the music21 chorales gave us.
+Note two things when using it: `analysis_automatic.rntxt` is a machine's
+reading and must never be used as ground truth — measuring against another
+model tells you how alike two guesses are, not whether either is right — and
+the licence is share-alike, which is fine for measuring (nothing is
+distributed) and needs thought before anything derived from it ships.
+
+**PDMX deserves its own paragraph**, because it is the one that looks like it
+solves everything. It is a careful piece of work — the paper is explicitly a
+response to the Suno and Udio lawsuits — and its own README reports that the
+copyright metadata on the MuseScore website disagrees with the metadata inside
+the files for 12.29% of them (31,221 songs), recommending the
+`no_license_conflict` subset. The deeper problem is one no filtering can fix:
+"public domain" there is *the uploader's claim*, and a user who transcribes a
+2019 pop song and ticks public domain has not made the composition public
+domain. For research that is a reasonable risk to carry. For a product with
+your name on it, it is the Lakh problem with better paperwork.
+
 ## The part that actually differentiates you
 
 Public-domain data is classical and folk. **A model trained on Bach chorales

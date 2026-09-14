@@ -287,18 +287,21 @@ decoration or number its suspensions.
 2. Leaps larger than a fourth, and any diminished leap, change direction after.
 3. Consecutive leaps should outline a triad.
 
-◐ rules 1 and 2; ○ rule 3. Rule 1 is now *measured* against the chorales the
-rule came from (`python3 -m middaw.corpus measure`), and Middaw does not follow
-it closely enough:
+◐ rules 1 and 2; ○ rule 3. Both are now *measured*
+(`python3 -m middaw.corpus measure`), against the chorales the rules came from
+and against 396 nineteenth-century song melodies:
 
-| | Bach, 410 chorales | Middaw |
-| --- | --- | --- |
-| stepwise motion | 67.1% | 49.1% |
-| repeated note | 14.7% | 18.8% |
-| leap turns back | 77.6% | 81.3% |
+| | Bach, 410 chorales | Lieder, 396 voice lines | Middaw |
+| --- | --- | --- | --- |
+| stepwise motion | 67.1% | 46.6% | 49–59% |
+| repeated note | 14.7% | 22.7% | 9–19% |
+| leap turns back | 77.6% | 91.8% | 77–81% |
 
-Rule 2 we keep as well as Bach does. Rule 1 we do not, and that is the single
-clearest measured difference between our melodies and real ones.
+Rule 1 has no single right value: a chorale steps far more than a song, which
+sets syllables and repeats notes to do it. Middaw's figure moves with the style
+too, but it was never measured, so it is right by accident where it is right.
+Rule 2 is the clear one — real melodies turn back after a leap more reliably
+than ours, in both repertoires.
 
 ## 8. Rhythm
 
@@ -519,9 +522,12 @@ twelve accompaniment figures.
 
 The biggest gaps, in the order they would most improve the output:
 
-1. **Too few steps.** Measured against the chorales: Bach's melodies move by
-   step 67% of the time and ours 49%. This is now a number rather than an
-   opinion, which makes it the first thing to fix.
+1. **Melodic constants that were never measured.** How often a melody steps,
+   repeats a note and turns back after a leap differs by style — 67% stepwise
+   in a chorale, 47% in a song — and Middaw's figures were set by ear. They are
+   now measurable per style, which makes this the first thing to fix. Turning
+   back after a leap is the one that is simply too low: 77% against real
+   music's 92%.
 2. **Subdivision groupings and clave** — where rhythmic identity actually lives.
 3. **Voice leading for the chords** — doubling, spacing, guide tones, and
    resolving the seventh down by step. The countermelody already avoids
