@@ -65,7 +65,8 @@
       "register": -2,
       "velocity": 68,
       "chromaticism": 0.4,
-      "functional": 0.55
+      "functional": 0.55,
+      "ornament": 0.3
     },
     "jazz": {
       "label": "Jazz",
@@ -131,7 +132,8 @@
       "register": 0,
       "velocity": 78,
       "chromaticism": 0.9,
-      "functional": 0.9
+      "functional": 0.9,
+      "ornament": 0.55
     },
     "blues": {
       "label": "Blues",
@@ -193,7 +195,8 @@
       "register": -1,
       "velocity": 82,
       "chromaticism": 0.5,
-      "functional": 0.25
+      "functional": 0.25,
+      "ornament": 0.45
     },
     "classical": {
       "label": "Classical",
@@ -266,7 +269,8 @@
       "register": 0,
       "velocity": 76,
       "chromaticism": 0.5,
-      "functional": 0.8
+      "functional": 0.8,
+      "ornament": 0.65
     },
     "baroque": {
       "label": "Baroque",
@@ -336,7 +340,8 @@
       "register": 0,
       "velocity": 74,
       "chromaticism": 0.55,
-      "functional": 0.85
+      "functional": 0.85,
+      "ornament": 0.8
     },
     "romantic_era": {
       "label": "Romantic era",
@@ -404,7 +409,8 @@
       "register": 0,
       "velocity": 72,
       "chromaticism": 0.55,
-      "functional": 0.75
+      "functional": 0.75,
+      "ornament": 0.7
     },
     "folk": {
       "label": "Folk",
@@ -468,7 +474,8 @@
       "register": 0,
       "velocity": 76,
       "chromaticism": 0.1,
-      "functional": 0.3
+      "functional": 0.3,
+      "ornament": 0.35
     },
     "celtic": {
       "label": "Celtic",
@@ -524,7 +531,8 @@
       "register": 1,
       "velocity": 80,
       "chromaticism": 0.05,
-      "functional": 0.2
+      "functional": 0.2,
+      "ornament": 0.45
     },
     "pop": {
       "label": "Pop",
@@ -586,7 +594,8 @@
       "register": 0,
       "velocity": 82,
       "chromaticism": 0.15,
-      "functional": 0.3
+      "functional": 0.3,
+      "ornament": 0.25
     },
     "ballad": {
       "label": "Ballad",
@@ -649,7 +658,8 @@
       "register": 0,
       "velocity": 68,
       "chromaticism": 0.3,
-      "functional": 0.55
+      "functional": 0.55,
+      "ornament": 0.35
     },
     "ambient": {
       "label": "Ambient",
@@ -705,7 +715,8 @@
       "register": 1,
       "velocity": 58,
       "chromaticism": 0.1,
-      "functional": 0.35
+      "functional": 0.35,
+      "ornament": 0.2
     },
     "cinematic": {
       "label": "Cinematic",
@@ -772,7 +783,8 @@
       "register": -1,
       "velocity": 84,
       "chromaticism": 0.25,
-      "functional": 0.45
+      "functional": 0.45,
+      "ornament": 0.3
     },
     "house": {
       "label": "House",
@@ -824,7 +836,8 @@
       "register": 0,
       "velocity": 86,
       "chromaticism": 0.2,
-      "functional": 0.4
+      "functional": 0.4,
+      "ornament": 0.15
     },
     "techno": {
       "label": "Techno",
@@ -875,7 +888,8 @@
       "register": -1,
       "velocity": 88,
       "chromaticism": 0.05,
-      "functional": 0.15
+      "functional": 0.15,
+      "ornament": 0.08
     },
     "trap": {
       "label": "Trap",
@@ -928,7 +942,8 @@
       "register": -2,
       "velocity": 84,
       "chromaticism": 0.15,
-      "functional": 0.25
+      "functional": 0.25,
+      "ornament": 0.15
     },
     "rnb": {
       "label": "R&B",
@@ -981,7 +996,8 @@
       "register": 0,
       "velocity": 72,
       "chromaticism": 0.65,
-      "functional": 0.75
+      "functional": 0.75,
+      "ornament": 0.4
     },
     "gospel": {
       "label": "Gospel",
@@ -1038,7 +1054,8 @@
       "register": 0,
       "velocity": 88,
       "chromaticism": 0.85,
-      "functional": 0.85
+      "functional": 0.85,
+      "ornament": 0.55
     },
     "waltz": {
       "label": "Waltz",
@@ -1087,7 +1104,8 @@
       "register": 0,
       "velocity": 76,
       "chromaticism": 0.4,
-      "functional": 0.7
+      "functional": 0.7,
+      "ornament": 0.5
     },
     "ragtime": {
       "label": "Ragtime",
@@ -1141,7 +1159,8 @@
       "register": 0,
       "velocity": 82,
       "chromaticism": 0.75,
-      "functional": 0.8
+      "functional": 0.8,
+      "ornament": 0.5
     },
     "tango": {
       "label": "Tango",
@@ -1192,7 +1211,8 @@
       "register": -1,
       "velocity": 84,
       "chromaticism": 0.55,
-      "functional": 0.7
+      "functional": 0.7,
+      "ornament": 0.45
     },
     "bossa": {
       "label": "Bossa nova",
@@ -1243,7 +1263,8 @@
       "register": 0,
       "velocity": 70,
       "chromaticism": 0.8,
-      "functional": 0.85
+      "functional": 0.85,
+      "ornament": 0.4
     },
     "minimal": {
       "label": "Minimalism",
@@ -1301,7 +1322,8 @@
       "register": 0,
       "velocity": 70,
       "chromaticism": 0.05,
-      "functional": 0.25
+      "functional": 0.25,
+      "ornament": 0.1
     },
     "chiptune": {
       "label": "Chiptune",
@@ -1357,7 +1379,8 @@
       "register": 1,
       "velocity": 86,
       "chromaticism": 0.1,
-      "functional": 0.3
+      "functional": 0.3,
+      "ornament": 0.25
     },
     "rock": {
       "label": "Rock",
@@ -1421,7 +1444,8 @@
       "register": -1,
       "velocity": 92,
       "chromaticism": 0.1,
-      "functional": 0.3
+      "functional": 0.3,
+      "ornament": 0.2
     }
   },
   "moods": {
@@ -1622,7 +1646,8 @@
       "extensions_delta": 0.4,
       "valence": 0.4,
       "arousal": -0.6,
-      "chromaticism_delta": 0.1
+      "chromaticism_delta": 0.1,
+      "ornament_delta": 0.1
     },
     "calm": {
       "label": "Calm",
@@ -1646,7 +1671,8 @@
       "velocity_delta": -14,
       "extensions_delta": 0.25,
       "valence": 0.5,
-      "arousal": -0.8
+      "arousal": -0.8,
+      "ornament_delta": -0.05
     },
     "playful": {
       "label": "Playful",
@@ -1668,7 +1694,8 @@
       "density_delta": 0.12,
       "register_delta": 1,
       "valence": 0.7,
-      "arousal": 0.6
+      "arousal": 0.6,
+      "ornament_delta": 0.1
     },
     "mysterious": {
       "label": "Mysterious",
@@ -1713,7 +1740,8 @@
       "extensions_delta": 0.35,
       "valence": 0.7,
       "arousal": -0.3,
-      "chromaticism_delta": 0.15
+      "chromaticism_delta": 0.15,
+      "ornament_delta": 0.1
     },
     "nostalgic": {
       "label": "Nostalgic",
@@ -1759,7 +1787,8 @@
       "register_delta": -2,
       "valence": -0.7,
       "arousal": 0.9,
-      "chromaticism_delta": -0.1
+      "chromaticism_delta": -0.1,
+      "ornament_delta": -0.1
     },
     "warm": {
       "label": "Warm",
@@ -1912,6 +1941,29 @@
         "walking pace"
       ],
       "tempo_scale": 1.0
+    },
+    "ornamented": {
+      "synonyms": [
+        "ornamented",
+        "ornate",
+        "decorated",
+        "florid",
+        "embellished",
+        "flowery",
+        "melismatic"
+      ],
+      "ornament_delta": 0.35
+    },
+    "plain": {
+      "synonyms": [
+        "plain",
+        "unadorned",
+        "stark",
+        "austere",
+        "skeletal",
+        "bare bones"
+      ],
+      "ornament_delta": -0.3
     }
   },
   "roles": {

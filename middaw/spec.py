@@ -41,6 +41,7 @@ class MusicSpec:
     progression: list[str] = field(default_factory=lambda: ["I", "V", "vi", "IV"])
     progression_labels: list[str] = field(default_factory=list)
     chromaticism: float = 0.25
+    ornament: float = 0.35
     pattern: str = "block"               # accompaniment figure
     roles: list[str] = field(default_factory=lambda: ["melody", "chords", "bass"])
 
@@ -96,6 +97,7 @@ class MusicSpec:
         self.velocity = int(max(20, min(120, self.velocity)))
         self.humanize = max(0.0, min(2.0, self.humanize))
         self.chromaticism = max(0.0, min(1.0, self.chromaticism))
+        self.ornament = max(0.0, min(1.0, self.ornament))
         self.tonic %= 12
         return self
 

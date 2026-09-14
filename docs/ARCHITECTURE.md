@@ -48,6 +48,11 @@ accompaniment figures, swing and density per tag — plus:
   the phrase (A, A', B, A''). Repetition with variation is what makes a line
   sound composed; a first-order Markov walk does not give you that however good
   its statistics are.
+- **`middaw/embellish.py`** — non-chord tones, applied *after* the chord-tone
+  line exists, because passing, neighbour, escape and the rest are
+  relationships between three notes rather than kinds of pitch. Every label is
+  then re-derived from the finished line, so what the generator reports is
+  true of what it wrote.
 - **`middaw/accompaniment.py`** — twelve named figures (alberti, stride,
   offbeat comping, waltz, rolled, ostinato…). Adding a style is a function plus
   a weight in the vocabulary.

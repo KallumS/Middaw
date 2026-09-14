@@ -16,11 +16,15 @@ throughout — whether Middaw acts on it yet.
 
 **Kallum's own studies** — the working vocabulary of this project:
 *Chord Theory* (every triad and tetrad possible in 12TET and what each set of
-fixed pitches can stand for), *The 32 Modes* (Bhatkhande's thaats through
-Jairazbhoy's numbering), *Visualizing the Network of Musical Harmony* (the
+fixed pitches can stand for), *Visualizing the Network of Musical Harmony* (the
 fifths-and-thirds lattice), *Key Changes and Modulations*, *The Movement and
 Flexibility of Dominant Chords*, *Major Seventh Chords*, *Interesting Chords*,
 *Rhythmic Explorations*.
+
+Middaw is a **Western** music-theory system throughout: common-practice tonal
+harmony, its modes, and the jazz and popular practice built on top of it. Where
+a source reached outside that tradition, the material was left there rather
+than imported.
 
 **Robert Hutchinson, *Music Theory for the 21st-Century Classroom*** (University
 of Puget Sound, Sept 2025, GNU FDL) — a four-semester college text in 35
@@ -78,20 +82,34 @@ Dorian, Aeolian, Phrygian, Locrian. Moving one step to the right on that axis is
 the same note-change as modulating up a fifth — it brightens. ◐ the modes are
 there; the brightness axis is not wired to "bright"/"dark" prompts yet
 
-**Locrian is not a viable tonic mode.** Without a perfect fifth the tonic chord
-is diminished and cannot hold. Bhatkhande's 32-thaat system excludes it for
-exactly this reason. Middaw could previously pick it. ✅ now excluded
+**Locrian is a theoretical mode, not a key.** Its tonic triad is diminished, so
+there is no perfect fifth above the tonic to anchor it; the "tonic" chord wants
+to resolve away rather than sit still. Western practice uses locrian as a
+*scale* — what you play over a iiø7 — not as a home. Middaw could previously
+pick it as a tonic mode. ✅ now excluded
 
-**The 32 thaats.** Fix 1 and 5; let 2, 3, 6 and 7 be flat or natural and 4 be
-natural or sharp. That gives 32 seven-note modes, every one of which has a major
-or minor tonic triad — 8 with a I∆7 tonic, 8 with I7, 8 with i-7, 8 with i-∆7.
-It is a complete and principled mode set, with western names for all of them
-(Lydian b2, Hungarian Minor, Double Harmonic, Todi…). ○ Middaw ships 18 scales;
-this would extend it to a closed system
+**The scale inventory.** Middaw ships eighteen, in the three groups Hutchinson
+sorts them into:
+
+- **Classical**: major, natural minor, harmonic minor, melodic minor.
+- **Modes**: ionian, dorian, phrygian, lydian, mixolydian, aeolian, locrian.
+- **Jazz and synthetic**: major and minor pentatonic, major and minor blues,
+  whole tone, and the two octatonic (diminished) scales, whole-half and
+  half-whole.
+
+The hybrid modes jazz uses — lydian dominant, mixolydian b2, lydian
+augmented, altered — are rotations of melodic and harmonic minor, so they come
+free from the scales already present. ○ naming them so a prompt can ask for
+one by name is not done
 
 **Reduced scales borrow their harmony from a parent.** Pentatonic and blues
 scales cannot be stacked in thirds; use the parent seven-note scale for chords.
 ✅ `PARENT_SCALE`
+
+**The blues scale** is the minor pentatonic with an added note between the 4
+and the 5. Its b3, b5 and b7 are the "blue notes" — not chord tones of a major
+triad or a dominant seventh, which is exactly why they colour the harmony
+rather than belong to it.
 
 **"Faux" chords.** In C harmonic major the 3, b6 and 7 look like an E major
 triad, but the b6 sits an augmented second from the 3, not a major third. The
@@ -229,29 +247,32 @@ no subphrase model.
 | Augmentation | every duration doubled | ○ |
 | Diminution | every duration halved | ○ |
 | Rhythmic change | some but not all durations varied | ✅ |
-| Ornamentation | decorate with non-chord tones | ○ |
+| Ornamentation | decorate with non-chord tones | ✅ |
 | Extension | material added on repetition | ○ |
 | Retrograde | order of notes reversed | ○ |
 
-**Non-chord tones** — classified by how they are approached and left. This is
-the single biggest missing piece in Middaw's melodies, which currently only snap
-to chord tones:
+**Non-chord tones** — classified by how they are approached and left. A
+non-chord tone is not a kind of pitch; it is a *relationship* between three
+notes, which is why `middaw/embellish.py` decides them as a pass over a
+finished chord-tone line rather than while the line is being written:
 
-| Type | Approached by | Left by |
-| --- | --- | --- |
-| Passing tone | step | step, same direction |
-| Neighbor tone | step | step, opposite direction |
-| Appoggiatura | leap | step |
-| Escape tone | step | leap, opposite direction |
-| Double neighbor | upper and lower neighbor before returning | |
-| Anticipation | step | same note |
-| Pedal point | same note | same note |
-| Suspension | same note | step **down** |
-| Retardation | same note | step **up** |
+| Type | Approached by | Left by | Built? |
+| --- | --- | --- | --- |
+| Passing tone | step | step, same direction | ✅ |
+| Neighbor tone | step | step, opposite direction | ✅ |
+| Appoggiatura | leap | step | ✅ |
+| Escape tone | step | leap, opposite direction | ✅ |
+| Double neighbor | upper and lower neighbor before returning | | ○ |
+| Anticipation | step | same note | ✅ |
+| Pedal point | same note | same note | ○ |
+| Suspension | same note | step **down** | ✅ |
+| Retardation | same note | step **up** | ✅ |
 
 Qualifiers: accented (on the beat) / unaccented; chromatic; metrical /
 sub-metrical / super-metrical. Suspensions are numbered by the interval above
-the bass and its resolution: 9-8, 7-6, 4-3, 2-3, 6-5. ○
+the bass and its resolution: 9-8, 7-6, 4-3, 2-3, 6-5. ◐ Middaw writes accented
+and unaccented decoration and reports which; it does not yet write chromatic
+decoration or number its suspensions.
 
 **Rules of melody** (from Bach's 371 chorales):
 
@@ -474,18 +495,18 @@ Middaw currently implements, in rough order of confidence: chord spelling and
 naming, mode-derived diatonic harmony, the four-function flowchart, secondary
 and substitute dominants, related II chords, all five cadences, thirteen forms
 with per-section cadence planning, six voices (melody, countermelody, ostinato,
-arpeggio, chords, bass), motif-based melody with tonal inversion, a rhythm-cell
-vocabulary, and twelve accompaniment figures.
+arpeggio, chords, bass), motif-based melody with tonal inversion, seven kinds
+of non-chord tone applied and then re-verified, a rhythm-cell vocabulary, and
+twelve accompaniment figures.
 
 The biggest gaps, in the order they would most improve the output:
 
-1. **Non-chord tones** — melodies that decorate rather than only land. This is
-   the single biggest remaining gap: Middaw's melodies only ever arrive on
-   chord tones, which is why they sound placed rather than sung.
-2. **Subdivision groupings and clave** — where rhythmic identity actually lives.
-3. **Voice leading for the chords** — doubling, spacing, guide tones, and
+1. **Subdivision groupings and clave** — where rhythmic identity actually lives.
+2. **Voice leading for the chords** — doubling, spacing, guide tones, and
    resolving the seventh down by step. The countermelody already avoids
    parallel perfect intervals; nothing else does.
-4. **Modulation** — the app cannot change key at all, so a sonata exposition
+3. **Modulation** — the app cannot change key at all, so a sonata exposition
    cannot really go to the dominant and a binary form cannot really come back.
-5. **Sentences and elisions** — the melodic side of phrase construction.
+4. **Sentences and elisions** — the melodic side of phrase construction.
+5. **Chromatic decoration** — every non-chord tone Middaw writes is diatonic,
+   so it decorates but never leans.

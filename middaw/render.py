@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from dataclasses import replace
 
 from middaw.accompaniment import generate_accompaniment, generate_bass
+from middaw.embellish import embellish
 from middaw.form import Section, choose_form, describe, plan_form
 from middaw.functional import generate_progression, recadence
 from middaw.melody import DEFAULT_INTERVALS, generate_melody
@@ -32,11 +33,13 @@ class Generation:
     midi: bytes
     chords: list[dict]
     sections: list[Section] = None
+    embellishments: list = None
 
     def to_dict(self) -> dict:
         return {"spec": self.spec.to_dict(), "song": self.song.to_dict(),
                 "chords": self.chords,
-                "sections": [s.to_dict() for s in (self.sections or [])]}
+                "sections": [s.to_dict() for s in (self.sections or [])],
+                "embellishments": [e.to_dict() for e in (self.embellishments or [])]}
 
 
 def _colour(symbol: str, rng: random.Random, extensions: float) -> str:
@@ -174,6 +177,7 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
     beats_per_bar = spec.beats_per_bar
     all_spans: list[tuple[float, float, Chord]] = []
     all_labels: list[str] = []
+    ornaments: list = []
 
     for section in sections:
         # Each section is rendered as its own little piece, then slid into
@@ -193,14 +197,22 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
             melody = generate_melody(part, _chords_by_bar(spans), rng,
                                      intervals=intervals, rhythm_bias=rhythm_bias,
                                      motif_rng=motif_rng, cadence=section.cadence)
+            # The skeleton is chord tones; the decoration comes after, because
+            # a non-chord tone is a relationship to its neighbours and cannot
+            # be decided while the note is being placed.
+            melody, added = embellish(part, spans, melody, rng)
+            ornaments += [replace(e, beat=e.beat + offset) for e in added]
         if "countermelody" in tracks:
             # Set against whatever the melody is doing, even when there is no
             # melody track: then it is simply the only line.
             against = melody or generate_melody(
                 part, _chords_by_bar(spans), random.Random(spec.seed),
                 intervals=intervals, motif_rng=motif_rng, cadence=section.cadence)
-            _extend(tracks["countermelody"],
-                    generate_countermelody(part, spans, against, rng), offset)
+            counter = generate_countermelody(part, spans, against, rng)
+            counter, added = embellish(part, spans, counter, rng,
+                                       amount=part.ornament * 0.6)
+            ornaments += [replace(e, beat=e.beat + offset) for e in added]
+            _extend(tracks["countermelody"], counter, offset)
         if "melody" in tracks:
             _extend(tracks["melody"], melody, offset, section.transpose)
         if "ostinato" in tracks:
@@ -227,7 +239,7 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
 
     return Generation(spec=spec, song=song, midi=song_to_bytes(song),
                       chords=name_chords(spec, all_spans, all_labels),
-                      sections=sections)
+                      sections=sections, embellishments=ornaments)
 
 
 def _extend(track: Track, notes: list[Note], offset: float,

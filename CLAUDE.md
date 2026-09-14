@@ -134,6 +134,36 @@ counter notes looks plausible and detects nothing.
 An ostinato figure is invented once for the whole piece, not once per section.
 That repetition is what makes it an ostinato.
 
+## Non-chord tones are decided last
+
+`middaw/embellish.py`. A non-chord tone is not a kind of pitch, it is a
+*relationship*: the same D is a passing tone, a neighbour or an escape
+depending on what surrounds it. So decoration is a **post-pass over a finished
+chord-tone line**, never a choice made while the line is being written — that
+is the only place the approach and the departure are both known.
+
+Invariants, all of them load-bearing:
+
+- **Labels are re-derived, not remembered.** `_verify` classifies every
+  applied note again from the finished line and drops or re-labels anything
+  that no longer matches. A later insertion can turn a neighbour into an
+  escape; the music is still fine, only the label was wrong, and a generator
+  that reports a label it did not write is worse than one that reports none.
+- **Everything added is a scale degree**, so the in-key invariant
+  `tests/test_render.py` asserts survives decoration.
+- **Nothing may come between a suspension and its resolution.** The boundary
+  pass returns a `frozen` set covering both notes and the split pass honours
+  it, or the suspension is simply a wrong note.
+- **The last note of a section is never touched.** The cadence is the point of
+  the phrase.
+- **A melodic line stays monophonic.** `_monophonic` trims each note to the
+  next onset; decoration works in the *slot* between onsets, not in the
+  sounding duration, because melodies shorten notes for articulation and so
+  are almost never contiguous.
+
+Choose the *device* first, then its direction. Weighting the forms instead
+over-represents whichever device has two of them.
+
 ## Corpus discipline
 
 A MIDI file is a separate copyrightable work from the composition it

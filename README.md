@@ -57,7 +57,7 @@ those words are the backlog for the vocabulary.
   uplifting, dreamy, calm, playful, mysterious, romantic, nostalgic,
   aggressive, warm
 - **Descriptors**: sparse, dense, high, low, loud, quiet, swung, straight,
-  slow, fast, moderate
+  slow, fast, moderate, ornamented, plain
 - **Voices**: melody, countermelody, ostinato, arpeggio, chords, bass — asked
   for by name, or chosen by the style (a baroque prompt is scored for two
   independent lines and a bass, not a tune over a pad)
@@ -66,6 +66,9 @@ those words are the backlog for the vocabulary.
   prompt, or chosen by the style
 - **Cadences**: every section is built backwards from the way it ends —
   perfect and imperfect authentic, plagal, deceptive, half
+- **Ornamentation**: passing tones, neighbours, appoggiaturas, escape tones,
+  anticipations, suspensions and retardations — how much is a matter of style,
+  and "ornamented" or "plain" in the prompt overrules it
 
 All of it lives in one file, [`data/vocab/tags.json`](data/vocab/tags.json),
 which is read by both the prompt parser and the corpus labeller. Adding a

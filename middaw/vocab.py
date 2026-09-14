@@ -30,6 +30,7 @@ class Priors:
     register: float = 0.0
     velocity: float = 78.0
     humanize: float = 1.0
+    ornament: float = 0.35        # appetite for non-chord tones
     chromaticism: float = 0.25    # appetite for secondary/substitute dominants
     functional: float = 0.5       # chance of writing the progression from function
 
@@ -47,7 +48,7 @@ class Priors:
         for pattern, w in entry.get("patterns", {}).items():
             self.patterns[pattern] = self.patterns.get(pattern, 0.0) + w * weight
         for key in ("density", "swing", "extensions", "register", "velocity",
-                    "chromaticism", "functional"):
+                    "chromaticism", "functional", "ornament"):
             if key in entry:
                 current = getattr(self, key)
                 setattr(self, key, current * (1 - weight) + entry[key] * weight)
@@ -68,6 +69,7 @@ class Priors:
         self.register += entry.get("register_delta", 0.0)
         self.velocity += entry.get("velocity_delta", 0.0)
         self.chromaticism += entry.get("chromaticism_delta", 0.0)
+        self.ornament += entry.get("ornament_delta", 0.0)
         if "swing" in entry:
             self.swing = entry["swing"]
         self.humanize *= entry.get("humanize_scale", 1.0)
