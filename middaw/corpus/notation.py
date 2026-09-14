@@ -39,6 +39,14 @@ class Score:
     tempo: float = 90.0
     tonic: int = 0                       # from the key signature
     mode: str = "major"
+    #: Whether the file actually *said* major or minor. A key signature alone
+    #: names a collection, not a key: two sharps is D major and B minor and
+    #: E dorian. MuseScore's MusicXML export writes no <mode> element at all,
+    #: so assuming major there invents a ground truth and then marks correct
+    #: answers wrong against it.
+    key_stated: bool = False
+    #: The major key the signature names, whatever the actual key is.
+    signature_tonic: int = 0
     #: Written measure number -> beat it starts on. A pickup bar is usually
     #: numbered 0, and the analyses number their measures the same way, which
     #: is what lets the two be lined up.
@@ -123,8 +131,11 @@ def _read_key(root, score: Score) -> None:
     if key is None:
         return
     fifths = int(_text(key, "fifths", 0))
-    mode = (_text(key, "mode", "major") or "major").lower()
+    stated = _text(key, "mode")
+    mode = (stated or "major").lower()
     tonic = FIFTHS_TONIC.get(fifths, 0)
+    score.signature_tonic = tonic
+    score.key_stated = bool(stated) and mode in ("major", "minor")
     if mode.startswith("minor"):
         score.tonic = (tonic + 9) % 12
         score.mode = "minor"
@@ -161,8 +172,12 @@ def _read_part(part, score: Score) -> list[Note]:
                 if time is not None:
                     beats = _text(time, "beats")
                     beat_type = _text(time, "beat-type")
-                    if beats and beat_type and "+" not in beats:
+                    try:
+                        # "3+2/8" and "(6)/8" are both written in the wild; a
+                        # meter we cannot read is not a reason to lose a score.
                         score.meter = (int(beats), int(beat_type))
+                    except (TypeError, ValueError):
+                        pass
             elif element.tag == "sound" and element.get("tempo"):
                 score.tempo = float(element.get("tempo"))
             elif element.tag == "backup":
@@ -215,6 +230,147 @@ def _read_note(element, notes, divisions, cursor, previous_onset, open_ties):
             open_ties[key] = note
 
     return (cursor if is_chord else cursor + length), start
+
+
+# --------------------------------------------------------------------------
+# Humdrum **kern: the other format the good encodings come in.
+# --------------------------------------------------------------------------
+
+_KERN_DURATION_RE = re.compile(r"(\d+)(\.*)")
+_KERN_PITCH_RE = re.compile(r"([a-gA-G]+)([#\-n]*)")
+
+
+def kern_pitch(token: str) -> int | None:
+    """'cc#' -> 73. Lower case is middle C up; upper case is below it."""
+    match = _KERN_PITCH_RE.search(token)
+    if not match:
+        return None
+    letters, accidentals = match.groups()
+    letter = letters[0]
+    if letter.islower():
+        octave = 4 + len(letters) - 1
+    else:
+        octave = 3 - (len(letters) - 1)
+    pitch = (octave + 1) * 12 + STEP_PITCH_CLASSES[letter.upper()]
+    pitch += accidentals.count("#") - accidentals.count("-")
+    return pitch
+
+
+def kern_duration(token: str) -> float | None:
+    """'4.' -> 1.5 beats. The number is a division of a whole note."""
+    # Not anchored: a token can open with a tie or a phrase mark - "[2a" is a
+    # half note that happens to start a tie, and matching from the front reads
+    # it as no duration at all and silently drops every tied note in the file.
+    match = _KERN_DURATION_RE.search(token)
+    if not match:
+        return None
+    value, dots = match.groups()
+    number = int(value)
+    length = 8.0 if number == 0 else 4.0 / number
+    return length * (2.0 - 0.5 ** len(dots))
+
+
+def read_kern(path) -> Score:
+    """Parse a Humdrum `**kern` file.
+
+    Each spine keeps its own clock: a data token places a note and moves that
+    spine forward, and a null token (`.`) means the note before it is still
+    sounding. That is what keeps the parts aligned without a bar count.
+    """
+    score = Score(tempo=90.0)
+    spines: list[int] = []          # indices of the **kern columns
+    names: dict[int, str] = {}
+    clocks: dict[int, float] = {}
+    open_ties: dict[tuple[int, int], Note] = {}
+    measure = 0
+
+    for line in Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line or line.startswith("!"):
+            continue
+        columns = line.split("\t")
+
+        if line.startswith("**"):
+            spines = [i for i, c in enumerate(columns) if c == "**kern"]
+            clocks = {i: 0.0 for i in spines}
+            continue
+        if line.startswith("*"):
+            for index in spines:
+                if index >= len(columns):
+                    continue
+                token = columns[index]
+                if token.startswith('*I"'):
+                    names[index] = token[3:].strip() or f"Part {index}"
+                elif token.startswith("*M") and "/" in token:
+                    top, _, bottom = token[2:].partition("/")
+                    if top.isdigit() and bottom.split()[0].isdigit():
+                        score.meter = (int(top), int(bottom.split()[0]))
+                elif token.startswith("*MM") and token[3:].replace(".", "").isdigit():
+                    score.tempo = float(token[3:])
+                elif token.endswith(":") and len(token) > 1:
+                    parsed = parse_romantext_key(token[1:-1])
+                    if parsed:
+                        score.tonic, score.mode = parsed
+                        score.key_stated = True
+                        score.signature_tonic = (
+                            parsed[0] if parsed[1] == "major"
+                            else (parsed[0] + 3) % 12)
+            continue
+        if line.startswith("="):
+            number = re.match(r"=+(\d+)", columns[0])
+            if number:
+                measure = int(number.group(1))
+                start = min((clocks[i] for i in spines if i in clocks), default=0.0)
+                score.measure_starts.setdefault(measure, round(start, 6))
+                if measure - 1 in score.measure_starts:
+                    score.measure_lengths.setdefault(
+                        measure - 1,
+                        round(start - score.measure_starts[measure - 1], 6))
+            continue
+
+        for index in spines:
+            if index >= len(columns):
+                continue
+            token = columns[index].strip()
+            if not token or token == "." or "q" in token.lower():
+                continue                      # null token, or a grace note
+            length = kern_duration(token)
+            if length is None:
+                continue
+            start = clocks[index]
+            clocks[index] = start + length
+            if "r" in token.split()[0] and not _KERN_PITCH_RE.search(token.split()[0]):
+                continue                      # a rest still takes its time
+            part = names.get(index, f"Part {index + 1}")
+            for chord_note in token.split():
+                if "r" in chord_note and not _KERN_PITCH_RE.search(chord_note):
+                    continue
+                pitch = kern_pitch(chord_note)
+                if pitch is None:
+                    continue
+                key = (index, pitch)
+                held = open_ties.get(key)
+                if held is not None and ("]" in chord_note or "_" in chord_note):
+                    held.duration = round(start + length - held.start, 6)
+                    if "_" not in chord_note:
+                        open_ties.pop(key, None)
+                    continue
+                note = Note(start=round(start, 6), duration=round(length, 6),
+                            pitch=max(0, min(127, pitch)), velocity=80)
+                score.parts.setdefault(part, []).append(note)
+                score.notes.append(note)
+                if "[" in chord_note or "_" in chord_note:
+                    open_ties[key] = note
+
+    score.notes.sort(key=lambda n: (n.start, n.pitch))
+    return score
+
+
+def read_score(path) -> Score:
+    """Read whichever notation format this file is in."""
+    suffix = Path(path).suffix.lower()
+    if suffix in (".krn", ".kern"):
+        return read_kern(path)
+    return read_musicxml(path)
 
 
 # --------------------------------------------------------------------------

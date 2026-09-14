@@ -105,6 +105,8 @@ genre adds it to both at once.
   deliberately does not map
 - **[docs/APPROACH.md](docs/APPROACH.md)** — why the generator calculates a
   piece rather than learning one, and what a corpus is actually for
+- **[docs/MEASUREMENTS.md](docs/MEASUREMENTS.md)** — every measurement taken
+  against music Middaw did not write, per corpus, with the caveats
 - **[docs/LABELLING.md](docs/LABELLING.md)** — how to label the dataset, and
   why the label schema is also the prompt vocabulary
 - **[docs/DATASET.md](docs/DATASET.md)** — sourcing MIDI you are actually
@@ -125,12 +127,12 @@ python3 -m middaw.corpus stats             # what the corpus teaches the generat
 python3 -m middaw.corpus measure <folder>  # check the analyser against real scores
 ```
 
-`measure` is the one that keeps the rest honest. It reads MusicXML scores and
-any RomanText analyses beside them and says how close Middaw's key detection
-and harmonic analysis are to what a human wrote — against 410 Bach chorales,
-74.9% for tonic and mode, and 80.5% agreement with an analyst's chord roots. It
-copies nothing into the corpus, so it can be pointed at files whose rights are
-not cleared.
+`measure` is the one that keeps the rest honest. It reads MusicXML and Humdrum
+`**kern` scores, and any RomanText analyses beside them, and says how close
+Middaw's key detection, harmonic analysis and melodies are to what a human
+wrote. It copies nothing into the corpus, so it can be pointed at files whose
+rights are not cleared. Run against 3,200 scores and 553 human analyses so far
+— see **[docs/MEASUREMENTS.md](docs/MEASUREMENTS.md)**.
 
 A freshly ingested file has no provenance, and `validate --strict` fails until
 a human fills it in. Only entries whose licence clears commercial use are used

@@ -143,7 +143,7 @@ Counted from the repositories, October 2026.
 | **[OpenScore String Quartets](https://github.com/OpenScore/StringQuartets)** | 196 `.mxl` movements | **CC0 1.0** | Four independent parts — our exact texture |
 | **[When in Rome](https://github.com/MarkGotham/When-in-Rome)** | 761 scores, 1,494 human analyses, 535 of them lined up with a score | **CC BY-SA 4.0** for new content; analyses converted from elsewhere keep their original licences, which "vary" | Ground truth for harmonic analysis, thirty times what the music21 chorales gave us |
 | **[PDMX](https://github.com/pnlong/PDMX)** | 250,000+ MusicXML scraped from MuseScore's public-domain-tagged uploads | code MIT; the scores are whatever their uploaders claimed | See below |
-| **[Bach 370 chorales](https://github.com/craigsapp/bach-370-chorales)** (Craig Sapp) | 370 `**kern` chorales | **CC BY-NC-SA 4.0** — non-commercial | Measurement only |
+| **[Bach 370 chorales](https://github.com/craigsapp/bach-370-chorales)** (Craig Sapp) | 370 `**kern` chorales | **CC BY-NC-SA 4.0** — non-commercial | Measurement only. The best-stated keys of any corpus here: an encoder's analytical claim rather than an exporter's default |
 | **[DCML corpora](https://github.com/DCMLab)** (Beethoven quartets, Mozart sonatas, and more) | annotated scores with harmony labels | **CC BY-NC-SA 4.0** — non-commercial | Measurement only |
 
 **The OpenScore corpora are the find.** CC0 is a waiver, not a licence with
@@ -151,6 +151,12 @@ conditions: the encoders gave up their rights in the encodings, and the
 compositions are nineteenth-century. Both clearances, settled, in the format
 that keeps the most information. They ask to be credited and it costs nothing
 to do it.
+
+**The DCML corpora arrive through When in Rome.** Their Beethoven quartets,
+Mozart sonatas and Chopin mazurkas are in it, converted to RomanText, under the
+original CC BY-NC-SA — so we get the analyses without writing a MuseScore
+parser and a TSV label reader, and non-commercial means measurement only, which
+is all we do with them. `docs/MEASUREMENTS.md` has what they said.
 
 **When in Rome is the measuring stick.** 535 scores with a human analyst's
 roman numerals beside them, against the eighteen the music21 chorales gave us.

@@ -21,19 +21,20 @@ from pathlib import Path
 
 from middaw.corpus.analyse import detect_key, name_window, symbol_root
 from middaw.corpus.notation import (Analysis, Score, parse_romantext_key,
-                                    read_musicxml, read_romantext)
+                                    read_romantext, read_score)
 from middaw.scaleview import key_for
 from middaw.song import Note
-from middaw.theory import NOTE_NAMES, parse_roman
+from middaw.theory import NOTE_NAMES, SCALES, parse_roman
 
-SCORE_SUFFIXES = (".mxl", ".musicxml", ".xml")
+SCORE_SUFFIXES = (".mxl", ".musicxml", ".xml", ".krn")
 
 #: Part names that mean "this staff carries one melodic line". The top line of
 #: a piano staff is not a melody - it is whichever note happens to be highest,
 #: which is why measuring a song's melody against the piano part produces
 #: octave leaps and a stepwise share that means nothing.
 MELODY_PART_NAMES = ("soprano", "voice", "singstimme", "gesang", "stimme",
-                     "chant", "canto", "melody", "vocal", "descant")
+                     "chant", "canto", "melody", "vocal", "descant",
+                     "violin", "violino", "flute", "oboe", "clarinet")
 
 #: Figured bass says which inversion, not which chord. Both are stripped for
 #: comparison, because a chord read from notes has no way to report one and
@@ -48,6 +49,14 @@ class KeyResult:
     expected: tuple[int, str]
     found: tuple[int, str]
     confidence: float
+    #: False when all the file gave us was a key signature. Then the only
+    #: honest question is whether our tonic belongs to that collection.
+    stated: bool = True
+    collection: tuple[int, ...] = ()
+
+    @property
+    def in_collection(self) -> bool:
+        return not self.collection or self.found[0] in self.collection
 
     @property
     def tonic_right(self) -> bool:
@@ -110,15 +119,25 @@ def analyst_chord(chord, default_key: tuple[int, str]):
 
 
 def measure_key(score: Score, analysis: Analysis | None, name: str) -> KeyResult:
-    """Ask `detect_key` for the key, and compare it with what is written."""
-    expected = None
-    if analysis is not None:
-        expected = analysis.tonic_and_mode()
+    """Ask `detect_key` for the key, and compare it with what is written.
+
+    An analyst's key is the ground truth where there is one. Failing that, a
+    file that states major or minor alongside its signature is ground truth
+    too. A file that states only a signature is *not*: two sharps is D major,
+    B minor and E dorian, and marking B minor wrong because the export wrote
+    no mode is measuring our reader rather than our analyser.
+    """
+    stated = True
+    expected = analysis.tonic_and_mode() if analysis is not None else None
     if expected is None:
         expected = (score.tonic, score.mode)
+        stated = score.key_stated
     tonic, mode, confidence = detect_key(score.notes)
+    collection = tuple(sorted((score.signature_tonic + step) % 12
+                              for step in SCALES["major"]))
     return KeyResult(name=name, expected=expected, found=(tonic, mode),
-                     confidence=confidence)
+                     confidence=confidence, stated=stated,
+                     collection=() if stated else collection)
 
 
 def measure_harmony(score: Score, analysis: Analysis, name: str) -> HarmonyResult:
@@ -342,7 +361,7 @@ def run(directory, limit: int | None = None, style: str = "hymn",
 
     for path in scores:
         try:
-            score = read_musicxml(path)
+            score = read_score(path)
         except Exception as error:                     # noqa: BLE001
             unreadable_scores.append(f"{path.relative_to(directory)}: {error}")
             continue
@@ -445,13 +464,14 @@ def format_report(report: dict) -> str:
         for problem in report["unreadable"][:5]:
             out(f"    {problem}")
 
-    keys = report["keys"]
+    keys = [k for k in report["keys"] if k.stated]
+    signature_only = [k for k in report["keys"] if not k.stated]
     if keys:
         exact = sum(k.exact for k in keys)
         tonic = sum(k.tonic_right for k in keys)
         relative = sum(k.relative for k in keys)
         out("")
-        out("key detection, against the key the score is written in")
+        out(f"key detection, against the {len(keys)} score(s) that state a key")
         out(f"  tonic and mode : {exact:4}/{len(keys)}  {exact / len(keys):6.1%}")
         out(f"  tonic only     : {tonic:4}/{len(keys)}  {tonic / len(keys):6.1%}")
         out(f"  relative error : {relative:4}/{len(keys)}  {relative / len(keys):6.1%}")
@@ -460,6 +480,16 @@ def format_report(report: dict) -> str:
             out(f"    {_short(k.name)}: wrote {NOTE_NAMES[k.expected[0]]} {k.expected[1]}, "
                 f"read {NOTE_NAMES[k.found[0]]} {k.found[1]} "
                 f"(confidence {k.confidence:.2f})")
+
+    if signature_only:
+        inside = sum(k.in_collection for k in signature_only)
+        out("")
+        out(f"key detection, against {len(signature_only)} score(s) that give a "
+            f"signature but never say major or minor")
+        out(f"  tonic is in the written collection: {inside:4}/{len(signature_only)}"
+            f"  {inside / len(signature_only):6.1%}")
+        out("  (a signature names a collection, not a key, so that is the only "
+            "question it can answer)")
 
     harmony = report["harmony"]
     if harmony:

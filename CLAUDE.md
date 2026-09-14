@@ -226,10 +226,11 @@ notes are written. `MusicSpec` is the seam, and it is there for exactly this.
 ## Measuring against real music
 
 `middaw/corpus/measure.py`, run as `python3 -m middaw.corpus measure <folder>`.
-It reads MusicXML scores and any RomanText analyses beside them, and reports
-how close our key detection and our harmonic analysis are to what a human
-wrote. `middaw/corpus/notation.py` reads both formats with the standard
-library, for the same reason `middaw/midi.py` writes MIDI by hand.
+It reads MusicXML and Humdrum `**kern` scores and any RomanText analyses beside
+them, and reports how close our key detection, our harmonic analysis and our
+melodies are to what a human wrote. `middaw/corpus/notation.py` reads all three
+formats with the standard library, for the same reason `middaw/midi.py` writes
+MIDI by hand. Findings go in `docs/MEASUREMENTS.md`, per corpus, with the date.
 
 Measuring is not ingesting: it reports numbers about a folder and copies
 nothing into the corpus, which is what makes it usable on files whose rights
@@ -240,10 +241,19 @@ accuracy figure in this project before this tool existed was produced by
 generating music and analysing it, which measures the generator against
 itself. When the two sets disagree, the real music is right.
 
-And when a measurement collapses, suspect the reader first: the first run said
-key detection was 45% accurate, and the actual fault was that 156 of the 410
-chorales mark the soprano minor and the other three parts major, so reading
-every part and keeping the last called them all major.
+And when a measurement collapses, suspect the reader first. Three times now the
+fault has been ours rather than the analyser's: 156 of the 410 music21 chorales
+mark the soprano minor and the lower three major (so keeping the last part read
+as 45% accuracy); every tied note in every `**kern` file was dropped, because a
+tie-start is written `[2a` and the duration pattern was anchored to the front of
+the token; and MuseScore's MusicXML export writes no mode at all, so 1,457 of
+the 1,462 Lieder scores have a key signature and no key.
+
+**A key signature is not a key.** Two sharps is D major, B minor and E dorian.
+Where a file states only a signature, the only fair question is whether the
+tonic we picked belongs to that collection, and the harness asks that question
+separately. Reading the signature as major invents a ground truth and then
+marks correct answers wrong against it.
 
 ## Corpus discipline
 
@@ -259,27 +269,25 @@ dataset and a liability. See `docs/DATASET.md`.
 
 ## Known limits, honestly
 
-- Key detection in `middaw/corpus/analyse.py` names tonic and mode exactly for
-  **74.9%** of 410 Bach chorales and finds the tonic for **80.2%** — measured,
-  not estimated. Most of the residue is a minor key named as one of its modes
-  (B minor read as B dorian), because the collection is picked from the major
-  scale and a raised leading tone moves it; the rest is four-bar vamps that
-  never state a tonic, where `i-bVII-i-bVII` is as much G mixolydian as D
-  dorian. Harmonic analysis agrees with a human analyst's root on **80.5%** of
-  1,041 chords.
-- Both of those are chorale numbers, and chorales are the easy case. Against
-  535 songs, quartets and sonatas with human analyses (When in Rome), key
-  detection drops to **53.4%** and harmonic analysis to **62.7%** of 52,685
-  chords. An arpeggiated accompaniment under a modulating song is a different
-  problem from four voices in crotchets, and the window-namer is not good at
-  it yet. Quote the harder number.
+- Key detection in `middaw/corpus/analyse.py` names tonic and mode for **87%**
+  of the Bach chorales that state a key, and **53%** of 535 songs, quartets and
+  sonatas. Chorales are the easy case; quote the harder number. What the spread
+  shows is that the *collection* is nearly always right — 98–99.6% of detected
+  tonics belong to the notes the signature names — and the tonic *inside* it is
+  where we lose, which points at the second half of `detect_key`.
+- Harmonic analysis agrees with a human analyst's root on **80.5%** of 1,041
+  chorale chords and **62.7%** of 52,685 chords of songs, quartets and sonatas.
 - **How stepwise a melody should be is a per-style constant, and ours are not
-  measured.** Bach's chorale melodies step 67% of the time; a nineteenth-century
-  song steps 47% and repeats a note 23% of the time, because it is setting
-  syllables. Middaw writes 49% for a hymn and 59% for a romantic-era piece —
-  wrong in both directions, because the number was never a number. What holds
-  across both corpora: real melodies turn back after a leap more reliably than
-  ours (92% against our 77%).
+  measured.** A chorale steps 70% of the time, a nineteenth-century song 47%
+  (repeating a note 21% of the time, because it is setting syllables), a
+  quartet's first violin 51%. Middaw writes 49–60% depending on style, so it is
+  not wrong everywhere — it is unmeasured everywhere. **Turning back after a
+  leap is the real gap**: every repertoire measured does it more reliably than
+  we do, and songs do it 90% of the time against our 77%.
+- All of those numbers, per corpus, with the caveats, are in
+  `docs/MEASUREMENTS.md`. Two chorale editions of the same repertoire disagree
+  about the key of 4% of the pieces they share, so nothing here is more precise
+  than that.
 - The soundfont path (vendored file → CDN → built-in tone) has been exercised
   end to end against a locally built stand-in soundfont, but never against the
   real FluidR3 file, because the sandbox blocks both CDNs. Try it for real.

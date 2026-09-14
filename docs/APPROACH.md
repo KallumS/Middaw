@@ -157,6 +157,11 @@ exactly what the generator's vocabulary is made of and exactly what a corpus is
 for. What does hold across both: real melodies turn back after a leap more
 reliably than ours do.
 
+Five corpora have now been through it — the two OpenScore collections, When in
+Rome, and both editions of the Bach chorales — and the per-corpus numbers live
+in [MEASUREMENTS.md](MEASUREMENTS.md) rather than here, because they will change
+and this file should not.
+
 Everything else the run touched was left alone on purpose. A sweep of the
 chord-window constants moved root accuracy between 80.4% and 81.4% across
 every setting, and the key-detection weights bought a point on the chorales for

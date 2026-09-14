@@ -10,8 +10,8 @@ from middaw.corpus.measure import (_detected_transposition, analyst_chord,
                                    measure_harmony, measure_key,
                                    melodic_profile, pair_files,
                                    profile_distance, run)
-from middaw.corpus.notation import (parse_romantext_key, read_musicxml,
-                                    read_romantext)
+from middaw.corpus.notation import (parse_romantext_key, read_kern,
+                                    read_musicxml, read_romantext)
 from middaw.scaleview import key_for
 from middaw.song import Note
 
@@ -147,6 +147,99 @@ class TestMusicXML(unittest.TestCase):
     def test_a_zipped_score_reads_the_same(self):
         xml = score_xml([part("P1", "S", [measure(1, note("C", 4, 4), attributes())])])
         self.assertEqual(len(self.read(xml, suffix=".mxl").notes), 1)
+
+
+KERN = """!!!COM: Bach, Johann Sebastian
+!!!SCT: BWV 269
+**kern	**kern
+*I"Bass	*I"Soprano
+*k[f#]	*k[f#]
+*G:	*G:
+*M3/4	*M3/4
+*MM100	*MM100
+4GG	4g
+=1	=1
+4G	2g
+4E	.
+4F#	4dd
+=2	=2
+2D	4b
+4C	[2a
+=3	=3
+8r	2a]
+8AA	.
+2GG	4g
+*-	*-
+"""
+
+
+class TestKern(unittest.TestCase):
+    def read(self, text=KERN):
+        directory = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        path = directory / "chorale.krn"
+        path.write_text(text, encoding="utf-8")
+        return read_kern(path)
+
+    def test_pitches(self):
+        from middaw.corpus.notation import kern_pitch
+        self.assertEqual(kern_pitch("c"), 60)
+        self.assertEqual(kern_pitch("cc"), 72)
+        self.assertEqual(kern_pitch("C"), 48)
+        self.assertEqual(kern_pitch("CC"), 36)
+        self.assertEqual(kern_pitch("f#"), 66)
+        self.assertEqual(kern_pitch("e-"), 63)
+
+    def test_durations(self):
+        from middaw.corpus.notation import kern_duration
+        self.assertEqual(kern_duration("4"), 1.0)
+        self.assertEqual(kern_duration("8"), 0.5)
+        self.assertEqual(kern_duration("4."), 1.5)
+        self.assertEqual(kern_duration("2"), 2.0)
+        self.assertEqual(kern_duration("1"), 4.0)
+
+    def test_a_duration_is_found_behind_a_tie_or_phrase_mark(self):
+        """"[2a" is a half note starting a tie, not a token without a duration.
+
+        Anchoring the match to the front of the token drops every tied note in
+        the file, and a chorale is mostly tied notes.
+        """
+        from middaw.corpus.notation import kern_duration
+        self.assertEqual(kern_duration("[2a"), 2.0)
+        self.assertEqual(kern_duration("(4b"), 1.0)
+        self.assertEqual(kern_duration("{8cc"), 0.5)
+
+    def test_metadata(self):
+        score = self.read()
+        self.assertEqual(score.meter, (3, 4))
+        self.assertEqual(score.tempo, 100.0)
+        self.assertEqual((score.tonic, score.mode), (7, "major"))
+        self.assertEqual(sorted(score.parts), ["Bass", "Soprano"])
+
+    def test_each_spine_keeps_its_own_clock(self):
+        """A null token means the note before it is still sounding."""
+        score = self.read()
+        soprano = score.parts["Soprano"]
+        self.assertEqual([(n.start, n.duration) for n in soprano[:3]],
+                         [(0.0, 1.0), (1.0, 2.0), (3.0, 1.0)])
+        bass = score.parts["Bass"]
+        self.assertEqual([(n.start, n.duration) for n in bass[:4]],
+                         [(0.0, 1.0), (1.0, 1.0), (2.0, 1.0), (3.0, 1.0)])
+
+    def test_a_tie_makes_one_note(self):
+        score = self.read()
+        held = [n for n in score.parts["Soprano"] if n.duration == 4.0]
+        self.assertEqual(len(held), 1)          # [2a ... 2a] is one note
+
+    def test_rests_take_time_without_sounding(self):
+        score = self.read()
+        bass = score.parts["Bass"]
+        self.assertEqual(bass[-2].start, 7.5)   # after the eighth rest
+        self.assertEqual(bass[-1].start, 8.0)
+
+    def test_barlines_become_measure_starts(self):
+        score = self.read()
+        self.assertEqual(score.measure_starts[1], 1.0)
+        self.assertEqual(score.measure_starts[2], 4.0)
 
 
 ROMAN_TEXT = """Composer: J. S. Bach
