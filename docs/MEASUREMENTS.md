@@ -94,6 +94,30 @@ does it more reliably than we do, and the songs do it 90% of the time against
 our 77%. That is rule 2 in `docs/THEORY.md`, marked implemented, and it is
 implemented at the wrong strength.
 
+### Setting the dials from it
+
+`middaw/chance.py` holds the generator's probabilities by name, and four of the
+measurements above are now the defaults for the styles they describe — hymn
+from the chorales, classical from the quartets, romantic era and ballad from
+the Lieder. What moved, measured before and after:
+
+| Interval distribution distance from real music | before | after |
+| --- | --- | --- |
+| hymn vs Bach chorales | 0.206 | **0.173** |
+| romantic era song vs Lieder | 0.164 | **0.137** |
+| classical piece vs string quartets | 0.110 | **0.108** |
+
+The bass dial came from the same place: over 52,570 analysed chords the real
+bass is the root 44.4% of the time, the third 20.9%, the fifth 14.2%, and
+something outside the chord for the remaining 20.5% — a passing note, usually.
+Counting only the times it is on a chord tone at all, which is the only choice
+our dial makes, that is 56% root. Middaw had it at 70% by assumption.
+
+**The dial is not the outcome.** A melody told to step 70% of the time comes
+out at 55%, because chord-tone snapping, the register window and the cadence
+all act after the dice. So the dials move the output in the right direction
+without landing on the number, and the output is what gets measured.
+
 ### What the corpora found in our code
 
 Each of these was a bug in the *reader*, found because a measurement collapsed:
@@ -106,6 +130,11 @@ Each of these was a bug in the *reader*, found because a measurement collapsed:
    `[2a`, so it parsed as no duration at all. Fixing it moved the Sapp
    chorales from 70.0% to 87.0%.
 3. **MuseScore exports state no mode**, as above.
+4. **The bass overlapped itself by up to 1.8 beats.** Any chord lasting two
+   beats or more in a dense style played its root for 95% of the span and then
+   its fifth from halfway, both sounding at once. A bass line is one note at a
+   time; it is now trimmed to the next onset, after humanising rather than
+   before.
 
 Which is the standing lesson: when a number collapses, the reader is the first
 suspect, not the analyser.

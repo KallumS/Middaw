@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
+from middaw.chance import Chances, from_entry as chances_from_entry
+
 VOCAB_PATH = Path(__file__).resolve().parent.parent / "data" / "vocab" / "tags.json"
 
 _WORD_RE = re.compile(r"[a-z0-9#&+/-]+")
@@ -31,6 +33,7 @@ class Priors:
     velocity: float = 78.0
     humanize: float = 1.0
     ornament: float = 0.35        # appetite for non-chord tones
+    chances: Chances = field(default_factory=Chances)
     chromaticism: float = 0.25    # appetite for secondary/substitute dominants
     functional: float = 0.5       # chance of writing the progression from function
 
@@ -52,6 +55,16 @@ class Priors:
             if key in entry:
                 current = getattr(self, key)
                 setattr(self, key, current * (1 - weight) + entry[key] * weight)
+        # The first style names the odds; a blended-in second one nudges them.
+        if entry.get("chances"):
+            wanted = chances_from_entry(entry)
+            for name in ("step", "skip", "repeat", "leap_turns_back",
+                         "cadence_lands_home", "cadence_deceptive",
+                         "twin_answers", "new_motif", "bass_root", "bass_fifth"):
+                mine = getattr(self.chances, name)
+                setattr(self.chances, name,
+                        mine * (1 - weight) + getattr(wanted, name) * weight)
+            self.chances.clamp()
 
     def apply_modifier(self, entry: dict) -> None:
         """Moods and descriptors nudge an existing prior rather than replacing it."""

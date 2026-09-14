@@ -300,7 +300,15 @@
       "velocity": 76,
       "chromaticism": 0.5,
       "functional": 0.8,
-      "ornament": 0.65
+      "ornament": 0.65,
+      "chances": {
+        "repeat": 0.13,
+        "step": 0.51,
+        "skip": 0.18,
+        "leap_turns_back": 0.81,
+        "bass_root": 0.56,
+        "bass_fifth": 0.18
+      }
     },
     "baroque": {
       "label": "Baroque",
@@ -448,7 +456,15 @@
       "velocity": 72,
       "chromaticism": 0.55,
       "functional": 0.75,
-      "ornament": 0.7
+      "ornament": 0.7,
+      "chances": {
+        "repeat": 0.21,
+        "step": 0.47,
+        "skip": 0.16,
+        "leap_turns_back": 0.9,
+        "bass_root": 0.56,
+        "bass_fifth": 0.18
+      }
     },
     "folk": {
       "label": "Folk",
@@ -728,7 +744,15 @@
       "velocity": 68,
       "chromaticism": 0.3,
       "functional": 0.55,
-      "ornament": 0.35
+      "ornament": 0.35,
+      "chances": {
+        "repeat": 0.21,
+        "step": 0.47,
+        "skip": 0.16,
+        "leap_turns_back": 0.9,
+        "bass_root": 0.6,
+        "bass_fifth": 0.16
+      }
     },
     "ambient": {
       "label": "Ambient",
@@ -3526,7 +3550,15 @@
       "velocity": 76,
       "chromaticism": 0.25,
       "functional": 1.0,
-      "ornament": 0.2
+      "ornament": 0.2,
+      "chances": {
+        "repeat": 0.15,
+        "step": 0.7,
+        "skip": 0.07,
+        "leap_turns_back": 0.77,
+        "bass_root": 0.62,
+        "bass_fifth": 0.1
+      }
     },
     "trance": {
       "label": "Trance",

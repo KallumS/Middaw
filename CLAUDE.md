@@ -156,6 +156,46 @@ against both counter notes looks plausible and detects nothing.
 An ostinato figure is invented once for the whole piece, not once per section.
 That repetition is what makes it an ostinato.
 
+## The dice are named
+
+`middaw/chance.py`. The generator was always random; its probabilities were
+just scattered through the code as bare numbers — `rng.random() < 0.45` here,
+`< 0.7` there. A number like that cannot be read, cannot be changed by a style
+and cannot be checked against real music. Every one of them now has a name in
+`Chances`, rides on the spec, and can be set per genre in
+`data/vocab/tags.json` under `chances`.
+
+Three of them decide most of what a listener hears:
+
+- **`step` / `skip` / `repeat`** — how far the melody moves next, as a *class*;
+  the leap is whatever is left. The size inside a class still comes from the
+  interval distribution, which is what a corpus supplies. Rolling the class
+  first is what lets a style say "steps 70% of the time" and have it be true.
+- **`bass_root` / `bass_fifth`** — which note of the chord the bass takes; the
+  third is the remainder, and that is what puts a chord in inversion.
+- **`cadence_lands_home`** — whether a phrase comes home to the tonic or ends
+  somewhere else in the key.
+
+Two rules for anything added there:
+
+- **A probability is a fact about a style, not a knob to taste.** Where a
+  corpus can answer it, the default is what the corpus said and the comment
+  says which corpus. `docs/MEASUREMENTS.md` has them.
+- **Whatever it claims, it has to do.** `tests/test_chance.py` rolls each dial
+  a few thousand times and checks the rate that comes out is the rate asked
+  for.
+
+**The dial is the intent, not the outcome.** Snapping to chord tones on strong
+beats, staying inside the register and landing a cadence all happen *after* the
+dice, so the realised rate sits between the dial and what those constraints
+allow — a melody told to step 70% of the time comes out at 55%. That gap is not
+a bug, it is the reason output gets measured rather than dials trusted.
+
+Two invariants that survive any roll: **a cadence lands in root position**, and
+**the melody, countermelody and bass are monophonic** — trimmed to the next
+onset in `middaw/render.py` after humanising, because nudged timing can push a
+note past the one after it.
+
 ## Genres are note-formation rules, not sounds
 
 `docs/GENRES.md` is the record for every style: what it is, how its notes are

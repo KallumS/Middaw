@@ -124,9 +124,15 @@ class TestDevicesAreWhatTheyClaim(unittest.TestCase):
         self.assertGreater(found, 0, "no suspensions were produced")
 
     def test_an_anticipation_arrives_at_the_next_note_early(self):
+        # The rarest device by some way - about one in fifty - and it needs a
+        # line with held notes to anticipate into, so this looks at the styles
+        # that write them rather than at more seeds of a pop tune.
         found = 0
-        for seed in range(6):
-            _spec, _spans, _skel, notes, applied = _line("a pop tune in G major", seed)
+        for prompt, seed in [(p, s) for p in ("a romantic nocturne in Eb",
+                                              "baroque invention in C major",
+                                              "ornamented celtic jig in A minor")
+                             for s in range(10)]:
+            _spec, _spans, _skel, notes, applied = _line(prompt, seed)
             by_start = sorted(notes, key=lambda n: (n.start, n.pitch))
             for item in applied:
                 if item.kind != ANTICIPATION:

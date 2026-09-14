@@ -120,6 +120,19 @@ def _humanize_timing(spec: MusicSpec, notes: list[Note], rng: random.Random) -> 
         note.start = max(0.0, note.start + rng.gauss(0, jitter))
 
 
+#: Parts that are one note at a time. The harmony part is chords, so not it.
+MONOPHONIC_PARTS = ("melody", "countermelody", "bass")
+
+
+def _keep_monophonic(notes: list[Note]) -> None:
+    """Trim each note so it ends before the next one starts."""
+    ordered = sorted(notes, key=lambda n: n.start)
+    for index, note in enumerate(ordered[:-1]):
+        room = ordered[index + 1].start - note.start
+        if room > 0:
+            note.duration = min(note.duration, room)
+
+
 def _trim_overlaps(notes: list[Note]) -> None:
     """Stop a repeated pitch from being cut short by its own predecessor."""
     by_pitch: dict[int, Note] = {}
@@ -243,6 +256,11 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
         _humanize_timing(spec, track.notes, rng)
         _dynamic_arc(spec, track.notes)
         _trim_overlaps(track.notes)
+        if track.role in MONOPHONIC_PARTS:
+            # Humanising moves onsets, which can push a note past the one
+            # after it. A line that is one note at a time has to still be one
+            # note at a time once the timing has been nudged.
+            _keep_monophonic(track.notes)
         track.notes.sort(key=lambda n: (n.start, n.pitch))
 
     return Generation(spec=spec, song=song, midi=song_to_bytes(song),

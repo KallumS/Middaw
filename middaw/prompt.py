@@ -255,6 +255,7 @@ def parse_prompt(
             spec.bars = 16
 
     # --- content controls ---
+    spec.chances = priors.chances
     spec.chromaticism = max(0.0, min(1.0, priors.chromaticism))
     spec.ornament = max(0.0, min(1.0, priors.ornament))
     spec.density = priors.density

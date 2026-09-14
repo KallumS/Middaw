@@ -12,6 +12,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
+from middaw.chance import Chances
 from middaw.rhythm import apply_swing, bar_rhythm, pulse_length
 from middaw.song import Note
 from middaw.spec import MusicSpec
@@ -41,6 +42,38 @@ def _weighted_choice(rng: random.Random, weights: dict[int, float]) -> int:
     return next(iter(weights))
 
 
+#: Scale degrees in each class of melodic move. A step is a second, a skip is
+#: a third, a leap is a fourth or more - the same classes `Chances` rolls.
+MOVE_SIZES = {
+    "repeat": (0,),
+    "step": (-1, 1),
+    "skip": (-2, 2),
+    "leap": (-3, 3, -4, 4, -5, 5, -7, 7),
+}
+
+
+def _next_move(rng: random.Random, intervals: dict[int, float],
+               chances: Chances, previous: int) -> int:
+    """Choose how far to move: the class first, then the size inside it.
+
+    Rolling the class separately is what lets a style say "step 70% of the
+    time" and have it be true, while the corpus still decides whether a leap
+    is a fourth or an octave. Picking a size straight out of the interval
+    distribution buries that decision in a histogram nobody can read.
+    """
+    move = chances.move(rng)
+    sizes = MOVE_SIZES[move]
+    weights = {size: intervals.get(size, 0.0) for size in sizes}
+    if sum(weights.values()) <= 0:
+        weights = {size: 1.0 for size in sizes}
+    step = _weighted_choice(rng, weights)
+    # A leap is answered by a move the other way, which is the one melodic
+    # rule real music keeps more reliably than we used to.
+    if abs(previous) >= 3 and step * previous > 0 and rng.random() < chances.leap_turns_back:
+        step = -abs(step) if previous > 0 else abs(step)
+    return step
+
+
 def _chord_at(chords: list[tuple[float, Chord]], beat: float) -> Chord:
     current = chords[0][1]
     for start, chord in chords:
@@ -58,9 +91,7 @@ def _make_motif(rng: random.Random, spec: MusicSpec,
     contour: list[int] = []
     previous = 0
     for _ in range(max(0, len(rhythm) - 1)):
-        step = _weighted_choice(rng, intervals)
-        if abs(previous) >= 3 and step * previous > 0:
-            step = -1 if previous > 0 else 1      # resolve a leap by step back
+        step = _next_move(rng, intervals, spec.chances, previous)
         contour.append(step)
         previous = step
     return Motif(rhythm=rhythm, contour=contour)
@@ -75,11 +106,13 @@ def _vary(rng: random.Random, motif: Motif, spec: MusicSpec,
         rhythm = bar_rhythm(rng, spec.meter, spec.density, bias=rhythm_bias)
         contour = contour[:max(0, len(rhythm) - 1)]
     while len(contour) < max(0, len(rhythm) - 1):
-        contour.append(_weighted_choice(rng, intervals))
+        contour.append(_next_move(rng, intervals, spec.chances,
+                                  contour[-1] if contour else 0))
     contour = contour[:max(0, len(rhythm) - 1)]
     if contour and rng.random() < strength:
         index = rng.randrange(len(contour))
-        contour[index] = _weighted_choice(rng, intervals)
+        contour[index] = _next_move(rng, intervals, spec.chances,
+                                    contour[index - 1] if index else 0)
     if contour and rng.random() < strength * 0.35:
         contour = [-step for step in contour]      # inversion
     return Motif(rhythm=rhythm, contour=contour)
@@ -120,7 +153,7 @@ def generate_melody(spec: MusicSpec, chords_by_bar: list[list[tuple[float, Chord
     for bar_index, chords in enumerate(chords_by_bar):
         position_in_phrase = bar_index % phrase_length
         if position_in_phrase == 0:
-            if bar_index == 0 or rng.random() < 0.45:
+            if bar_index == 0 or rng.random() < spec.chances.new_motif:
                 motif = _make_motif(motif_rng, spec, intervals, rhythm_bias)
             bar_motif = motif
         elif position_in_phrase == 2:
@@ -136,8 +169,9 @@ def generate_melody(spec: MusicSpec, chords_by_bar: list[list[tuple[float, Chord
             if index > 0:
                 step = bar_motif.contour[min(index - 1, len(bar_motif.contour) - 1)] \
                     if bar_motif.contour else 0
-                if abs(last_leap) >= 3 and step * last_leap > 0:
-                    step = -1 if last_leap > 0 else 1
+                if (abs(last_leap) >= 3 and step * last_leap > 0
+                        and rng.random() < spec.chances.leap_turns_back):
+                    step = -abs(step) if last_leap > 0 else abs(step)
                 degree += step
                 last_leap = step
 

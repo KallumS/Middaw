@@ -44,6 +44,7 @@ between them they decide every note:
 | `velocity` | base loudness |
 | `ornament` | appetite for non-chord tones (`middaw/embellish.py`) |
 | `synonyms` | every word that should reach this style, including sub-genres whose notes are the parent's |
+| `chances` | optional: the style's own probabilities (`middaw/chance.py`) — how often the melody steps, skips or repeats, how often the bass takes the root, how often a phrase comes home. Set from measurement or left alone; `docs/MEASUREMENTS.md` says which styles have been measured |
 
 Two more tables live in code rather than data because they name code objects:
 `GENRE_FORMS` in `middaw/form.py` (which forms suit a style) and

@@ -35,6 +35,7 @@ import random
 from dataclasses import dataclass, field
 
 from middaw.cadence import DC, HC, IAC, PAC, PC
+from middaw.chance import Chances
 
 # Lengths a section may have. Everything lands on these because these are the
 # lengths sections actually come in.
@@ -238,14 +239,18 @@ def _section_length(count: int, target: int) -> int:
 
 
 def plan_cadences(layout: list[tuple[str, str]], rng: random.Random,
-                  plagal_bias: float = 0.0) -> list[str]:
+                  plagal_bias: float = 0.0, chances: Chances | None = None) -> list[str]:
     """Give every section an ending, so the piece asks and answers.
 
-    The last section gets the most conclusive cadence there is. Sections whose
-    job is to lead somewhere - an antecedent, a bridge, an episode, a
-    development - stop on the dominant. Everything else alternates question and
-    answer, with the occasional deceptive turn just before the end.
+    The last section gets the most conclusive cadence there is, always: a piece
+    that never resolves is a different request, and our own key detection reads
+    the final chord. Every *other* section rolls
+    `chances.cadence_lands_home` - does this phrase come home to the tonic, or
+    end somewhere else in the key? Sections whose job is to lead somewhere - an
+    antecedent, a bridge, an episode, a development - stop on the dominant
+    whatever the roll says, because that is what the role means.
     """
+    chances = chances or Chances()
     plan: list[str] = []
     total = len(layout)
     for index, (label, role) in enumerate(layout):
@@ -258,16 +263,18 @@ def plan_cadences(layout: list[tuple[str, str]], rng: random.Random,
         elif any(open_role in role for open_role in OPEN_ROLES):
             # Its job is to lead somewhere, so it stops on the dominant.
             plan.append(HC)
-        elif next_letter == letter and rng.random() < 0.7:
+        elif next_letter == letter and rng.random() < chances.twin_answers:
             # The first of a pair is an antecedent: it asks, and its twin
             # answers. That is what makes A A' a period rather than a repeat.
             plan.append(HC)
-        elif index == total - 2 and rng.random() < 0.30:
+        elif rng.random() < chances.cadence_lands_home:
+            plan.append(IAC)                   # comes home
+        elif index == total - 2 and rng.random() < chances.cadence_deceptive:
             # A deceptive cadence just before the end makes the final
             # resolution land harder.
             plan.append(DC)
         else:
-            plan.append(IAC)
+            plan.append(HC)                    # ends on some other degree
     return plan
 
 
@@ -288,7 +295,8 @@ def plan_form(spec, rng: random.Random, make_progression=None) -> list[Section]:
         bars = spec.bars
 
     plagal = 0.35 if set(getattr(spec, "genres", [])) & PLAGAL_GENRES else 0.06
-    cadence_plan = plan_cadences(layout, rng, plagal)
+    cadence_plan = plan_cadences(layout, rng, plagal,
+                                 getattr(spec, "chances", None))
 
     # One progression per letter, re-ended for each cadence that letter takes.
     bases: dict[str, tuple[list[str], list[str]]] = {}

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
 
+from middaw.chance import Chances
 from middaw.theory import is_minor
 from middaw.scaleview import key_for
 
@@ -44,6 +45,7 @@ class MusicSpec:
     ornament: float = 0.35
     pattern: str = "block"               # accompaniment figure
     harmony: str = "chords"              # chords | ostinato | arpeggio
+    chances: Chances = field(default_factory=Chances)
 
     # --- provenance of the interpretation ---
     genres: list[str] = field(default_factory=list)
@@ -99,6 +101,7 @@ class MusicSpec:
         self.humanize = max(0.0, min(2.0, self.humanize))
         self.chromaticism = max(0.0, min(1.0, self.chromaticism))
         self.ornament = max(0.0, min(1.0, self.ornament))
+        self.chances.clamp()
         self.tonic %= 12
         return self
 

@@ -243,14 +243,22 @@ def melodic_profile(notes: list[Note]) -> dict:
             if nxt == 0 or (nxt > 0) != (interval > 0):
                 recovered += 1
     total = sum(steps.values())
-    stepwise = sum(count for interval, count in steps.items()
-                   if 0 < abs(interval) <= 2)
+    # The same four classes `middaw/chance.py` rolls, so the measurement can
+    # be read straight across into the dial.
+    classes = Counter()
+    for interval, count in steps.items():
+        size = abs(interval)
+        name = ("repeat" if size == 0 else "step" if size <= 2
+                else "skip" if size <= 4 else "leap")
+        classes[name] += count
     return {
         "notes": len(top),
         "intervals": steps,
         "moves": total,
-        "stepwise": stepwise / total if total else 0.0,
-        "repeats": steps.get(0, 0) / total if total else 0.0,
+        "stepwise": classes["step"] / total if total else 0.0,
+        "repeats": classes["repeat"] / total if total else 0.0,
+        "skips": classes["skip"] / total if total else 0.0,
+        "big_leaps": classes["leap"] / total if total else 0.0,
         "leaps": leaps,
         "leap_recovered": recovered / leaps if leaps else 0.0,
     }
@@ -294,6 +302,45 @@ def non_chord_tone_share(score: Score, analysis: Analysis) -> float | None:
         counted += 1
         outside += note.pitch % 12 not in classes
     return outside / counted if counted else None
+
+
+def bass_tone_shares(score: Score, analysis: Analysis) -> Counter | None:
+    """Which note of the chord the real bass took, over the analyst's chords.
+
+    This is the measurement behind `chances.bass_root`: how often tonal music
+    actually puts the root in the bass, rather than the third or the fifth.
+    """
+    default_key = analysis.tonic_and_mode() or (score.tonic, score.mode)
+    if not score.notes or not analysis.chords:
+        return None
+    placed = []
+    for chord in analysis.chords:
+        start = score.measure_beat(chord.measure, chord.beat)
+        parsed = analyst_chord(chord, default_key)
+        if start is not None and parsed is not None:
+            placed.append((start, parsed))
+    if not placed:
+        return None
+    placed.sort(key=lambda item: item[0])
+    end_of_piece = max(n.end for n in score.notes)
+
+    shares: Counter = Counter()
+    for index, (start, chord) in enumerate(placed):
+        finish = placed[index + 1][0] if index + 1 < len(placed) else end_of_piece
+        sounding = [n for n in score.notes if n.start < finish and n.end > start]
+        if not sounding:
+            continue
+        lowest = min(sounding, key=lambda n: n.pitch).pitch % 12
+        interval = (lowest - chord.root) % 12
+        if interval == 0:
+            shares["root"] += 1
+        elif interval in (3, 4):
+            shares["third"] += 1
+        elif interval in (6, 7, 8):
+            shares["fifth"] += 1
+        else:
+            shares["other"] += 1
+    return shares or None
 
 
 # --------------------------------------------------------------------------
@@ -356,6 +403,7 @@ def run(directory, limit: int | None = None, style: str = "hymn",
     real_intervals: Counter = Counter()
     real_profiles: list[dict] = []
     nct: list[float] = []
+    bass_tones: Counter = Counter()
     unreadable_scores: list[str] = []
     without_melody = 0
 
@@ -386,6 +434,9 @@ def run(directory, limit: int | None = None, style: str = "hymn",
             share = non_chord_tone_share(score, analysis)
             if share is not None:
                 nct.append(share)
+            bass = bass_tone_shares(score, analysis)
+            if bass is not None:
+                bass_tones.update(bass)
 
     return {
         "directory": str(directory),
@@ -396,6 +447,7 @@ def run(directory, limit: int | None = None, style: str = "hymn",
         "real": _summarise_profiles(real_profiles, real_intervals),
         "without_melody": without_melody,
         "real_nct": sum(nct) / len(nct) if nct else None,
+        "real_bass": dict(bass_tones),
         "generated": generated_profile(style, len(scores) or 20, seed),
     }
 
@@ -418,12 +470,17 @@ def _summarise_profiles(profiles: list[dict], intervals: Counter) -> dict:
         return {}
     moves = sum(p["moves"] for p in profiles)
     leaps = sum(p["leaps"] for p in profiles)
+    def share(name: str) -> float:
+        return (sum(p[name] * p["moves"] for p in profiles) / moves) if moves else 0.0
+
     return {
         "pieces": len(profiles),
         "notes": sum(p["notes"] for p in profiles),
         "intervals": intervals,
-        "stepwise": sum(p["stepwise"] * p["moves"] for p in profiles) / moves if moves else 0.0,
-        "repeats": sum(p["repeats"] * p["moves"] for p in profiles) / moves if moves else 0.0,
+        "stepwise": share("stepwise"),
+        "repeats": share("repeats"),
+        "skips": share("skips"),
+        "big_leaps": share("big_leaps"),
         "leap_recovered": (sum(p["leap_recovered"] * p["leaps"] for p in profiles)
                            / leaps if leaps else 0.0),
     }
@@ -527,9 +584,12 @@ def format_report(report: dict) -> str:
                 f"single melodic line, and are left out of this comparison")
         out(f"{'':17}{'real':>10}{'middaw':>10}")
         out(f"  pieces         {real['pieces']:>10}{made['pieces']:>10}")
-        out(f"  stepwise       {real['stepwise']:>10.1%}{made['stepwise']:>10.1%}")
-        out(f"  repeated note  {real['repeats']:>10.1%}{made['repeats']:>10.1%}")
-        out(f"  leap recovered {real['leap_recovered']:>10.1%}"
+        out("  the four move classes, as middaw/chance.py rolls them")
+        out(f"    repeat       {real['repeats']:>10.1%}{made['repeats']:>10.1%}")
+        out(f"    step         {real['stepwise']:>10.1%}{made['stepwise']:>10.1%}")
+        out(f"    skip         {real['skips']:>10.1%}{made['skips']:>10.1%}")
+        out(f"    leap         {real['big_leaps']:>10.1%}{made['big_leaps']:>10.1%}")
+        out(f"  leap turns back{real['leap_recovered']:>10.1%}"
             f"{made['leap_recovered']:>10.1%}")
         distance = profile_distance(real["intervals"], made["intervals"])
         out(f"  interval distribution distance: {distance:.3f} "
@@ -537,6 +597,15 @@ def format_report(report: dict) -> str:
         out("  most common intervals, in semitones")
         out(f"    real  : {_top_intervals(real['intervals'])}")
         out(f"    middaw: {_top_intervals(made['intervals'])}")
+    bass = report.get("real_bass") or {}
+    if bass:
+        total = sum(bass.values())
+        out("")
+        out(f"the bass, over {total} analysed chords")
+        for name in ("root", "third", "fifth", "other"):
+            if bass.get(name):
+                out(f"  {name:<6} {bass[name] / total:6.1%}")
+        out("  (this is what `chances.bass_root` is set from)")
     if report.get("real_nct") is not None:
         out(f"  notes outside the named chord: real {report['real_nct']:.1%}, "
             f"middaw {made.get('ornament_share', 0):.1%} decorated")

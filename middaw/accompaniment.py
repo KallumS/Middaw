@@ -228,19 +228,51 @@ def generate_accompaniment(spec: MusicSpec, spans: list[tuple[float, float, Chor
     return notes
 
 
+def bass_pitch(chord: Chord, root_octave: int, tone: str) -> int:
+    """The chord tone the bass is taking, in the bass octave.
+
+    The root is the safe answer and the usual one. The fifth under a chord is
+    the second inversion, which is unstable and is why it is rare; the third
+    is a first inversion, which is how a bass line walks between two chords
+    without leaping.
+    """
+    root = root_octave + ((chord.root - root_octave) % 12)
+    if tone == "root":
+        return root
+    wanted = {"fifth": 7, "third": 4}.get(tone, 0)
+    intervals = sorted((pc - chord.root) % 12 for pc in chord.pitch_classes)
+    closest = min(intervals, key=lambda i: (abs(i - wanted), i)) if intervals else 0
+    pitch = root + closest
+    return pitch - 12 if pitch - root_octave >= 12 else pitch
+
+
 def generate_bass(spec: MusicSpec, spans: list[tuple[float, float, Chord]],
                   rng: random.Random) -> list[Note]:
-    """Root-driven bass; walks when the style already implies a walking feel."""
+    """One note at a time, under the chord. Which note is a roll of the dice.
+
+    `spec.chances.bass_root` decides how often it is the root - the rest of the
+    time it is the fifth or the third, which is what puts a chord in inversion
+    and is most of what makes a bass line move rather than sit. The line is
+    always monophonic: every note is trimmed to the next onset, because a bass
+    that overlaps itself is two basses.
+    """
     root_octave = 36 + spec.register * 3
     walking = spec.pattern in ("walking", "offbeat") and spec.density > 0.5
     notes: list[Note] = []
-    for start, length, chord in spans:
+    for index, (start, length, chord) in enumerate(spans):
         root = root_octave + ((chord.root - root_octave) % 12)
+        # A cadence lands in root position - that is part of what makes it a
+        # cadence, and `middaw/cadence.py` says so for the perfect authentic
+        # one. So the last chord of a section keeps its root in the bass
+        # however the dice fall.
+        closing = index == len(spans) - 1
+        chosen = root if closing else bass_pitch(
+            chord, root_octave, spec.chances.bass_tone(rng))
         if spec.pattern == "waltz":
-            notes.append(_note(spec, rng, start, length * 0.9, root, 6))
+            notes.append(_note(spec, rng, start, length * 0.9, chosen, 6))
             continue
         if walking:
-            tones = [root, root + 7, root + 12, root + 5]
+            tones = [chosen, root + 7, root + 12, root + 5]
             position = 0.0
             index = 0
             while position < length - 1e-6:
@@ -249,8 +281,23 @@ def generate_bass(spec: MusicSpec, spans: list[tuple[float, float, Chord]],
                 position += 1.0
                 index += 1
         else:
-            notes.append(_note(spec, rng, start, min(length, length * 0.95), root, 6))
-            if length >= 2.0 and spec.density > 0.45:
+            notes.append(_note(spec, rng, start, min(length, length * 0.95), chosen, 6))
+            if length >= 2.0 and spec.density > 0.45 and not closing:
+                # The halfway note answers the first: whatever it took, this
+                # one takes a different tone of the same chord.
+                second = bass_pitch(chord, root_octave, spec.chances.bass_tone(rng))
+                if second == chosen:
+                    second = root + 7 if chosen == root else root
                 notes.append(_note(spec, rng, start + length / 2, length / 2 * 0.9,
-                                   root + 7, -6))
-    return notes
+                                   second, -6))
+    return _monophonic(notes)
+
+
+def _monophonic(notes: list[Note]) -> list[Note]:
+    """Trim every note to the next onset. A bass line is one note at a time."""
+    ordered = sorted(notes, key=lambda n: n.start)
+    for index, note in enumerate(ordered[:-1]):
+        room = ordered[index + 1].start - note.start
+        if room > 0:
+            note.duration = min(note.duration, room)
+    return [note for note in ordered if note.duration > 0.02]
