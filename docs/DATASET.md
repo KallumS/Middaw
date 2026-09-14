@@ -37,11 +37,9 @@ different rule without re-researching every file.
 | --- | --- | --- | --- |
 | **Mutopia Project** | ~2,000 classical scores | CC0 / CC BY-SA / PD | LilyPond source, exports MIDI. Per-piece licences — read each. |
 | **KernScores / CCARH** (Stanford) | Bach chorales, Beethoven sonatas, Haydn quartets, Josquin, Scarlatti | mostly free for research and reuse | Humdrum `**kern`, converts cleanly to MIDI. The best-encoded classical data anywhere. |
-| **Essen Folksong Collection** | ~20,000 folk melodies, European and Chinese | free | Monophonic. Superb for melody and phrase statistics. |
 | **Nottingham Music Database** | ~1,200 British/Irish folk tunes | traditional, freely distributed | ABC format, melody + chord symbols — the chords make it unusually useful. |
 | **thesession.org** | ~40,000 Irish traditional settings | data dumps CC0 / CC BY-SA | Tunes are traditional; check the setting's own terms. |
 | **Magenta Groove MIDI (GMD / E-GMD)** | ~13.6 hours of played drums | **CC BY 4.0** | Commercially usable, properly licensed, expressively played. The gold standard for how a dataset should be released. |
-| **music21 core corpus** | Bach chorales, ABC folk, Palestrina, trecento | mixed, mostly free | Already parsed; ScaleView measured its chord reader against exactly this. |
 | **Anything you commission or write** | whatever you want | yours | See below. |
 
 ### Tier 2 — usable with care, keep in a separate split
@@ -52,6 +50,9 @@ different rule without re-researching every file.
 | **MAESTRO** (Magenta) | Performances of PD works, but the **dataset is CC BY-NC-SA 4.0**. Not for a commercial product. |
 | **GiantMIDI-Piano** | Transcriptions are CC BY 4.0, but many underlying *compositions* are still in copyright. Filter by composer death date. |
 | **ASAP**, **(n)ASAP** | Research licences. Read them. |
+| **music21 core corpus** | The compositions are almost all out of US copyright; the *encodings* are licensed to music21, and its own licence file warns of commercial restrictions. Per-repertory clearance needed — see below. |
+| **Essen Folksong Collection** | ~8,500 melodies as shipped with music21, and explicitly **non-commercial**: the encodings are licensed to music21, not onward. The wider ESAC database's status is described by its own maintainers as unclear. |
+| **Ryan's Mammoth Collection** (1883) | The tunes are long out of copyright; the ABC encodings shipped with music21 carry no stated terms of their own. Worth chasing to the original ABC transcribers, since a cleared fiddle repertory is genuinely useful to us. |
 
 ### Tier 3 — do not use
 
@@ -63,6 +64,70 @@ product with your name on it, it is the wrong trade. Lakh in particular is
 unavoidably tempting because it is large, clean, and everyone uses it — the
 schema's `license` check exists to make including it a deliberate act rather
 than a drift.
+
+## The music21 corpus, checked
+
+It comes up every time, so here is what is actually in it and what its licence
+actually says. Counted from the repository at `cuthbertLab/music21`, and quoted
+from `music21/corpus/license.txt`.
+
+**The software is BSD-3-Clause. The corpus is not covered by that.** Its own
+licence file says the encodings are "distributed with the permission of the
+encoders" and that:
+
+> Some encodings included in the corpus may not be used for commercial uses or
+> have other restrictions … The encodings may be under copyright but have been
+> licensed for use, though there may be restrictions on commercial use.
+
+That is the two-clearance problem again, and it lands on the second clearance.
+The compositions are fine — Palestrina, Bach, a fiddle collection printed in
+1883. The *encodings* are licensed **to music21**, and that permission does not
+travel to us. Only one repertory carries its own licence file, and it is the
+largest one:
+
+> [Essen] … Prof. AMU Dr. Habil. Ewa Dahlig-Turek, who has given permission for
+> **non-commercial** distribution and use of these files in music21. … The
+> files distributed with music21 are ABC encodings, created by Seymour Schlien,
+> and distributed with music21 by his permission.
+
+So Essen is out for a commercial product as it stands — though asking those two
+people directly is a small and realistic thing to do, and is the correct route
+if we want it.
+
+**What is in there**, by weight rather than by file count, since the ABC files
+are collections:
+
+| Repertory | Size | What it is good for |
+| --- | --- | --- |
+| Essen folksong | 8,514 tunes in 31 ABC files (1,224 of them Chinese, outside our Western scope) | melodic intervals, contour, phrase length — monophonic |
+| Palestrina | 1,318 `**kern` files | Renaissance counterpoint, modal cadences |
+| O'Neill's *Music of Ireland* (1850 tunes) | ~1,800 tunes in 39 ABC files | celtic, and the jig/reel rhythmic cells |
+| Ryan's Mammoth Collection (1883) | 1,059 ABC tunes | bluegrass, celtic, old-time fiddle repertoire |
+| Bach chorales | 408 MusicXML | **four-part writing** — our exact texture — plus cadences, non-chord tones, voice leading |
+| Bach + Monteverdi analyses | 68 RomanText files | human harmonic analyses: ground truth for testing ours |
+| Aird's *Airs* (1782) | 6 books of ABC | Scottish and English airs |
+| Trecento, Monteverdi, Josquin, Ciconia, Lusitano | ~260 files | early music |
+| Beethoven 26, Mozart 16, Haydn 9, Schumann 12, others 1–2 each | ~80 files | not enough of any one composer to calibrate anything |
+
+Two things follow from that table. The first is that it is **not** the
+symphonic classical archive people assume — there is exactly one Chopin file
+and one Schubert. It is overwhelmingly **folk melody and Renaissance
+polyphony**. The second is that the 68 RomanText analyses are the most
+interesting thing in it for us: a human analyst's roman numerals for music we
+also have the notes for, which is a real test set for `middaw/corpus/analyse.py`
+and costs nothing to use, because nothing derived from it is shipped.
+
+What it cannot give us at all: anything after about 1900. No swing, no
+backbeat, no comping, no groove, no extended harmony, no production. Those are
+exactly the styles whose constants in `data/vocab/tags.json` are currently set
+by hand — so this corpus calibrates the half of the vocabulary that is already
+strongest, and leaves the modern half where it is.
+
+**The formats are notation, not MIDI** — `**kern`, ABC and MusicXML. That is a
+feature for measurement, because barlines, key signatures and separated voices
+are all still there, which MIDI loses. It needs a converter, and using music21
+itself offline to do the conversion is fine: the no-dependency rule is about
+what Middaw *ships*, not about what a `tools/` script uses to prepare data.
 
 ## The part that actually differentiates you
 

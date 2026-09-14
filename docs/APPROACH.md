@@ -140,6 +140,12 @@ much it exposes:
 Getting a lawyer to look at any commercial use of measured statistics is a
 sensible step before stage B ships, and is not a question this file can settle.
 
+The same test applies to the obvious "but this one is public domain" candidate,
+the music21 core corpus: its compositions are clear, its *encodings* are
+licensed to music21 with commercial restrictions, and its largest repertory is
+non-commercial by name. [DATASET.md](DATASET.md) has the verified inventory and
+the quotes. It is a fine measuring instrument and a poor pool to ship from.
+
 ## The decision
 
 **The renderer stays a calculator.** Learning may replace how the parameters
