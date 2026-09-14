@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+web/soundfonts/
+*.mid
+!data/corpus/**/*.mid
+.venv/

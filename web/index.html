@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Middaw</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Middaw</h1>
+      <p class="tagline">MIDI first. Nothing is transcribed from audio.</p>
+    </header>
+
+    <form id="prompt-form" autocomplete="off">
+      <label for="prompt" id="prompt-label">What do you want to create?</label>
+      <div class="input-row">
+        <input id="prompt" name="prompt" type="text" maxlength="2000"
+               placeholder="a sad lo-fi piano loop in F minor at 82 bpm" autofocus>
+        <button type="submit" id="generate">Create</button>
+      </div>
+      <p class="examples" id="examples"></p>
+    </form>
+
+    <section id="result" hidden aria-live="polite">
+      <div class="interpretation">
+        <p id="summary"></p>
+        <p id="unmatched" class="unmatched" hidden></p>
+      </div>
+
+      <div id="chords" class="chords"></div>
+
+      <div class="roll-wrap">
+        <canvas id="roll" width="1200" height="280"></canvas>
+      </div>
+
+      <div class="transport">
+        <button type="button" id="play" class="primary">Play</button>
+        <button type="button" id="again">Another take</button>
+        <a id="download" download class="button">Download .mid</a>
+        <span class="seed">seed <code id="seed"></code></span>
+      </div>
+      <p id="voice-note" class="voice-note"></p>
+    </section>
+
+    <p id="status" class="status" role="status"></p>
+    <p id="corpus-note" class="corpus-note"></p>
+  </main>
+
+  <script src="/player.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

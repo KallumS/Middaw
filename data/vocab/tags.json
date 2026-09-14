@@ -1,0 +1,1914 @@
+{
+  "version": 1,
+  "note": "Single source of truth for BOTH prompt parsing and corpus labelling. A tag id used here is the same id stored in data/corpus/manifest.json. Adding a tag makes it understandable in prompts and queryable in the dataset at the same time.",
+  "genres": {
+    "lofi": {
+      "label": "Lo-fi",
+      "synonyms": [
+        "lofi",
+        "lo-fi",
+        "lo fi",
+        "chillhop",
+        "boom bap",
+        "study beats"
+      ],
+      "tempo": [
+        70,
+        88
+      ],
+      "modes": {
+        "dorian": 3,
+        "minor": 3,
+        "major": 2
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "i7",
+            "iv7",
+            "bVII7",
+            "bIIImaj7"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "ii7",
+            "V7",
+            "Imaj7",
+            "vi7"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i7",
+            "bVImaj7",
+            "bVII7",
+            "i7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "offbeat": 4,
+        "block": 2,
+        "arpeggio_updown": 1,
+        "rolled": 2
+      },
+      "density": 0.42,
+      "swing": 0.17,
+      "extensions": 0.85,
+      "register": -2,
+      "velocity": 68
+    },
+    "jazz": {
+      "label": "Jazz",
+      "synonyms": [
+        "jazzy",
+        "bebop",
+        "swing",
+        "cocktail jazz",
+        "jazz piano"
+      ],
+      "tempo": [
+        100,
+        160
+      ],
+      "modes": {
+        "major": 3,
+        "dorian": 2,
+        "minor": 2,
+        "mixolydian": 1
+      },
+      "meters": {
+        "4/4": 10,
+        "3/4": 2
+      },
+      "progressions": [
+        {
+          "c": [
+            "ii7",
+            "V7",
+            "Imaj7",
+            "vi7"
+          ],
+          "w": 4
+        },
+        {
+          "c": [
+            "Imaj7",
+            "vi7",
+            "ii7",
+            "V7"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i7",
+            "ii0",
+            "V7",
+            "i7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "offbeat": 3,
+        "block": 3,
+        "walking": 2,
+        "rolled": 1
+      },
+      "density": 0.65,
+      "swing": 0.32,
+      "extensions": 0.95,
+      "register": 0,
+      "velocity": 78
+    },
+    "blues": {
+      "label": "Blues",
+      "synonyms": [
+        "bluesy",
+        "delta blues",
+        "twelve bar"
+      ],
+      "tempo": [
+        78,
+        120
+      ],
+      "modes": {
+        "blues": 3,
+        "minor_pentatonic": 2,
+        "mixolydian": 2
+      },
+      "meters": {
+        "4/4": 10,
+        "12/8": 3
+      },
+      "progressions": [
+        {
+          "c": [
+            "I7",
+            "I7",
+            "I7",
+            "I7",
+            "IV7",
+            "IV7",
+            "I7",
+            "I7",
+            "V7",
+            "IV7",
+            "I7",
+            "V7"
+          ],
+          "w": 4
+        },
+        {
+          "c": [
+            "i7",
+            "iv7",
+            "i7",
+            "V7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "block": 3,
+        "broken_octave": 2,
+        "walking": 2,
+        "offbeat": 1
+      },
+      "density": 0.55,
+      "swing": 0.3,
+      "extensions": 0.7,
+      "register": -1,
+      "velocity": 82
+    },
+    "classical": {
+      "label": "Classical",
+      "synonyms": [
+        "classic",
+        "sonata",
+        "concert piano"
+      ],
+      "tempo": [
+        76,
+        132
+      ],
+      "modes": {
+        "major": 3,
+        "minor": 3,
+        "harmonic_minor": 1
+      },
+      "meters": {
+        "4/4": 8,
+        "3/4": 4,
+        "6/8": 2
+      },
+      "progressions": [
+        {
+          "c": [
+            "I",
+            "IV",
+            "V",
+            "I"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i",
+            "iv",
+            "V7",
+            "i"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "vi",
+            "ii",
+            "V7"
+          ],
+          "w": 2
+        },
+        {
+          "c": [
+            "i",
+            "bVI",
+            "iio",
+            "V7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "alberti": 4,
+        "block": 2,
+        "arpeggio_updown": 3,
+        "broken_octave": 1
+      },
+      "density": 0.62,
+      "swing": 0.0,
+      "extensions": 0.15,
+      "register": 0,
+      "velocity": 76
+    },
+    "baroque": {
+      "label": "Baroque",
+      "synonyms": [
+        "bach",
+        "fugue",
+        "harpsichord",
+        "invention",
+        "counterpoint"
+      ],
+      "tempo": [
+        84,
+        132
+      ],
+      "modes": {
+        "major": 3,
+        "minor": 3,
+        "harmonic_minor": 2
+      },
+      "meters": {
+        "4/4": 6,
+        "3/4": 4,
+        "6/8": 3
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "V",
+            "i",
+            "iv",
+            "V7",
+            "i"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "V/vi",
+            "vi",
+            "IV",
+            "V7",
+            "I"
+          ],
+          "w": 2
+        },
+        {
+          "c": [
+            "i",
+            "bVII",
+            "bVI",
+            "V7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "arpeggio_up": 4,
+        "arpeggio_updown": 3,
+        "alberti": 2,
+        "walking": 2
+      },
+      "density": 0.78,
+      "swing": 0.0,
+      "extensions": 0.1,
+      "register": 0,
+      "velocity": 74
+    },
+    "romantic_era": {
+      "label": "Romantic era",
+      "synonyms": [
+        "romantic era",
+        "romantic period",
+        "chopin",
+        "nocturne",
+        "liszt",
+        "rachmaninoff",
+        "late romantic"
+      ],
+      "tempo": [
+        60,
+        96
+      ],
+      "modes": {
+        "minor": 3,
+        "major": 2,
+        "harmonic_minor": 1
+      },
+      "meters": {
+        "4/4": 6,
+        "3/4": 4,
+        "6/8": 3
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "iv6",
+            "V7",
+            "i"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "vi",
+            "IV",
+            "V7"
+          ],
+          "w": 2
+        },
+        {
+          "c": [
+            "i",
+            "bVI",
+            "bIII",
+            "V7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "arpeggio_updown": 4,
+        "ballad": 3,
+        "rolled": 2,
+        "broken_octave": 2
+      },
+      "density": 0.6,
+      "swing": 0.0,
+      "extensions": 0.35,
+      "register": 0,
+      "velocity": 72
+    },
+    "folk": {
+      "label": "Folk",
+      "synonyms": [
+        "traditional",
+        "acoustic",
+        "singer songwriter"
+      ],
+      "tempo": [
+        88,
+        124
+      ],
+      "modes": {
+        "major": 3,
+        "mixolydian": 2,
+        "dorian": 2,
+        "minor": 1
+      },
+      "meters": {
+        "4/4": 8,
+        "3/4": 3,
+        "6/8": 3
+      },
+      "progressions": [
+        {
+          "c": [
+            "I",
+            "V",
+            "vi",
+            "IV"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "bVII",
+            "IV",
+            "I"
+          ],
+          "w": 2
+        },
+        {
+          "c": [
+            "i",
+            "bVII",
+            "bVI",
+            "bVII"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "block": 3,
+        "arpeggio_up": 3,
+        "waltz": 1
+      },
+      "density": 0.5,
+      "swing": 0.05,
+      "extensions": 0.1,
+      "register": 0,
+      "velocity": 76
+    },
+    "celtic": {
+      "label": "Celtic",
+      "synonyms": [
+        "irish",
+        "jig",
+        "reel",
+        "scottish"
+      ],
+      "tempo": [
+        110,
+        150
+      ],
+      "modes": {
+        "dorian": 3,
+        "mixolydian": 3,
+        "major": 2,
+        "minor": 1
+      },
+      "meters": {
+        "6/8": 6,
+        "4/4": 4,
+        "3/4": 1
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "bVII",
+            "i",
+            "bVII"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "bVII",
+            "IV",
+            "I"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "arpeggio_up": 3,
+        "block": 2,
+        "ostinato": 2
+      },
+      "density": 0.75,
+      "swing": 0.0,
+      "extensions": 0.05,
+      "register": 1,
+      "velocity": 80
+    },
+    "pop": {
+      "label": "Pop",
+      "synonyms": [
+        "radio pop",
+        "catchy",
+        "chart"
+      ],
+      "tempo": [
+        96,
+        128
+      ],
+      "modes": {
+        "major": 3,
+        "minor": 2,
+        "mixolydian": 1
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "I",
+            "V",
+            "vi",
+            "IV"
+          ],
+          "w": 4
+        },
+        {
+          "c": [
+            "vi",
+            "IV",
+            "I",
+            "V"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "vi",
+            "IV",
+            "V"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "block": 3,
+        "offbeat": 2,
+        "arpeggio_up": 2,
+        "ballad": 1
+      },
+      "density": 0.52,
+      "swing": 0.0,
+      "extensions": 0.2,
+      "register": 0,
+      "velocity": 82
+    },
+    "ballad": {
+      "label": "Ballad",
+      "synonyms": [
+        "slow song",
+        "power ballad",
+        "love song"
+      ],
+      "tempo": [
+        62,
+        80
+      ],
+      "modes": {
+        "major": 3,
+        "minor": 3
+      },
+      "meters": {
+        "4/4": 8,
+        "6/8": 3,
+        "3/4": 2
+      },
+      "progressions": [
+        {
+          "c": [
+            "I",
+            "iii",
+            "IV",
+            "V"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "vi",
+            "IV",
+            "I",
+            "V"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i",
+            "bVI",
+            "bIII",
+            "bVII"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "ballad": 4,
+        "arpeggio_updown": 3,
+        "rolled": 2,
+        "sustained": 1
+      },
+      "density": 0.38,
+      "swing": 0.0,
+      "extensions": 0.35,
+      "register": 0,
+      "velocity": 68
+    },
+    "ambient": {
+      "label": "Ambient",
+      "synonyms": [
+        "atmospheric",
+        "drone",
+        "soundscape",
+        "meditative"
+      ],
+      "tempo": [
+        54,
+        78
+      ],
+      "modes": {
+        "lydian": 2,
+        "major": 2,
+        "dorian": 2,
+        "minor": 2,
+        "major_pentatonic": 1
+      },
+      "meters": {
+        "4/4": 8,
+        "3/4": 2
+      },
+      "progressions": [
+        {
+          "c": [
+            "Imaj7",
+            "IVmaj7",
+            "Imaj7",
+            "vi7"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i7",
+            "bVImaj7",
+            "i7",
+            "bIIImaj7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "sustained": 4,
+        "rolled": 3,
+        "arpeggio_updown": 2
+      },
+      "density": 0.22,
+      "swing": 0.0,
+      "extensions": 0.8,
+      "register": 1,
+      "velocity": 58
+    },
+    "cinematic": {
+      "label": "Cinematic",
+      "synonyms": [
+        "film score",
+        "soundtrack",
+        "trailer",
+        "orchestral",
+        "epic score"
+      ],
+      "tempo": [
+        66,
+        104
+      ],
+      "modes": {
+        "minor": 3,
+        "dorian": 2,
+        "aeolian": 2,
+        "major": 1
+      },
+      "meters": {
+        "4/4": 8,
+        "3/4": 2,
+        "6/8": 2
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "bVI",
+            "bIII",
+            "bVII"
+          ],
+          "w": 4
+        },
+        {
+          "c": [
+            "i",
+            "bVII",
+            "bVI",
+            "V7"
+          ],
+          "w": 2
+        },
+        {
+          "c": [
+            "i",
+            "iv",
+            "bVI",
+            "V7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "ostinato": 4,
+        "sustained": 2,
+        "broken_octave": 2,
+        "arpeggio_updown": 2
+      },
+      "density": 0.55,
+      "swing": 0.0,
+      "extensions": 0.3,
+      "register": -1,
+      "velocity": 84
+    },
+    "house": {
+      "label": "House",
+      "synonyms": [
+        "deep house",
+        "four to the floor",
+        "club"
+      ],
+      "tempo": [
+        118,
+        128
+      ],
+      "modes": {
+        "minor": 3,
+        "dorian": 2,
+        "major": 1
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "i7",
+            "iv7",
+            "bVImaj7",
+            "bVII7"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "ii7",
+            "V7",
+            "Imaj7",
+            "Imaj7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "offbeat": 5,
+        "block": 2,
+        "arpeggio_up": 2
+      },
+      "density": 0.6,
+      "swing": 0.06,
+      "extensions": 0.7,
+      "register": 0,
+      "velocity": 86
+    },
+    "techno": {
+      "label": "Techno",
+      "synonyms": [
+        "minimal techno",
+        "industrial"
+      ],
+      "tempo": [
+        128,
+        142
+      ],
+      "modes": {
+        "minor": 3,
+        "phrygian": 2,
+        "locrian": 1
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "i",
+            "bII",
+            "i"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i",
+            "bVI",
+            "i",
+            "bVII"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "ostinato": 5,
+        "offbeat": 3,
+        "arpeggio_up": 2
+      },
+      "density": 0.8,
+      "swing": 0.0,
+      "extensions": 0.15,
+      "register": -1,
+      "velocity": 88
+    },
+    "trap": {
+      "label": "Trap",
+      "synonyms": [
+        "drill",
+        "hip hop",
+        "hiphop",
+        "rap beat"
+      ],
+      "tempo": [
+        130,
+        150
+      ],
+      "modes": {
+        "minor": 3,
+        "phrygian": 2,
+        "harmonic_minor": 2
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "bVI",
+            "bVII",
+            "i"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i",
+            "iv",
+            "bVI",
+            "V7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "ostinato": 4,
+        "arpeggio_up": 3,
+        "sustained": 2
+      },
+      "density": 0.5,
+      "swing": 0.1,
+      "extensions": 0.3,
+      "register": -2,
+      "velocity": 84
+    },
+    "rnb": {
+      "label": "R&B",
+      "synonyms": [
+        "r&b",
+        "rnb",
+        "soul",
+        "neo soul"
+      ],
+      "tempo": [
+        72,
+        96
+      ],
+      "modes": {
+        "minor": 3,
+        "dorian": 3,
+        "major": 2
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "Imaj7",
+            "iii7",
+            "vi7",
+            "ii7"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i9",
+            "iv9",
+            "bVIImaj7",
+            "bIIImaj7"
+          ],
+          "w": 3
+        }
+      ],
+      "patterns": {
+        "offbeat": 4,
+        "rolled": 3,
+        "block": 2
+      },
+      "density": 0.5,
+      "swing": 0.2,
+      "extensions": 0.95,
+      "register": 0,
+      "velocity": 72
+    },
+    "gospel": {
+      "label": "Gospel",
+      "synonyms": [
+        "church",
+        "spiritual",
+        "hymn"
+      ],
+      "tempo": [
+        72,
+        108
+      ],
+      "modes": {
+        "major": 4,
+        "mixolydian": 1
+      },
+      "meters": {
+        "4/4": 8,
+        "12/8": 4,
+        "6/8": 2
+      },
+      "progressions": [
+        {
+          "c": [
+            "I",
+            "V/vi",
+            "vi",
+            "V/V",
+            "V7",
+            "I"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "Imaj7",
+            "IV",
+            "iii7",
+            "vi7",
+            "ii7",
+            "V7"
+          ],
+          "w": 3
+        }
+      ],
+      "patterns": {
+        "block": 4,
+        "rolled": 3,
+        "walking": 1
+      },
+      "density": 0.68,
+      "swing": 0.22,
+      "extensions": 0.8,
+      "register": 0,
+      "velocity": 88
+    },
+    "waltz": {
+      "label": "Waltz",
+      "synonyms": [
+        "viennese",
+        "valse"
+      ],
+      "tempo": [
+        96,
+        168
+      ],
+      "modes": {
+        "major": 3,
+        "minor": 3
+      },
+      "meters": {
+        "3/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "I",
+            "V7",
+            "V7",
+            "I"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i",
+            "iv",
+            "V7",
+            "i"
+          ],
+          "w": 3
+        }
+      ],
+      "patterns": {
+        "waltz": 6,
+        "arpeggio_up": 2
+      },
+      "density": 0.55,
+      "swing": 0.0,
+      "extensions": 0.2,
+      "register": 0,
+      "velocity": 76
+    },
+    "ragtime": {
+      "label": "Ragtime",
+      "synonyms": [
+        "rag",
+        "joplin",
+        "stride"
+      ],
+      "tempo": [
+        88,
+        116
+      ],
+      "modes": {
+        "major": 4
+      },
+      "meters": {
+        "4/4": 10,
+        "2/4": 4
+      },
+      "progressions": [
+        {
+          "c": [
+            "I",
+            "V/V",
+            "V7",
+            "I"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "I",
+            "V7",
+            "I",
+            "IV",
+            "I",
+            "V7",
+            "I"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "broken_octave": 5,
+        "block": 2
+      },
+      "density": 0.8,
+      "swing": 0.0,
+      "extensions": 0.35,
+      "register": 0,
+      "velocity": 82
+    },
+    "tango": {
+      "label": "Tango",
+      "synonyms": [
+        "milonga",
+        "piazzolla"
+      ],
+      "tempo": [
+        100,
+        132
+      ],
+      "modes": {
+        "harmonic_minor": 3,
+        "minor": 3,
+        "phrygian": 1
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "iv",
+            "V7",
+            "i"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i",
+            "bVI",
+            "V7",
+            "i"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "ostinato": 4,
+        "block": 3,
+        "broken_octave": 1
+      },
+      "density": 0.65,
+      "swing": 0.0,
+      "extensions": 0.3,
+      "register": -1,
+      "velocity": 84
+    },
+    "bossa": {
+      "label": "Bossa nova",
+      "synonyms": [
+        "bossa nova",
+        "samba",
+        "brazilian"
+      ],
+      "tempo": [
+        112,
+        140
+      ],
+      "modes": {
+        "major": 3,
+        "dorian": 2,
+        "minor": 2
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "Imaj7",
+            "ii7",
+            "V7",
+            "Imaj7"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i7",
+            "ii0",
+            "V7",
+            "i7"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "offbeat": 5,
+        "block": 2
+      },
+      "density": 0.5,
+      "swing": 0.05,
+      "extensions": 0.95,
+      "register": 0,
+      "velocity": 70
+    },
+    "minimal": {
+      "label": "Minimalism",
+      "synonyms": [
+        "minimalist",
+        "glass",
+        "reich",
+        "repetitive",
+        "phase"
+      ],
+      "tempo": [
+        96,
+        144
+      ],
+      "modes": {
+        "major": 2,
+        "minor": 2,
+        "lydian": 2,
+        "mixolydian": 1
+      },
+      "meters": {
+        "4/4": 6,
+        "6/8": 3,
+        "5/4": 2,
+        "7/8": 2
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "bVII",
+            "bVI",
+            "bVII"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "V",
+            "vi",
+            "iii"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "ostinato": 6,
+        "arpeggio_up": 3,
+        "arpeggio_updown": 2
+      },
+      "density": 0.85,
+      "swing": 0.0,
+      "extensions": 0.2,
+      "register": 0,
+      "velocity": 70
+    },
+    "chiptune": {
+      "label": "Chiptune",
+      "synonyms": [
+        "video game",
+        "8 bit",
+        "8-bit",
+        "gameboy",
+        "nes",
+        "arcade"
+      ],
+      "tempo": [
+        120,
+        172
+      ],
+      "modes": {
+        "major": 3,
+        "minor": 3,
+        "lydian": 1,
+        "mixolydian": 1
+      },
+      "meters": {
+        "4/4": 10
+      },
+      "progressions": [
+        {
+          "c": [
+            "I",
+            "vi",
+            "IV",
+            "V"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "i",
+            "bVII",
+            "bVI",
+            "V7"
+          ],
+          "w": 3
+        }
+      ],
+      "patterns": {
+        "arpeggio_up": 5,
+        "ostinato": 3,
+        "block": 1
+      },
+      "density": 0.85,
+      "swing": 0.0,
+      "extensions": 0.1,
+      "register": 1,
+      "velocity": 86
+    },
+    "rock": {
+      "label": "Rock",
+      "synonyms": [
+        "indie rock",
+        "guitar rock",
+        "alt rock",
+        "grunge"
+      ],
+      "tempo": [
+        104,
+        156
+      ],
+      "modes": {
+        "minor": 3,
+        "mixolydian": 2,
+        "major": 2,
+        "minor_pentatonic": 2
+      },
+      "meters": {
+        "4/4": 10,
+        "6/8": 1
+      },
+      "progressions": [
+        {
+          "c": [
+            "i",
+            "bVII",
+            "bVI",
+            "bVII"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "I",
+            "bVII",
+            "IV",
+            "I"
+          ],
+          "w": 3
+        },
+        {
+          "c": [
+            "vi",
+            "IV",
+            "I",
+            "V"
+          ],
+          "w": 2
+        }
+      ],
+      "patterns": {
+        "block": 4,
+        "broken_octave": 2,
+        "ostinato": 2
+      },
+      "density": 0.6,
+      "swing": 0.0,
+      "extensions": 0.1,
+      "register": -1,
+      "velocity": 92
+    }
+  },
+  "moods": {
+    "sad": {
+      "label": "Sad",
+      "synonyms": [
+        "sorrowful",
+        "mournful",
+        "unhappy",
+        "grief",
+        "crying",
+        "heartbroken"
+      ],
+      "modes": {
+        "minor": 4,
+        "aeolian": 2,
+        "phrygian": 1
+      },
+      "tempo_scale": 0.85,
+      "density_delta": -0.1,
+      "velocity_delta": -10,
+      "register_delta": -1,
+      "valence": -0.8,
+      "arousal": -0.4
+    },
+    "melancholy": {
+      "label": "Melancholy",
+      "synonyms": [
+        "melancholic",
+        "wistful",
+        "bittersweet",
+        "somber",
+        "sombre",
+        "pensive"
+      ],
+      "modes": {
+        "minor": 3,
+        "dorian": 3,
+        "aeolian": 2
+      },
+      "tempo_scale": 0.9,
+      "density_delta": -0.08,
+      "velocity_delta": -8,
+      "extensions_delta": 0.2,
+      "valence": -0.5,
+      "arousal": -0.3
+    },
+    "dark": {
+      "label": "Dark",
+      "synonyms": [
+        "ominous",
+        "sinister",
+        "brooding",
+        "menacing",
+        "evil",
+        "haunting"
+      ],
+      "modes": {
+        "phrygian": 3,
+        "minor": 3,
+        "harmonic_minor": 2,
+        "locrian": 1
+      },
+      "tempo_scale": 0.92,
+      "register_delta": -2,
+      "velocity_delta": -4,
+      "valence": -0.7,
+      "arousal": 0.2
+    },
+    "tense": {
+      "label": "Tense",
+      "synonyms": [
+        "suspense",
+        "suspenseful",
+        "anxious",
+        "uneasy",
+        "nervous",
+        "thriller"
+      ],
+      "modes": {
+        "locrian": 2,
+        "phrygian": 3,
+        "harmonic_minor": 3,
+        "whole_tone": 1
+      },
+      "tempo_scale": 1.05,
+      "density_delta": 0.1,
+      "valence": -0.6,
+      "arousal": 0.6
+    },
+    "epic": {
+      "label": "Epic",
+      "synonyms": [
+        "heroic",
+        "grand",
+        "powerful",
+        "monumental",
+        "sweeping"
+      ],
+      "modes": {
+        "minor": 3,
+        "dorian": 2,
+        "major": 1
+      },
+      "tempo_scale": 0.96,
+      "density_delta": 0.1,
+      "velocity_delta": 14,
+      "register_delta": -1,
+      "valence": 0.2,
+      "arousal": 0.8
+    },
+    "triumphant": {
+      "label": "Triumphant",
+      "synonyms": [
+        "victorious",
+        "fanfare",
+        "celebratory",
+        "glorious"
+      ],
+      "modes": {
+        "major": 4,
+        "lydian": 2,
+        "mixolydian": 1
+      },
+      "tempo_scale": 1.05,
+      "density_delta": 0.1,
+      "velocity_delta": 14,
+      "valence": 0.8,
+      "arousal": 0.8
+    },
+    "happy": {
+      "label": "Happy",
+      "synonyms": [
+        "joyful",
+        "cheerful",
+        "sunny",
+        "bright",
+        "feelgood",
+        "feel good"
+      ],
+      "modes": {
+        "major": 4,
+        "lydian": 2,
+        "mixolydian": 2,
+        "major_pentatonic": 1
+      },
+      "tempo_scale": 1.08,
+      "density_delta": 0.05,
+      "velocity_delta": 8,
+      "register_delta": 1,
+      "valence": 0.9,
+      "arousal": 0.6
+    },
+    "uplifting": {
+      "label": "Uplifting",
+      "synonyms": [
+        "hopeful",
+        "optimistic",
+        "inspiring",
+        "soaring",
+        "euphoric"
+      ],
+      "modes": {
+        "major": 4,
+        "lydian": 3,
+        "mixolydian": 1
+      },
+      "tempo_scale": 1.04,
+      "velocity_delta": 8,
+      "register_delta": 1,
+      "valence": 0.8,
+      "arousal": 0.5
+    },
+    "dreamy": {
+      "label": "Dreamy",
+      "synonyms": [
+        "ethereal",
+        "floaty",
+        "hazy",
+        "shimmering",
+        "otherworldly",
+        "airy"
+      ],
+      "modes": {
+        "lydian": 4,
+        "major": 2,
+        "dorian": 2,
+        "major_pentatonic": 1
+      },
+      "tempo_scale": 0.88,
+      "density_delta": -0.15,
+      "velocity_delta": -12,
+      "register_delta": 1,
+      "extensions_delta": 0.4,
+      "valence": 0.4,
+      "arousal": -0.6
+    },
+    "calm": {
+      "label": "Calm",
+      "synonyms": [
+        "peaceful",
+        "serene",
+        "gentle",
+        "relaxing",
+        "soothing",
+        "tranquil",
+        "chill"
+      ],
+      "modes": {
+        "major": 3,
+        "lydian": 2,
+        "dorian": 2,
+        "major_pentatonic": 2
+      },
+      "tempo_scale": 0.82,
+      "density_delta": -0.18,
+      "velocity_delta": -14,
+      "extensions_delta": 0.25,
+      "valence": 0.5,
+      "arousal": -0.8
+    },
+    "playful": {
+      "label": "Playful",
+      "synonyms": [
+        "whimsical",
+        "quirky",
+        "cheeky",
+        "bouncy",
+        "silly",
+        "jaunty"
+      ],
+      "modes": {
+        "major": 3,
+        "lydian": 2,
+        "mixolydian": 2,
+        "major_pentatonic": 2
+      },
+      "tempo_scale": 1.08,
+      "density_delta": 0.12,
+      "register_delta": 1,
+      "valence": 0.7,
+      "arousal": 0.6
+    },
+    "mysterious": {
+      "label": "Mysterious",
+      "synonyms": [
+        "enigmatic",
+        "curious",
+        "strange",
+        "eerie",
+        "uncanny"
+      ],
+      "modes": {
+        "dorian": 2,
+        "phrygian": 2,
+        "whole_tone": 2,
+        "harmonic_minor": 2,
+        "minor": 2
+      },
+      "tempo_scale": 0.9,
+      "density_delta": -0.1,
+      "velocity_delta": -8,
+      "valence": -0.2,
+      "arousal": 0.1
+    },
+    "romantic": {
+      "label": "Romantic",
+      "synonyms": [
+        "tender",
+        "loving",
+        "intimate",
+        "affectionate",
+        "sensual"
+      ],
+      "modes": {
+        "major": 3,
+        "minor": 2,
+        "dorian": 1
+      },
+      "tempo_scale": 0.86,
+      "density_delta": -0.05,
+      "velocity_delta": -6,
+      "extensions_delta": 0.35,
+      "valence": 0.7,
+      "arousal": -0.3
+    },
+    "nostalgic": {
+      "label": "Nostalgic",
+      "synonyms": [
+        "reminiscent",
+        "yearning",
+        "bittersweet memory",
+        "faded",
+        "vintage"
+      ],
+      "modes": {
+        "major": 3,
+        "minor": 2,
+        "mixolydian": 2
+      },
+      "tempo_scale": 0.88,
+      "density_delta": -0.05,
+      "velocity_delta": -8,
+      "extensions_delta": 0.3,
+      "valence": 0.1,
+      "arousal": -0.4
+    },
+    "aggressive": {
+      "label": "Aggressive",
+      "synonyms": [
+        "angry",
+        "furious",
+        "violent",
+        "brutal",
+        "harsh",
+        "raging"
+      ],
+      "modes": {
+        "phrygian": 3,
+        "minor": 3,
+        "locrian": 2,
+        "minor_pentatonic": 2
+      },
+      "tempo_scale": 1.15,
+      "density_delta": 0.2,
+      "velocity_delta": 20,
+      "register_delta": -2,
+      "valence": -0.7,
+      "arousal": 0.9
+    },
+    "warm": {
+      "label": "Warm",
+      "synonyms": [
+        "cosy",
+        "cozy",
+        "comforting",
+        "rich",
+        "lush"
+      ],
+      "modes": {
+        "major": 3,
+        "mixolydian": 2,
+        "dorian": 1
+      },
+      "tempo_scale": 0.94,
+      "velocity_delta": -4,
+      "extensions_delta": 0.4,
+      "valence": 0.6,
+      "arousal": -0.3
+    }
+  },
+  "descriptors": {
+    "sparse": {
+      "synonyms": [
+        "sparse",
+        "minimal notes",
+        "spacious",
+        "restrained",
+        "stripped back",
+        "simple",
+        "bare"
+      ],
+      "density_delta": -0.15
+    },
+    "dense": {
+      "synonyms": [
+        "dense",
+        "busy",
+        "intricate",
+        "complex",
+        "virtuosic",
+        "flurry",
+        "cascading",
+        "fast notes"
+      ],
+      "density_delta": 0.25
+    },
+    "high": {
+      "synonyms": [
+        "high register",
+        "high",
+        "sparkling",
+        "twinkling",
+        "music box",
+        "bell like"
+      ],
+      "register_delta": 2
+    },
+    "low": {
+      "synonyms": [
+        "low register",
+        "low",
+        "deep",
+        "bassy",
+        "sub",
+        "rumbling"
+      ],
+      "register_delta": -2
+    },
+    "loud": {
+      "synonyms": [
+        "loud",
+        "forte",
+        "powerful",
+        "bold",
+        "driving"
+      ],
+      "velocity_delta": 14
+    },
+    "quiet": {
+      "synonyms": [
+        "quiet",
+        "soft",
+        "piano",
+        "delicate",
+        "hushed",
+        "whispered",
+        "muted"
+      ],
+      "velocity_delta": -14
+    },
+    "swung": {
+      "synonyms": [
+        "swung",
+        "shuffle",
+        "shuffled",
+        "laid back",
+        "behind the beat"
+      ],
+      "swing": 0.3
+    },
+    "straight": {
+      "synonyms": [
+        "straight",
+        "on the grid",
+        "quantised",
+        "quantized",
+        "robotic",
+        "mechanical"
+      ],
+      "swing": 0.0,
+      "humanize_scale": 0.15
+    },
+    "slow": {
+      "synonyms": [
+        "slow",
+        "slowly",
+        "downtempo",
+        "adagio",
+        "largo",
+        "lento",
+        "dragging",
+        "unhurried"
+      ],
+      "tempo_scale": 0.75
+    },
+    "fast": {
+      "synonyms": [
+        "fast",
+        "quick",
+        "uptempo",
+        "up tempo",
+        "allegro",
+        "presto",
+        "frantic",
+        "rapid",
+        "racing",
+        "energetic",
+        "driving fast"
+      ],
+      "tempo_scale": 1.2
+    },
+    "moderate": {
+      "synonyms": [
+        "mid tempo",
+        "midtempo",
+        "moderate",
+        "moderato",
+        "walking pace"
+      ],
+      "tempo_scale": 1.0
+    }
+  },
+  "roles": {
+    "melody": {
+      "synonyms": [
+        "melody",
+        "lead",
+        "tune",
+        "hook",
+        "topline",
+        "riff",
+        "motif"
+      ]
+    },
+    "chords": {
+      "synonyms": [
+        "chords",
+        "chord progression",
+        "progression",
+        "comping",
+        "harmony",
+        "pad"
+      ]
+    },
+    "bass": {
+      "synonyms": [
+        "bass",
+        "bassline",
+        "bass line",
+        "low end"
+      ]
+    },
+    "arpeggio": {
+      "synonyms": [
+        "arpeggio",
+        "arp",
+        "arpeggiated",
+        "broken chords"
+      ]
+    },
+    "ostinato": {
+      "synonyms": [
+        "ostinato",
+        "repeating figure",
+        "vamp"
+      ]
+    },
+    "drums": {
+      "synonyms": [
+        "drums",
+        "beat",
+        "percussion",
+        "groove"
+      ]
+    }
+  }
+}
