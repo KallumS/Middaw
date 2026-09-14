@@ -127,3 +127,93 @@ class TestAnalysisRoundTrip(unittest.TestCase):
                       "pitch_low", "pitch_high", "syncopation", "swing",
                       "chords", "roman", "intervals", "rhythm_cells"):
             self.assertIn(field, derived)
+
+
+class TestFormAndLength(unittest.TestCase):
+    """Length comes from what the thing is called; long means sections."""
+
+    def test_the_ladder(self):
+        from middaw.form import snap_to_ladder
+        self.assertEqual(snap_to_ladder(1), 4)
+        self.assertEqual(snap_to_ladder(7), 8)
+        self.assertEqual(snap_to_ladder(20), 16)
+        self.assertEqual(snap_to_ladder(45), 32)
+        self.assertEqual(snap_to_ladder(500), 64)
+
+    def test_length_is_inferred_from_what_it_is_called(self):
+        cases = [
+            ("a short drum beat", 8),
+            ("a lo-fi loop", 8),
+            ("a jazz riff idea", 4),
+            ("a verse in C major", 16),
+            ("write me a full piece", 32),
+            ("symphony orchestra", 64),
+            ("an epic orchestral movement", 64),
+        ]
+        for prompt, bars in cases:
+            with self.subTest(prompt=prompt):
+                self.assertEqual(parse_prompt(prompt, seed=1).bars, bars)
+
+    def test_an_explicit_bar_count_is_taken_literally(self):
+        # 12 is not on the ladder, and a twelve-bar blues really is twelve bars.
+        self.assertEqual(parse_prompt("12 bars of blues", seed=1).bars, 12)
+        self.assertEqual(parse_prompt("6 bars of piano", seed=1).bars, 6)
+
+    def test_short_generations_are_a_single_phrase_or_period(self):
+        self.assertEqual(generate("a riff idea", seed=2).spec.form, "A")
+        self.assertEqual(generate("a lo-fi loop", seed=2).spec.form, "A A'")
+
+    def test_long_generations_get_a_bridge(self):
+        for prompt in ("write me a full piece", "symphony orchestra"):
+            result = generate(prompt, seed=3)
+            letters = {s.letter for s in result.sections}
+            self.assertIn("A", letters)
+            self.assertIn("B", letters, f"{prompt} has no contrasting section")
+
+    def test_sections_cover_the_piece_exactly(self):
+        for prompt in ("a lo-fi loop", "a verse in C", "a full piece", "symphony"):
+            result = generate(prompt, seed=4)
+            total = sum(s.bars for s in result.sections)
+            self.assertEqual(total, result.spec.bars)
+            starts = [s.start_bar for s in result.sections]
+            self.assertEqual(starts, sorted(starts))
+            expected = 0
+            for section in result.sections:
+                self.assertEqual(section.start_bar, expected)
+                expected += section.bars
+
+    def test_a_contrasting_section_actually_contrasts(self):
+        result = generate("write me a full piece in C major", seed=6)
+        a = next(s for s in result.sections if s.letter == "A")
+        b = next(s for s in result.sections if s.letter == "B")
+        self.assertNotEqual(a.progression, b.progression)
+        self.assertGreater(b.density, a.density)
+
+    def test_sections_that_share_a_letter_share_their_harmony(self):
+        result = generate("symphony orchestra in D minor", seed=8)
+        by_letter = {}
+        for section in result.sections:
+            by_letter.setdefault(section.letter, []).append(section.progression)
+        for letter, progressions in by_letter.items():
+            for progression in progressions[1:]:
+                self.assertEqual(progression, progressions[0], letter)
+
+    def test_a_sixty_four_bar_piece_is_not_one_loop_repeated(self):
+        result = generate("symphony orchestra", seed=9)
+        self.assertEqual(result.spec.bars, 64)
+        melody = [t for t in result.song.tracks if t.name == "Melody"][0]
+        beats_per_bar = result.spec.beats_per_bar
+        first = [round(n.start % (8 * beats_per_bar), 2) for n in melody.notes
+                 if n.start < 8 * beats_per_bar]
+        bridge = [round(n.start % (8 * beats_per_bar), 2) for n in melody.notes
+                  if 16 * beats_per_bar <= n.start < 24 * beats_per_bar]
+        self.assertNotEqual(first, bridge)
+
+    def test_long_pieces_still_produce_valid_midi(self):
+        from middaw.midi import bytes_to_song
+        for prompt in ("symphony orchestra", "a full piece", "a verse"):
+            result = generate(prompt, seed=5)
+            parsed = bytes_to_song(result.midi)
+            self.assertEqual(len(parsed.notes), len(result.song.notes))
+            for note in result.song.notes:
+                self.assertTrue(21 <= note.pitch <= 108)

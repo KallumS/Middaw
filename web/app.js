@@ -84,6 +84,26 @@
       context.stroke();
     }
 
+    // Section boundaries: where the form actually turns over.
+    var sections = (current && current.sections) || [];
+    if (sections.length > 1) {
+      context.font = '11px ui-sans-serif, system-ui, sans-serif';
+      sections.forEach(function (section, index) {
+        var x = (section.startBar - 1) * beatsPerBar * beatWidth;
+        if (index % 2 === 1) {
+          context.fillStyle = 'rgba(255,255,255,0.025)';
+          context.fillRect(x, 0, section.bars * beatsPerBar * beatWidth, height);
+        }
+        context.strokeStyle = 'rgba(255,255,255,0.18)';
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x, height);
+        context.stroke();
+        context.fillStyle = 'rgba(255,255,255,0.45)';
+        context.fillText(section.label, x + 5, 14);
+      });
+    }
+
     notes.forEach(function (item) {
       var note = item.note;
       var x = note.start * beatWidth;

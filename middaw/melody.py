@@ -88,8 +88,15 @@ def _vary(rng: random.Random, motif: Motif, spec: MusicSpec,
 def generate_melody(spec: MusicSpec, chords_by_bar: list[list[tuple[float, Chord]]],
                     rng: random.Random,
                     intervals: dict[int, float] | None = None,
-                    rhythm_bias: dict[tuple[float, ...], float] | None = None) -> list[Note]:
+                    rhythm_bias: dict[tuple[float, ...], float] | None = None,
+                    motif_rng: random.Random | None = None) -> list[Note]:
+    """`motif_rng` invents the motif; `rng` varies it and places the notes.
+
+    Passing the same `motif_rng` to two sections makes them the same melody
+    differently varied, which is what an A and an A' section are.
+    """
     intervals = intervals or DEFAULT_INTERVALS
+    motif_rng = motif_rng or rng
     scale = scale_pitch_classes(spec.tonic, spec.mode)
     centre = 60 + spec.register * 3 + 7
     tonic_root = centre - (centre - (spec.tonic + 60)) % 12
@@ -101,14 +108,14 @@ def generate_melody(spec: MusicSpec, chords_by_bar: list[list[tuple[float, Chord
 
     degree = nearest_degree(scale, tonic_root, centre)
     phrase_length = 4
-    motif = _make_motif(rng, spec, intervals, rhythm_bias)
+    motif = _make_motif(motif_rng, spec, intervals, rhythm_bias)
     last_leap = 0
 
     for bar_index, chords in enumerate(chords_by_bar):
         position_in_phrase = bar_index % phrase_length
         if position_in_phrase == 0:
             if bar_index == 0 or rng.random() < 0.45:
-                motif = _make_motif(rng, spec, intervals, rhythm_bias)
+                motif = _make_motif(motif_rng, spec, intervals, rhythm_bias)
             bar_motif = motif
         elif position_in_phrase == 2:
             bar_motif = _vary(rng, motif, spec, intervals, 0.8, rhythm_bias)

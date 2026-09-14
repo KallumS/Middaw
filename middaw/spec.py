@@ -48,6 +48,8 @@ class MusicSpec:
     genres: list[str] = field(default_factory=list)
     moods: list[str] = field(default_factory=list)
     descriptors: list[str] = field(default_factory=list)
+    scales: list[str] = field(default_factory=list)
+    form: str = ""
     matched_terms: list[str] = field(default_factory=list)
     unmatched_terms: list[str] = field(default_factory=list)
     corpus_sources: list[str] = field(default_factory=list)
@@ -107,7 +109,7 @@ class MusicSpec:
             self.key_name,
             f"{self.tempo} BPM",
             f"{self.meter[0]}/{self.meter[1]}",
-            f"{self.bars} bars",
+            f"{self.bars} bars" + (f" ({self.form})" if self.form else ""),
             " ".join(self.progression[:8]) + ("..." if len(self.progression) > 8 else ""),
         ]
         tags = self.genres + self.moods

@@ -17,6 +17,7 @@ from __future__ import annotations
 import random
 import re
 
+from middaw.form import snap_to_ladder
 from middaw.functional import generate_progression
 from middaw.spec import MusicSpec
 from middaw.theory import (PITCH_CLASSES, SCALES, harmonic_pitch_classes,
@@ -171,6 +172,7 @@ def parse_prompt(
     spec.moods = list(dict.fromkeys(m.tag for m in matches if m.kind == "mood"))
     spec.descriptors = list(dict.fromkeys(
         m.tag for m in matches if m.kind == "descriptor"))
+    spec.scales = list(dict.fromkeys(m.tag for m in matches if m.kind == "scale"))
     spec.matched_terms = [m.phrase for m in matches]
     directives = [m.group(0) for m in (
         _KEY_RE.search(text), _BARE_MODE_RE.search(text), _BPM_RE.search(text),
@@ -210,6 +212,9 @@ def parse_prompt(
     spec.tempo = int(round(tempo))
 
     # --- length ---
+    # A stated bar count is taken literally; everything else lands on the
+    # ladder of 4, 8, 16, 32 and 64, because those are the lengths sections
+    # actually come in.
     bars_match = _BARS_RE.search(text)
     if bars_match:
         spec.bars = int(bars_match.group("bars"))
@@ -221,8 +226,13 @@ def parse_prompt(
         elif _SECONDS_RE.search(text):
             seconds = int(_SECONDS_RE.search(text).group("n"))
         if seconds:
-            raw = seconds * spec.tempo / 60.0 / beats_per_bar
-            spec.bars = max(2, int(round(raw / 2) * 2))
+            spec.bars = snap_to_ladder(int(round(
+                seconds * spec.tempo / 60.0 / beats_per_bar)))
+        elif spec.scales:
+            # "a short drum beat" is eight bars; "symphony orchestra" is
+            # sixty-four. The longest thing named wins: an "epic orchestral
+            # movement" is a movement, not an epic.
+            spec.bars = max(vocab.scales[tag].get("bars", 16) for tag in spec.scales)
         else:
             spec.bars = 16
 
@@ -241,7 +251,8 @@ def parse_prompt(
     spec.progression = list(chords)
     spec.progression_labels = list(labels)
 
-    # A long progression (a 12-bar blues, say) defines its own phrase length.
+    # A long progression (a 12-bar blues, say) defines its own phrase length,
+    # and overrides the ladder - a blues is twelve bars, not sixteen.
     if not bars_match:
         cycle = len(spec.progression)
         if cycle > 8 and spec.bars % cycle:

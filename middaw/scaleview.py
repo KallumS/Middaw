@@ -150,21 +150,37 @@ class Key:
         return (FLAT_NAMES if self.uses_flats else SHARP_NAMES)[pitch_class % 12]
 
 
+# The spelling a musician actually writes for each key. D# minor and Eb minor
+# need the same number of accidentals, so counting them cannot choose; practice
+# chooses Eb minor.
+CONVENTIONAL_MAJOR = ("C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B")
+CONVENTIONAL_MINOR = ("C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B")
+
+
 def key_for(tonic: int, mode: str, spelling: str | None = None) -> Key:
     """Pick the conventional spelling of a key from a pitch class and a mode."""
     if spelling and spelling in ROOTS_BY_NAME:
         return Key(spelling, mode)
-    scale = SCALES.get(mode, SCALES["major"])
+    minorish = mode in ("minor", "aeolian", "harmonic_minor", "melodic_minor",
+                        "dorian", "phrygian", "locrian", "minor_pentatonic",
+                        "blues", "diminished_wh")
+    preferred = (CONVENTIONAL_MINOR if minorish else CONVENTIONAL_MAJOR)[tonic % 12]
+
     best: Key | None = None
     for root in ROOTS:
         if root.pitch_class != tonic % 12 or root.name == "Cb":
             continue
         candidate = Key(root, mode)
-        # Prefer the spelling that needs the fewest accidentals, and never one
-        # that cannot spell its own scale (that is what rules out, say, D# major).
+        # Never a spelling that cannot spell its own scale - that is what rules
+        # out, say, D# major, whose seventh degree needs a triple sharp.
         if len(candidate.names) < 12:
             continue
-        if best is None or _accidental_load(candidate) < _accidental_load(best):
+        if best is None:
+            best = candidate
+            continue
+        # Fewest accidentals wins; convention breaks the tie.
+        load, best_load = _accidental_load(candidate), _accidental_load(best)
+        if (load, candidate.root.name != preferred) < (best_load, best.root.name != preferred):
             best = candidate
     return best or Key(SHARP_NAMES[tonic % 12], mode)
 

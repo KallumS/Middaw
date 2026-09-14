@@ -94,6 +94,18 @@ always, with accidentals doing the rest. That is why `bVII` is the subtonic in
 both C major and C minor, and why `V7` in a minor key carries a raised leading
 tone.
 
+## Length and form
+
+`middaw/form.py`. Length is inferred from what the prompt calls the thing and
+snapped to the ladder 4, 8, 16, 32, 64 — an explicit bar count is taken
+literally, and a long progression (a twelve-bar blues) overrides the ladder.
+
+Anything past a loop is laid out as **sections**, because a 32-bar generation
+is not a longer loop. Sections sharing a letter share their harmony and their
+melodic motif (`generate_melody` takes a separate `motif_rng` for exactly
+this), so the return of A is heard as a return; contrasting sections get their
+own progression and are pushed away in density, register and dynamics.
+
 ## Corpus discipline
 
 A MIDI file is a separate copyrightable work from the composition it

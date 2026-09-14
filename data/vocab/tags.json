@@ -1962,9 +1962,117 @@
     "drums": {
       "synonyms": [
         "drums",
+        "drum",
         "beat",
         "percussion",
-        "groove"
+        "groove",
+        "drum beat",
+        "drum pattern"
+      ]
+    }
+  },
+  "scales": {
+    "motif": {
+      "label": "A motif",
+      "bars": 4,
+      "synonyms": [
+        "motif",
+        "motive",
+        "lick",
+        "stab",
+        "hook",
+        "sketch",
+        "idea",
+        "fragment",
+        "one bar",
+        "two bar",
+        "a couple of bars",
+        "tiny",
+        "brief"
+      ]
+    },
+    "loop": {
+      "label": "A loop",
+      "bars": 8,
+      "synonyms": [
+        "loop",
+        "beat",
+        "groove",
+        "vamp",
+        "phrase",
+        "intro",
+        "outro",
+        "break",
+        "fill",
+        "turnaround",
+        "short",
+        "quick",
+        "snippet",
+        "cell",
+        "bed",
+        "underscore"
+      ]
+    },
+    "section": {
+      "label": "A section",
+      "bars": 16,
+      "synonyms": [
+        "verse",
+        "chorus",
+        "refrain",
+        "bridge",
+        "middle eight",
+        "pre chorus",
+        "section",
+        "passage",
+        "cue",
+        "sting"
+      ]
+    },
+    "piece": {
+      "label": "A whole piece",
+      "bars": 32,
+      "synonyms": [
+        "piece",
+        "song",
+        "track",
+        "tune",
+        "number",
+        "composition",
+        "arrangement",
+        "study",
+        "etude",
+        "prelude",
+        "nocturne",
+        "interlude",
+        "waltz piece",
+        "full",
+        "complete",
+        "proper"
+      ]
+    },
+    "work": {
+      "label": "An extended work",
+      "bars": 64,
+      "synonyms": [
+        "symphony",
+        "symphonic",
+        "orchestra",
+        "orchestral",
+        "concerto",
+        "sonata",
+        "movement",
+        "suite",
+        "overture",
+        "rhapsody",
+        "fantasia",
+        "epic piece",
+        "long",
+        "extended",
+        "sprawling",
+        "opus",
+        "score",
+        "soundtrack"
       ]
     }
   }

@@ -6,7 +6,11 @@ import random
 import re
 from dataclasses import dataclass
 
+from dataclasses import replace
+
 from middaw.accompaniment import generate_accompaniment, generate_bass
+from middaw.form import Section, describe, plan_form
+from middaw.functional import generate_progression
 from middaw.melody import DEFAULT_INTERVALS, generate_melody
 from middaw.midi import song_to_bytes
 from middaw.song import Note, Song, Track
@@ -25,10 +29,12 @@ class Generation:
     song: Song
     midi: bytes
     chords: list[dict]
+    sections: list[Section] = None
 
     def to_dict(self) -> dict:
         return {"spec": self.spec.to_dict(), "song": self.song.to_dict(),
-                "chords": self.chords}
+                "chords": self.chords,
+                "sections": [s.to_dict() for s in (self.sections or [])]}
 
 
 def _colour(symbol: str, rng: random.Random, extensions: float) -> str:
@@ -62,7 +68,7 @@ def _chords_by_bar(spans) -> list[list[tuple[float, Chord]]]:
     return [[(0.0, chord)] for _start, _length, chord in spans]
 
 
-def name_chords(spec: MusicSpec, spans) -> list[dict]:
+def name_chords(spec: MusicSpec, spans, labels=None) -> list[dict]:
     """Name each bar's harmony with the ScaleView chord reader.
 
     The symbol is read back off the notes rather than taken from the roman
@@ -70,7 +76,7 @@ def name_chords(spec: MusicSpec, spans) -> list[dict]:
     in the MIDI - and it is the same routine the corpus labeller uses.
     """
     key = spec.key()
-    labels = spec.progression_labels or spec.progression
+    labels = labels or spec.progression_labels or spec.progression
     out = []
     for bar, (start, _length, chord) in enumerate(spans):
         out.append({
@@ -130,25 +136,53 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
         intervals = priors.intervals_for(tags, DEFAULT_INTERVALS)
         rhythm_bias = priors.rhythm_bias_for(tags)
         spec.corpus_sources = priors.sources_for(tags)
-    spans = build_chord_spans(spec, rng)
+
+    def fresh_progression(length: int):
+        chords = generate_progression(
+            tonic=spec.tonic, mode=spec.mode, length=length,
+            chromaticism=spec.chromaticism, sevenths=spec.extensions, rng=rng)
+        return ([c.symbol for c in chords], [c.display for c in chords])
+
+    sections = plan_form(spec, rng, make_progression=fresh_progression)
+    spec.form = describe(sections)
 
     song = Song(tempo=spec.tempo, meter=spec.meter,
                 ticks_per_beat=spec.ticks_per_beat, key_name=spec.key_name)
+    tracks = {name: Track(name=name, program=ACOUSTIC_GRAND_PIANO, channel=index)
+              for index, name in enumerate(("Chords", "Melody", "Bass"))}
 
-    if "chords" in spec.roles:
-        chord_notes = generate_accompaniment(spec, spans, rng)
-        song.tracks.append(Track(name="Chords", program=ACOUSTIC_GRAND_PIANO,
-                                 channel=0, notes=chord_notes))
-    if "melody" in spec.roles:
-        melody_notes = generate_melody(spec, _chords_by_bar(spans), rng,
-                                       intervals=intervals,
-                                       rhythm_bias=rhythm_bias)
-        song.tracks.append(Track(name="Melody", program=ACOUSTIC_GRAND_PIANO,
-                                 channel=1, notes=melody_notes))
-    if "bass" in spec.roles:
-        bass_notes = generate_bass(spec, spans, rng)
-        song.tracks.append(Track(name="Bass", program=ACOUSTIC_GRAND_PIANO,
-                                 channel=2, notes=bass_notes))
+    beats_per_bar = spec.beats_per_bar
+    all_spans: list[tuple[float, float, Chord]] = []
+    all_labels: list[str] = []
+
+    for section in sections:
+        # Each section is rendered as its own little piece, then slid into
+        # place. Sections that share a letter share a motif, so the return of
+        # A is heard as a return.
+        part = replace(spec, bars=section.bars, density=section.density,
+                       register=section.register, velocity=section.velocity,
+                       pattern=section.pattern,
+                       progression=list(section.progression),
+                       progression_labels=list(section.progression_labels)).clamp()
+        motif_rng = random.Random(f"{spec.seed}:{section.letter}")
+        spans = build_chord_spans(part, rng)
+        offset = section.start_bar * beats_per_bar
+
+        if "chords" in spec.roles:
+            _extend(tracks["Chords"], generate_accompaniment(part, spans, rng), offset)
+        if "melody" in spec.roles:
+            _extend(tracks["Melody"],
+                    generate_melody(part, _chords_by_bar(spans), rng,
+                                    intervals=intervals, rhythm_bias=rhythm_bias,
+                                    motif_rng=motif_rng), offset)
+        if "bass" in spec.roles:
+            _extend(tracks["Bass"], generate_bass(part, spans, rng), offset)
+
+        all_spans += [(start + offset, length, chord) for start, length, chord in spans]
+        all_labels += [section.progression_labels[i % len(section.progression_labels)]
+                       for i in range(section.bars)]
+
+    song.tracks = [track for track in tracks.values() if track.notes]
 
     for track in song.tracks:
         _humanize_timing(spec, track.notes, rng)
@@ -157,7 +191,14 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
         track.notes.sort(key=lambda n: (n.start, n.pitch))
 
     return Generation(spec=spec, song=song, midi=song_to_bytes(song),
-                      chords=name_chords(spec, spans))
+                      chords=name_chords(spec, all_spans, all_labels),
+                      sections=sections)
+
+
+def _extend(track: Track, notes: list[Note], offset: float) -> None:
+    for note in notes:
+        note.start += offset
+        track.notes.append(note)
 
 
 def generate(prompt: str, seed: int | None = None, **overrides) -> Generation:

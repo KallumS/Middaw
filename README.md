@@ -46,6 +46,10 @@ those words are the backlog for the vocabulary.
 
 - **Stated outright, and always obeyed**: `in F# minor`, `at 92 bpm`, `6/8`,
   `16 bars`, `30 seconds`, `D dorian`, `seed 4242`
+- **How long, from what you call it**: a `riff` is 4 bars, a `loop` or `drum
+  beat` 8, a `verse` 16, a `piece` 32, a `symphony` 64. Anything longer than a
+  loop is laid out as sections — 32 bars is AABA, not one loop played eight
+  times
 - **24 genres**: lo-fi, jazz, blues, classical, baroque, Romantic era, folk,
   celtic, pop, ballad, ambient, cinematic, house, techno, trap, R&B, gospel,
   waltz, ragtime, tango, bossa nova, minimalism, chiptune, rock

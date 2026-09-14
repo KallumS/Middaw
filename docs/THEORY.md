@@ -332,8 +332,17 @@ modulates away (major I→V, minor i→III or v) and the second modulates back.
 Rounded binary brings the opening material back after a contrasting phrase.
 Sonata form and rondo build on these.
 
-○ **None of this is built**, and it is the right next step: a 32- or 64-bar
-generation is not a longer loop, it is sections that contrast.
+◐ **Partly built.** `middaw/form.py` lays a generation out as sections before
+rendering: 4 bars is a single phrase, 8 is a parallel period (A A′), 16 and 32
+are AABA, and 64 is two turns of the form with a second contrasting section.
+Sections sharing a letter share their harmony and their melodic motif; a B
+section gets its own progression and is pushed away in density, register and
+dynamics. Length itself is inferred from what the thing is called — a "loop" is
+eight bars, a "symphony" is sixty-four.
+
+Still missing: cadence *choice* (a phrase should end on a half cadence when it
+is an antecedent), sentences, harmonically open and closed sections, and the
+12-bar blues as a form rather than a progression.
 
 ## 10. Texture and accompaniment
 
@@ -359,7 +368,9 @@ A **tenth between the bass and the top voice** is what makes arpeggiated
 accompaniments sound open rather than muddy. ○
 
 **Creating contrast between sections** varies the "elements of music": melody,
-harmony, rhythm, timbre, texture, articulation, dynamics, register. ○
+harmony, rhythm, timbre, texture, articulation, dynamics, register. ◐ Middaw
+varies harmony, density, register and dynamics between sections; timbre,
+articulation and texture are untouched.
 
 ## 11. Voice leading
 
@@ -444,8 +455,8 @@ inversion, a rhythm-cell vocabulary, and twelve accompaniment figures.
 
 The biggest gaps, in the order they would most improve the output:
 
-1. **Phrase and section structure** — everything longer than a loop.
-2. **Non-chord tones** — melodies that decorate rather than only land.
+1. **Non-chord tones** — melodies that decorate rather than only land.
+2. **Cadences** — phrases should *choose* how conclusively to end.
 3. **Subdivision groupings and clave** — where rhythmic identity actually lives.
 4. **Voice leading** — guide tones and the parallel-fifths prohibition.
 5. **Modulation** — the app cannot change key at all.
