@@ -50,9 +50,18 @@ those words are the backlog for the vocabulary.
   beat` 8, a `verse` 16, a `piece` 32, a `symphony` 64. Anything longer than a
   loop is laid out as sections — 32 bars is AABA, not one loop played eight
   times
-- **24 genres**: lo-fi, jazz, blues, classical, baroque, Romantic era, folk,
-  celtic, pop, ballad, ambient, cinematic, house, techno, trap, R&B, gospel,
-  waltz, ragtime, tango, bossa nova, minimalism, chiptune, rock
+- **72 genres**, across every family a listener would name — blues and
+  boogie-woogie; jazz, bebop, big band, Dixieland, modal and smooth jazz;
+  rock, punk, metal, prog, surf, rockabilly; soul, funk, disco, R&B;
+  pop, synthpop, city pop, doo-wop, vaporwave; house, techno, trance, drum and
+  bass, dubstep, UK garage, trap, boom bap, lo-fi, trip-hop, synthwave;
+  country, bluegrass, folk, celtic, klezmer, polka, march, zydeco; salsa,
+  samba, bossa nova, tango, flamenco, cumbia, reggaeton, bachata, mariachi;
+  reggae and ska; afrobeat; classical, baroque, Romantic era, Renaissance,
+  Impressionist, hymn; gospel, barbershop, lounge, new age, lullaby, cinematic,
+  ambient, minimalism, chiptune, ragtime, waltz, ballad. Hundreds more
+  sub-genre names route to the style whose notes they share — see
+  **[docs/GENRES.md](docs/GENRES.md)**
 - **16 moods**: sad, melancholy, dark, tense, epic, triumphant, happy,
   uplifting, dreamy, calm, playful, mysterious, romantic, nostalgic,
   aggressive, warm
@@ -90,6 +99,9 @@ genre adds it to both at once.
 
 - **[docs/THEORY.md](docs/THEORY.md)** — everything the generator knows about
   music, where it came from, and which parts are built yet
+- **[docs/GENRES.md](docs/GENRES.md)** — every style it can write, how each
+  one's notes are formulated, the devices they share, and the names it
+  deliberately does not map
 - **[docs/LABELLING.md](docs/LABELLING.md)** — how to label the dataset, and
   why the label schema is also the prompt vocabulary
 - **[docs/DATASET.md](docs/DATASET.md)** — sourcing MIDI you are actually

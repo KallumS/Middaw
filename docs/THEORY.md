@@ -6,6 +6,9 @@ This is a working reference, not a textbook. It records what was taken from the
 source material, why it matters to a MIDI-first generator, and — marked
 throughout — whether Middaw acts on it yet.
 
+For how that theory is spent on particular styles — what a bebop head, a
+montuno or a skank actually asks for — see [GENRES.md](GENRES.md).
+
 | | |
 | --- | --- |
 | ✅ | implemented |
@@ -109,7 +112,11 @@ scales cannot be stacked in thirds; use the parent seven-note scale for chords.
 **The blues scale** is the minor pentatonic with an added note between the 4
 and the 5. Its b3, b5 and b7 are the "blue notes" — not chord tones of a major
 triad or a dominant seventh, which is exactly why they colour the harmony
-rather than belong to it.
+rather than belong to it. ✅ So the blues scales are minor melodically and
+*dominant* harmonically, and `BLUES_MODES` says so: they take their harmony
+from mixolydian as well as from their minor parent, and a progression over them
+may be of either tonality. A twelve-bar is I7–IV7–V7 whatever the tune is
+doing, and without that rule a blues melody refuses its own harmony.
 
 **"Faux" chords.** In C harmonic major the 3, b6 and 7 look like an E major
 triad, but the b6 sits an augmented second from the 3, not a major third. The

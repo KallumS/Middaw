@@ -12,7 +12,13 @@
     'a celtic jig',
     'dreamy ambient pad, sparse, 8 bars',
     'bebop jazz piano in Bb major',
-    'slow blues in E'
+    'slow blues in E',
+    'a boogie woogie in G, 12 bars',
+    'uplifting trance in A minor',
+    'flamenco in phrygian, ornamented',
+    'a barbershop quartet in Eb',
+    'motown soul at 96 bpm',
+    'klezmer freygish, 16 bars'
   ];
 
   var form = document.getElementById('prompt-form');

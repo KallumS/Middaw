@@ -37,6 +37,12 @@ MINOR_MODES = {"minor", "aeolian", "harmonic_minor", "melodic_minor",
                "dorian", "phrygian", "locrian", "minor_pentatonic", "blues",
                "diminished_wh"}
 
+# The blues scales are minor-ish melodically and dominant harmonically: the
+# b3 and b5 are blue notes sounded *against* I7, IV7 and V7, not evidence of a
+# minor key. Modes listed here take their harmony from mixolydian as well as
+# from their own parent, and a progression over them may be of either tonality.
+BLUES_MODES = {"blues", "major_blues"}
+
 # Chord quality -> semitone offsets from the chord root.
 QUALITIES = {
     "maj": (0, 4, 7),
@@ -237,6 +243,8 @@ def harmonic_pitch_classes(tonic: int, mode: str) -> set[int]:
     """
     parent = PARENT_SCALE.get(mode, mode)
     allowed = set(scale_pitch_classes(tonic, parent))
+    if mode in BLUES_MODES:
+        allowed |= set(scale_pitch_classes(tonic, "mixolydian"))
     if is_minor(mode):
         allowed.add((tonic + 11) % 12)
     return allowed

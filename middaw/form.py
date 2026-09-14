@@ -100,11 +100,70 @@ GENRE_FORMS: dict[str, tuple[str, ...]] = {
     "waltz": ("ternary", "rondo"),
     "tango": ("binary", "ternary"),
     "bossa": ("aaba",),
-    "minimal_techno": ("strophic",),
+
+    # Song styles: a verse that returns, with or without a bridge.
+    "country": ("strophic", "aaba"),
+    "bluegrass": ("binary_repeated", "strophic"),
+    "soul": ("aaba", "strophic"),
+    "doo_wop": ("aaba", "strophic"),
+    "rockabilly": ("strophic", "aaba"),
+    "punk": ("strophic", "binary"),
+    "ska": ("aaba", "strophic"),
+    "reggae": ("strophic", "aaba"),
+    "synthpop": ("aaba", "strophic"),
+    "city_pop": ("aaba",),
+    "lounge": ("aaba", "ternary"),
+
+    # Dance styles are built out of repeated sections and a contrast.
+    "disco": ("strophic", "binary"),
+    "funk": ("strophic", "binary"),
+    "trance": ("binary", "strophic"),
+    "drum_and_bass": ("binary", "strophic"),
+    "dubstep": ("binary", "strophic"),
+    "uk_garage": ("strophic", "binary"),
+    "synthwave": ("binary", "strophic", "ternary"),
+    "vaporwave": ("strophic", "through_composed"),
+    "trip_hop": ("strophic", "aaba"),
+    "boom_bap": ("strophic", "aaba"),
+    "afrobeat": ("strophic", "binary"),
+
+    # Jazz plays a head and returns to it.
+    "bebop": ("aaba", "binary"),
+    "big_band": ("aaba", "rondo"),
+    "dixieland": ("medley", "rondo", "binary"),
+    "modal_jazz": ("binary", "through_composed"),
+    "smooth_jazz": ("aaba", "ternary"),
+    "boogie_woogie": ("strophic",),
+
+    # Dances and marches: strains, repeated, in the order they were written.
+    "polka": ("binary_repeated", "rondo", "medley"),
+    "march": ("rondo", "medley", "binary_repeated"),
+    "klezmer": ("binary_repeated", "rondo"),
+    "salsa": ("binary", "strophic"),
+    "samba": ("aaba", "binary"),
+    "cumbia": ("strophic", "binary"),
+    "flamenco": ("through_composed", "binary", "strophic"),
+
+    # Concert and devotional music.
+    "renaissance": ("binary", "through_composed", "period"),
+    "impressionist": ("ternary", "through_composed"),
+    "hymn": ("strophic", "period"),
+    "barbershop": ("aaba", "strophic"),
+    "new_age": ("through_composed", "strophic"),
+    "lullaby": ("strophic", "period", "binary"),
+
+    "metal": ("binary", "ternary", "through_composed"),
+    "prog_rock": ("through_composed", "rondo", "medley"),
+    "surf": ("binary_repeated", "aaba"),
+    "reggaeton": ("strophic", "binary"),
+    "bachata": ("aaba", "strophic"),
+    "mariachi": ("strophic", "binary_repeated", "ternary"),
+    "zydeco": ("binary_repeated", "strophic"),
 }
 
 #: Styles that lean on the plagal "amen" ending.
-PLAGAL_GENRES = {"gospel", "folk", "celtic", "ambient", "gospel"}
+PLAGAL_GENRES = {"gospel", "folk", "celtic", "ambient", "hymn", "renaissance",
+                 "soul", "country", "new_age", "reggae"}
 
 
 def snap_to_ladder(bars: int) -> int:

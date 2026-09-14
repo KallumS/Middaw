@@ -96,8 +96,16 @@ class Vocabulary:
         self.voices = data.get("voices", {})
         self._phrases = self._build_phrase_index()
 
-    def _build_phrase_index(self) -> list[tuple[str, str, str]]:
-        phrases: list[tuple[str, str, str]] = []
+    def _build_phrase_index(self) -> list[tuple[str, tuple[tuple[str, str], ...]]]:
+        """Group every synonym by phrase, so one word can mean several things.
+
+        "a soundtrack" is both a style (cinematic) and a length (a whole work);
+        "vamp" is both a length and a voice. Those axes are orthogonal and a
+        prompt means both at once, so a phrase carries every tag registered for
+        it. Two tags on the *same* axis would be a genuine ambiguity and
+        `_check_axes` refuses to load a vocabulary containing one.
+        """
+        by_phrase: dict[str, list[tuple[str, str]]] = {}
         for kind, group in (
             ("genre", self.genres),
             ("mood", self.moods),
@@ -115,8 +123,13 @@ class Vocabulary:
                     terms.add(label.lower())
                 for term in terms:
                     phrase = normalise(term)
-                    if phrase:
-                        phrases.append((phrase, kind, tag))
+                    if not phrase:
+                        continue
+                    claims = by_phrase.setdefault(phrase, [])
+                    if (kind, tag) not in claims:
+                        claims.append((kind, tag))
+        _check_axes(by_phrase)
+        phrases = [(phrase, tuple(claims)) for phrase, claims in by_phrase.items()]
         # Longest phrase wins, so "lo-fi" never loses to a one-word overlap.
         phrases.sort(key=lambda p: (-len(p[0].split()), -len(p[0])))
         return phrases
@@ -140,21 +153,35 @@ class Vocabulary:
         return tag in group
 
     def find(self, text: str) -> list[Match]:
-        """Greedy longest-first phrase match over normalised text."""
+        """Greedy longest-first phrase match over normalised text.
+
+        Words are claimed one axis at a time. "a waltz piece" is a waltz that
+        is thirty-two bars long: the two-word length phrase takes the words on
+        the length axis, and the style axis is still free for "waltz" to match
+        inside it. Claiming the span outright would have let whichever phrase
+        was longer silently swallow the other meaning.
+        """
         haystack = f" {normalise(text)} "
-        taken = [False] * len(haystack)
+        taken = {axis: [False] * len(haystack) for axis in AXES}
         matches: list[Match] = []
-        for phrase, kind, tag in self._phrases:
+        for phrase, claims in self._phrases:
             needle = f" {phrase} "
             start = haystack.find(needle)
             while start != -1:
                 # Claim only the phrase itself, not its boundary spaces, so
                 # "celtic jig" can match both "celtic" and "jig".
                 span = range(start + 1, start + len(needle) - 1)
-                if not any(taken[i] for i in span):
+                claimed = False
+                for kind, tag in claims:
+                    lane = taken[axis_of(kind)]
+                    if any(lane[i] for i in span):
+                        continue
                     for i in span:
-                        taken[i] = True
-                    matches.append(Match(kind, tag, phrase, start, start + len(needle)))
+                        lane[i] = True
+                    matches.append(
+                        Match(kind, tag, phrase, start, start + len(needle)))
+                    claimed = True
+                if claimed:
                     break
                 start = haystack.find(needle, start + 1)
         matches.sort(key=lambda m: m.start)
@@ -184,6 +211,38 @@ class Vocabulary:
             elif m.kind == "descriptor":
                 priors.apply_modifier(self.descriptors[m.tag])
         return priors
+
+
+# The axes a phrase can sit on. Genre, mood and descriptor all describe the
+# *character* of the music and argue with each other - "romantic" as both an era
+# and a feeling is why "a romantic waltz" used to come out as Chopin - so a
+# phrase may claim only one of them. The rest describe the container and stack
+# freely.
+CHARACTER_KINDS = ("genre", "mood", "descriptor")
+
+#: The independent axes a prompt describes. One word can sit on several of
+#: them at once, and each is matched separately.
+AXES = ("character", "scale", "form", "voice", "role")
+
+
+def axis_of(kind: str) -> str:
+    return "character" if kind in CHARACTER_KINDS else kind
+
+
+def _check_axes(by_phrase: dict[str, list[tuple[str, str]]]) -> None:
+    for phrase, claims in sorted(by_phrase.items()):
+        character = [(kind, tag) for kind, tag in claims if kind in CHARACTER_KINDS]
+        if len(character) > 1:
+            named = ", ".join(f"{kind} {tag}" for kind, tag in character)
+            raise ValueError(
+                f"vocabulary: {phrase!r} is claimed by {named}. A word may "
+                f"describe the character of the music only once.")
+        for kind in ("scale", "form", "voice", "role"):
+            same = [tag for k, tag in claims if k == kind]
+            if len(same) > 1:
+                raise ValueError(
+                    f"vocabulary: {phrase!r} is claimed by {kind}s "
+                    f"{', '.join(same)}.")
 
 
 def _dedupe_by_tag(matches: list[Match]) -> list[Match]:

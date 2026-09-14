@@ -97,11 +97,23 @@ yet, so ignored: …") and they are the backlog. Sort by frequency and add the
 top terms. That is the whole vocabulary-expansion process, and it is driven by
 what people actually type rather than by what you imagine they will.
 
-One warning from building this: **a word may not be both a genre and a mood.**
-"romantic" was both — the Romantic era and the feeling — and "a romantic
-waltz" resolved to Chopin rather than to tenderness. The era is now
-`romantic_era`, matched only by "romantic era", "chopin", "nocturne" and so
-on. Check every new tag against the existing synonym set for this.
+One warning from building this: **a word may describe the character of the
+music only once.** "romantic" was both the Romantic era and the feeling, and "a
+romantic waltz" resolved to Chopin rather than to tenderness. The era is now
+`romantic_era`, matched only by "romantic era", "chopin", "nocturne" and so on.
+Genre, mood and descriptor share one axis, and `middaw/vocab.py` now refuses to
+load a vocabulary that puts one word on it twice — so this is caught when the
+file is saved rather than in somebody's prompt.
+
+The other axes — length, form, voice, role — are independent, and a word is
+free to sit on several of them: "a soundtrack" is a cinematic style *and* a
+sixty-four bar length; "vamp" is a loop *and* an ostinato.
+
+**A sub-genre is a synonym unless it formulates notes differently.** The
+labelling vocabulary carries hundreds of sub-genre names that all resolve to a
+parent style, because the dataset should not fragment into tags with three
+files each. `docs/GENRES.md` records which names earned their own tag and
+which did not, style by style.
 
 ## Captions: the part that makes prompts work
 

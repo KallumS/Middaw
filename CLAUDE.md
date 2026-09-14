@@ -37,10 +37,19 @@ later, one half at a time.
 `middaw/corpus/`. Every dataset label is reachable from a prompt; every prompt
 word has somewhere in the dataset to look. Adding a genre adds it to both.
 
-**A word may not be both a genre and a mood.** "romantic" was both — the era
-and the feeling — and "a romantic waltz" resolved to Chopin. The era is now
-`romantic_era`, matched only by unambiguous names. Check every new tag against
-the existing synonyms for this.
+**A word may describe the character of the music once.** Genre, mood and
+descriptor are one axis and they argue with each other: "romantic" was both an
+era and a feeling, and "a romantic waltz" resolved to Chopin. The era is now
+`romantic_era`, matched only by unambiguous names. `_check_axes` in
+`middaw/vocab.py` refuses to load a vocabulary that breaks this, so the failure
+is at load time rather than in somebody's prompt.
+
+**The other axes stack.** Length, form, voice and role are independent of
+character and of each other, so one word can carry several meanings at once: "a
+soundtrack" is cinematic *and* sixty-four bars, "vamp" is eight bars *and* an
+ostinato. Matching claims one axis at a time, which is also why a longer phrase
+on one axis no longer swallows a shorter one on another — "a waltz piece" is a
+waltz that happens to be thirty-two bars long.
 
 Anything the parser did not understand is reported on the spec as
 `unmatched_terms` and shown to the user. That list is the vocabulary backlog;
@@ -133,6 +142,32 @@ counter notes looks plausible and detects nothing.
 
 An ostinato figure is invented once for the whole piece, not once per section.
 That repetition is what makes it an ostinato.
+
+## Genres are note-formation rules, not sounds
+
+`docs/GENRES.md` is the record for every style: what it is, how its notes are
+formulated, and why each dial in `data/vocab/tags.json` is set where it is.
+**Read it before adding or retuning a genre**, and add the reasoning there when
+you do.
+
+A genre entry sets all fourteen dials or it is not finished, and
+`tests/test_vocab.py` enforces that: every mode, meter, figure and chord symbol
+must exist, every style must render, and every mode a style names must have a
+listed progression that actually fits it. A progression that does not fit is
+never chosen, so an unfitting list is not a weak list — it is dead data.
+
+Sub-genres that differ only in production, scene or speed are **synonyms of the
+parent**, not new entries. A new entry has to formulate notes differently.
+Where a style's identity is timbre rather than pitch — noise, shoegaze, most of
+glitch — Middaw declines it and `docs/GENRES.md` says why. That list is not a
+gap to be closed by approximating; the real gaps are named separately there.
+
+The blues scales are the one deliberate ambivalence: minor-ish melodically, and
+dominant harmonically. `BLUES_MODES` in `middaw/theory.py` lets them take their
+harmony from mixolydian as well as their own parent, and lets a progression
+over them be of either tonality, because a twelve-bar is I7–IV7–V7 whatever the
+tune over it is doing. Without that rule a blues melody refuses its own
+harmony.
 
 ## Non-chord tones are decided last
 

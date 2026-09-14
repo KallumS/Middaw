@@ -59,6 +59,9 @@ accompaniment figures, swing and density per tag — plus:
 - **`middaw/theory.py`** and **`middaw/scaleview.py`** — scales, roman numerals
   and chords.
 
+Seventy-two styles are described that way, and `docs/GENRES.md` records what
+each one is and why its dials are set where they are.
+
 Coherence is enforced rather than hoped for: `_choose_progression` will not
 pair a major-key ii–V–I with a natural-minor melody, and `progression_fit`
 excludes progressions that are not diatonic to the chosen mode — a bVI under a

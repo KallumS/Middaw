@@ -108,6 +108,32 @@ def pattern_waltz(chord, spec, rng, start, length):
     return notes
 
 
+def pattern_oompah(chord, spec, rng, start, length):
+    """Bass note on the beat, chord off it. The polka, the march, the two-step.
+
+    In three this is the waltz figure; in two and four it alternates root and
+    fifth in the bass, which is what makes a march walk rather than sit.
+    """
+    tones = _voiced(chord, spec)
+    upper = tones[1:] or tones
+    root = tones[0] - 12
+    fifth = root + 7
+    notes = []
+    beat = 0.0
+    index = 0
+    while beat < length - 1e-6:
+        notes.append(_note(spec, rng, start + beat, 0.45,
+                           root if index % 2 == 0 else fifth, 4))
+        if beat + 0.5 < length:
+            for pitch in upper:
+                notes.append(_note(spec, rng, start + beat + 0.5, 0.4, pitch, -10))
+        beat += 1.0
+        index += 1
+    if not notes:
+        return pattern_block(chord, spec, rng, start, length)
+    return notes
+
+
 def pattern_offbeat(chord, spec, rng, start, length):
     tones = _voiced(chord, spec)
     step = 0.5
@@ -188,6 +214,7 @@ PATTERNS = {
     "broken_octave": pattern_broken_octave,
     "ballad": pattern_ballad,
     "walking": pattern_walking,
+    "oompah": pattern_oompah,
     "ostinato": pattern_ostinato,
 }
 

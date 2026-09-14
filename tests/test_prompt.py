@@ -54,8 +54,13 @@ class TestVocabularyMatching(unittest.TestCase):
         self.assertEqual(spec.genres, ["celtic"])
 
     def test_tags_are_not_double_counted(self):
+        spec = parse_prompt("lo-fi chillhop piano", seed=1)
+        self.assertEqual(spec.genres, ["lofi"])
+
+    def test_a_style_and_its_family_both_count(self):
+        """Bebop is jazz, and both tags describe the music truthfully."""
         spec = parse_prompt("bebop jazz piano", seed=1)
-        self.assertEqual(spec.genres, ["jazz"])
+        self.assertEqual(spec.genres, ["bebop", "jazz"])
 
     def test_unknown_words_are_reported(self):
         spec = parse_prompt("a lo-fi beat about kittens", seed=1)

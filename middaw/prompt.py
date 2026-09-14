@@ -20,8 +20,8 @@ import re
 from middaw.form import snap_to_ladder
 from middaw.functional import generate_progression
 from middaw.spec import MusicSpec
-from middaw.theory import (PITCH_CLASSES, SCALES, harmonic_pitch_classes,
-                           parse_note_name, parse_roman)
+from middaw.theory import (BLUES_MODES, PITCH_CLASSES, SCALES,
+                           harmonic_pitch_classes, parse_note_name, parse_roman)
 from middaw.vocab import Match, Vocabulary, load_vocabulary, normalise
 
 #: A form implies the music it belongs to, when the prompt named no style.
@@ -361,6 +361,31 @@ GENRE_VOICES = {
     "celtic": ("melody", "countermelody", "chords"),
     "jazz": ("melody", "chords", "bass"),
     "gospel": ("melody", "chords", "bass"),
+
+    # Counterpoint styles: independent lines, no chord bed.
+    "renaissance": ("melody", "countermelody", "bass"),
+    "dixieland": ("melody", "countermelody", "chords", "bass"),
+    "bluegrass": ("melody", "countermelody", "arpeggio", "bass"),
+    "prog_rock": ("melody", "countermelody", "ostinato", "bass"),
+    "hymn": ("melody", "countermelody", "chords", "bass"),
+    "barbershop": ("melody", "countermelody", "chords", "bass"),
+
+    # Riff styles: the figure is the tune.
+    "funk": ("ostinato", "chords", "bass"),
+    "afrobeat": ("ostinato", "countermelody", "chords", "bass"),
+    "metal": ("ostinato", "melody", "bass"),
+    "trance": ("arpeggio", "ostinato", "chords", "bass"),
+    "synthwave": ("melody", "arpeggio", "chords", "bass"),
+    "dubstep": ("ostinato", "chords", "bass"),
+    "drum_and_bass": ("ostinato", "chords", "bass"),
+    "boogie_woogie": ("melody", "ostinato", "bass"),
+    "salsa": ("melody", "ostinato", "chords", "bass"),
+
+    # Textures where the harmony carries the piece.
+    "new_age": ("arpeggio", "chords", "bass"),
+    "vaporwave": ("melody", "chords", "bass"),
+    "impressionist": ("melody", "arpeggio", "chords"),
+    "lullaby": ("melody", "arpeggio", "chords"),
 }
 
 ALL_VOICES = ("melody", "countermelody", "ostinato", "arpeggio", "chords", "bass")
@@ -419,8 +444,12 @@ def _choose_listed_progression(rng: random.Random, priors, spec: MusicSpec) -> t
     default = MODE_DEFAULT_PROGRESSIONS.get(
         spec.mode, ("i", "bVI", "bIII", "bVII") if minor_mode else ("I", "V", "vi", "IV"))
 
+    # A twelve-bar is I7-IV7-V7 whether or not the tune over it is bluesy, so
+    # the blues scales accept either tonality; every other mode must agree.
+    ambivalent = spec.mode in BLUES_MODES
     candidates = [(chords, weight) for chords, weight in priors.progressions
-                  if progression_is_minor(chords) == minor_mode and weight > 0]
+                  if weight > 0
+                  and (ambivalent or progression_is_minor(chords) == minor_mode)]
     # The mode's own default is always in the running, and is always fully
     # diatonic, so the fully-diatonic tier below is never empty.
     candidates.append((default, 1.0))

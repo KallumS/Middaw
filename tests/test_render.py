@@ -16,6 +16,11 @@ PROMPTS = [
     "minimal techno ostinato in 7/8",
     "a romantic waltz",
     "gospel piano, 12/8",
+    "a polka in 2/4",
+    "motown soul at 96 bpm",
+    "klezmer freygish, 16 bars",
+    "boogie woogie in G",
+    "a barbershop quartet in Eb",
     "",
 ]
 
