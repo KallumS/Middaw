@@ -2,7 +2,10 @@
 (function () {
   'use strict';
 
-  var TRACK_COLOURS = { Melody: '#7bd4a8', Chords: '#6a8fd8', Bass: '#c98bd4' };
+  var TRACK_COLOURS = {
+    Melody: '#7bd4a8', Countermelody: '#d8c06a', Ostinato: '#6ad8cf',
+    Arpeggio: '#9b8ad4', Chords: '#6a8fd8', Bass: '#c98bd4'
+  };
   var EXAMPLES = [
     'a sad lo-fi piano loop in F minor at 82 bpm',
     'epic cinematic build in 3/4, 32 bars',
@@ -100,7 +103,10 @@
         context.lineTo(x, height);
         context.stroke();
         context.fillStyle = 'rgba(255,255,255,0.45)';
-        context.fillText(section.label, x + 5, 14);
+        // The label and how the section ends - "A' · HC" - because the cadence
+        // is what makes the next section an answer.
+        context.fillText(section.label + (section.cadence ? ' \u00b7 ' + section.cadence : ''),
+                         x + 5, 14);
       });
     }
 
@@ -223,6 +229,21 @@
     chordsEl.dataset.cycle = length;
   }
 
+  function renderVoices(song) {
+    var el = document.getElementById('voices');
+    if (!el) { return; }
+    el.innerHTML = '';
+    song.tracks.forEach(function (track) {
+      var chip = document.createElement('span');
+      chip.className = 'voice';
+      var swatch = document.createElement('i');
+      swatch.style.background = TRACK_COLOURS[track.name] || '#8a90a4';
+      chip.appendChild(swatch);
+      chip.appendChild(document.createTextNode(track.name));
+      el.appendChild(chip);
+    });
+  }
+
   function show(data) {
     current = data;
     resultSection.hidden = false;
@@ -235,6 +256,7 @@
       : '';
 
     renderChords(data.chords);
+    renderVoices(data.song);
     drawRoll(data.song, null);
 
     seedEl.textContent = data.spec.seed;

@@ -9,10 +9,12 @@ from dataclasses import dataclass
 from dataclasses import replace
 
 from middaw.accompaniment import generate_accompaniment, generate_bass
-from middaw.form import Section, describe, plan_form
-from middaw.functional import generate_progression
+from middaw.form import Section, choose_form, describe, plan_form
+from middaw.functional import generate_progression, recadence
 from middaw.melody import DEFAULT_INTERVALS, generate_melody
 from middaw.midi import song_to_bytes
+from middaw.voices import (generate_arpeggio, generate_countermelody,
+                           generate_ostinato, make_ostinato_figure)
 from middaw.song import Note, Song, Track
 from middaw.spec import MusicSpec
 from middaw.scaleview import detect_chord
@@ -137,19 +139,37 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
         rhythm_bias = priors.rhythm_bias_for(tags)
         spec.corpus_sources = priors.sources_for(tags)
 
-    def fresh_progression(length: int):
+    def fresh_progression(length: int, cadence: str | None = None, base=None):
+        if base is not None and cadence:
+            # Same section, different ending.
+            return recadence(base[0], base[1], spec.tonic, spec.mode, cadence,
+                             sevenths=any("7" in sym for sym in base[0]))
         chords = generate_progression(
             tonic=spec.tonic, mode=spec.mode, length=length,
-            chromaticism=spec.chromaticism, sevenths=spec.extensions, rng=rng)
+            chromaticism=spec.chromaticism, sevenths=spec.extensions, rng=rng,
+            cadence=cadence)
         return ([c.symbol for c in chords], [c.display for c in chords])
 
+    spec.form_name = choose_form(spec, random.Random(spec.seed))
+    spec.forms = [spec.form_name]
     sections = plan_form(spec, rng, make_progression=fresh_progression)
     spec.form = describe(sections)
+    spec.bars = sum(section.bars for section in sections)
 
     song = Song(tempo=spec.tempo, meter=spec.meter,
                 ticks_per_beat=spec.ticks_per_beat, key_name=spec.key_name)
-    tracks = {name: Track(name=name, program=ACOUSTIC_GRAND_PIANO, channel=index)
-              for index, name in enumerate(("Chords", "Melody", "Bass"))}
+    voices = spec.voices or spec.roles or ["melody", "chords", "bass"]
+    names = {"melody": "Melody", "countermelody": "Countermelody",
+             "ostinato": "Ostinato", "arpeggio": "Arpeggio",
+             "chords": "Chords", "bass": "Bass"}
+    tracks = {voice: Track(name=names[voice], program=ACOUSTIC_GRAND_PIANO,
+                           channel=index)
+              for index, voice in enumerate(v for v in names if v in voices)}
+
+    # An ostinato is one figure restated; it is invented once for the piece,
+    # not once per section, or it stops being an ostinato.
+    ostinato_figure = (make_ostinato_figure(spec, random.Random(spec.seed ^ 0x05713))
+                       if "ostinato" in tracks else None)
 
     beats_per_bar = spec.beats_per_bar
     all_spans: list[tuple[float, float, Chord]] = []
@@ -168,15 +188,30 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
         spans = build_chord_spans(part, rng)
         offset = section.start_bar * beats_per_bar
 
-        if "chords" in spec.roles:
-            _extend(tracks["Chords"], generate_accompaniment(part, spans, rng), offset)
-        if "melody" in spec.roles:
-            _extend(tracks["Melody"],
-                    generate_melody(part, _chords_by_bar(spans), rng,
-                                    intervals=intervals, rhythm_bias=rhythm_bias,
-                                    motif_rng=motif_rng), offset)
-        if "bass" in spec.roles:
-            _extend(tracks["Bass"], generate_bass(part, spans, rng), offset)
+        melody: list[Note] = []
+        if "melody" in tracks:
+            melody = generate_melody(part, _chords_by_bar(spans), rng,
+                                     intervals=intervals, rhythm_bias=rhythm_bias,
+                                     motif_rng=motif_rng, cadence=section.cadence)
+        if "countermelody" in tracks:
+            # Set against whatever the melody is doing, even when there is no
+            # melody track: then it is simply the only line.
+            against = melody or generate_melody(
+                part, _chords_by_bar(spans), random.Random(spec.seed),
+                intervals=intervals, motif_rng=motif_rng, cadence=section.cadence)
+            _extend(tracks["countermelody"],
+                    generate_countermelody(part, spans, against, rng), offset)
+        if "melody" in tracks:
+            _extend(tracks["melody"], melody, offset, section.transpose)
+        if "ostinato" in tracks:
+            _extend(tracks["ostinato"],
+                    generate_ostinato(part, spans, rng, ostinato_figure), offset)
+        if "arpeggio" in tracks:
+            _extend(tracks["arpeggio"], generate_arpeggio(part, spans, rng), offset)
+        if "chords" in tracks:
+            _extend(tracks["chords"], generate_accompaniment(part, spans, rng), offset)
+        if "bass" in tracks:
+            _extend(tracks["bass"], generate_bass(part, spans, rng), offset)
 
         all_spans += [(start + offset, length, chord) for start, length, chord in spans]
         all_labels += [section.progression_labels[i % len(section.progression_labels)]
@@ -195,9 +230,12 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
                       sections=sections)
 
 
-def _extend(track: Track, notes: list[Note], offset: float) -> None:
+def _extend(track: Track, notes: list[Note], offset: float,
+            transpose: int = 0) -> None:
     for note in notes:
         note.start += offset
+        if transpose:
+            note.pitch = max(21, min(108, note.pitch + transpose))
         track.notes.append(note)
 
 

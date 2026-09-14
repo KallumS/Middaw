@@ -22,7 +22,14 @@ from middaw.functional import generate_progression
 from middaw.spec import MusicSpec
 from middaw.theory import (PITCH_CLASSES, SCALES, harmonic_pitch_classes,
                            parse_note_name, parse_roman)
-from middaw.vocab import Vocabulary, load_vocabulary, normalise
+from middaw.vocab import Match, Vocabulary, load_vocabulary, normalise
+
+#: A form implies the music it belongs to, when the prompt named no style.
+FORM_IMPLIES_GENRE = {"fugue": "baroque", "sonata": "classical",
+                      "rondo": "classical", "rondo_seven": "classical",
+                      "binary": "baroque", "binary_repeated": "baroque",
+                      "ternary": "classical", "aaba": "jazz",
+                      "strophic": "folk", "medley": "ragtime"}
 
 _MODE_WORDS = {
     "major": "major", "maj": "major", "ionian": "major",
@@ -173,6 +180,16 @@ def parse_prompt(
     spec.descriptors = list(dict.fromkeys(
         m.tag for m in matches if m.kind == "descriptor"))
     spec.scales = list(dict.fromkeys(m.tag for m in matches if m.kind == "scale"))
+    spec.forms = list(dict.fromkeys(m.tag for m in matches if m.kind == "form"))
+    requested_voices = list(dict.fromkeys(m.tag for m in matches if m.kind == "voice"))
+
+    # Naming a form names an era: a fugue is baroque, a sonata is classical.
+    for form in spec.forms:
+        implied = FORM_IMPLIES_GENRE.get(form)
+        if implied and not spec.genres:
+            spec.genres = [implied]
+            priors = vocab.priors_for(
+                matches + [Match("genre", implied, implied, 0, 0)])
     spec.matched_terms = [m.phrase for m in matches]
     directives = [m.group(0) for m in (
         _KEY_RE.search(text), _BARE_MODE_RE.search(text), _BPM_RE.search(text),
@@ -258,18 +275,9 @@ def parse_prompt(
         if cycle > 8 and spec.bars % cycle:
             spec.bars = cycle * max(1, round(spec.bars / cycle))
 
-    # --- roles ---
-    if requested_roles:
-        roles = []
-        for role in requested_roles:
-            if role in ("melody", "chords", "bass"):
-                roles.append(role)
-            elif role in ("arpeggio", "ostinato"):
-                roles.append("chords")
-                spec.pattern = "arpeggio_updown" if role == "arpeggio" else "ostinato"
-        if "melody" in requested_roles and "chords" not in roles:
-            roles.append("chords")
-        spec.roles = list(dict.fromkeys(roles)) or ["melody", "chords", "bass"]
+    # --- voices ---
+    spec.voices = _choose_voices(requested_voices, spec, rng)
+    spec.roles = list(spec.voices)
 
     for key, value in overrides.items():
         if value is not None and hasattr(spec, key):
@@ -337,6 +345,46 @@ def progression_fit(chords: tuple[str, ...] | list[str], spec: MusicSpec) -> flo
             total += 1
             fitting += pitch_class in allowed
     return 1.0 if total == 0 else fitting / total
+
+
+#: Textures that suit each style when the prompt does not ask for voices.
+GENRE_VOICES = {
+    "baroque": ("melody", "countermelody", "bass"),
+    "classical": ("melody", "chords", "bass", "countermelody"),
+    "romantic_era": ("melody", "chords", "bass"),
+    "minimal": ("ostinato", "arpeggio", "bass"),
+    "techno": ("ostinato", "chords", "bass"),
+    "cinematic": ("melody", "ostinato", "chords", "bass"),
+    "ambient": ("chords", "arpeggio"),
+    "chiptune": ("melody", "arpeggio", "bass"),
+    "celtic": ("melody", "countermelody", "chords"),
+    "jazz": ("melody", "chords", "bass"),
+    "gospel": ("melody", "chords", "bass"),
+}
+
+ALL_VOICES = ("melody", "countermelody", "ostinato", "arpeggio", "chords", "bass")
+
+
+def _choose_voices(requested: list[str], spec: MusicSpec,
+                   rng: random.Random) -> list[str]:
+    """Which lines play. What was asked for, else what the style is scored for.
+
+    A melody on its own is a melody; asked for alone it still gets a bass, so
+    there is something under it.
+    """
+    if requested:
+        voices = [v for v in requested if v in ALL_VOICES]
+        if "countermelody" in voices and "melody" not in voices:
+            voices.insert(0, "melody")
+        # One line alone is a sketch, not a texture: give it a foundation.
+        if len(voices) == 1 and voices[0] not in ("bass", "chords"):
+            voices.append("bass")
+        return list(dict.fromkeys(voices))
+
+    for genre in spec.genres:
+        if genre in GENRE_VOICES:
+            return list(GENRE_VOICES[genre])
+    return ["melody", "chords", "bass"]
 
 
 def _choose_progression(rng: random.Random, priors, spec: MusicSpec):

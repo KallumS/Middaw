@@ -106,6 +106,34 @@ melodic motif (`generate_melody` takes a separate `motif_rng` for exactly
 this), so the return of A is heard as a return; contrasting sections get their
 own progression and are pushed away in density, register and dynamics.
 
+## Cadences come first, then the harmony
+
+`middaw/cadence.py`. A section is given its ending *before* its progression is
+written, and `generate_progression(cadence=...)` chains backwards from it. The
+closing chords are then protected from chromatic decoration — the cadence is
+the point of the phrase, so a tritone substitute must not eat it.
+
+Sections sharing a letter are the **same music re-ended** (`recadence`), not
+different music. A refrain that stops on the dominant and the same refrain that
+closes must be recognisably one tune.
+
+A minor key borrows a major V at a cadence. A **modal** key does not: raising
+dorian's flat seventh turns it into minor. `MINOR_KEY_MODES` in
+`middaw/functional.py` is the list that decides, and it deliberately excludes
+dorian, phrygian and mixolydian.
+
+## Voices, not just chords
+
+`middaw/voices.py`. Six lines: melody, countermelody, ostinato, arpeggio,
+chords, bass. The countermelody is a real second voice — it moves where the
+melody rests, moves contrary to it where it can, stays under it, and refuses
+parallel fifths and octaves. `_makes_parallel` compares each voice against the
+other *at the same moment*; comparing the current melody note against both
+counter notes looks plausible and detects nothing.
+
+An ostinato figure is invented once for the whole piece, not once per section.
+That repetition is what makes it an ostinato.
+
 ## Corpus discipline
 
 A MIDI file is a separate copyrightable work from the composition it

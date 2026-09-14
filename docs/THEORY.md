@@ -164,7 +164,17 @@ over the same progression. ◐ Middaw is fixed at one chord per bar
 
 Conclusive cadences end on the tonic. This distinction is what builds periods:
 a phrase ending less conclusively is answered by one ending more conclusively.
-◐ Middaw's progressions end on the tonic but do not choose a cadence type
+
+✅ `middaw/cadence.py`. Every section is given a cadence before its harmony is
+written, and `generate_progression` builds backwards from it, so the ending is
+the thing the phrase was designed around rather than whatever it happened to
+reach. The closing chords are protected from chromatic decoration. A PAC also
+puts the tonic in the melody's top voice, which is the part of the definition
+most generators quietly skip.
+
+A minor key borrows a major V at a cadence; a *modal* key does not. Raising
+dorian's flat seventh to make a leading tone turns it into minor, which is the
+opposite of what was asked for.
 
 ## 6. Chromatic harmony
 
@@ -206,8 +216,9 @@ unaltered when it has tonic function, like the first chord of a blues. ○
 
 **Motive → fragment → subphrase → phrase.** A motive is the smallest
 identifiable idea (two to seven notes); a subphrase is usually two bars; a
-phrase is usually four. ◐ Middaw builds motives and varies them; it has no
-subphrase or phrase model
+phrase is usually four. ◐ Middaw builds motives and varies them, and sections
+sharing a letter share a motif so a return is heard as a return; it still has
+no subphrase model.
 
 **Seven ways to alter a motive** — the whole toolkit of melodic development:
 
@@ -332,17 +343,24 @@ modulates away (major I→V, minor i→III or v) and the second modulates back.
 Rounded binary brings the opening material back after a contrasting phrase.
 Sonata form and rondo build on these.
 
-◐ **Partly built.** `middaw/form.py` lays a generation out as sections before
-rendering: 4 bars is a single phrase, 8 is a parallel period (A A′), 16 and 32
-are AABA, and 64 is two turns of the form with a second contrasting section.
-Sections sharing a letter share their harmony and their melodic motif; a B
-section gets its own progression and is pushed away in density, register and
-dynamics. Length itself is inferred from what the thing is called — a "loop" is
-eight bars, a "symphony" is sixty-four.
+✅ **Built.** `middaw/form.py` carries a catalogue of thirteen forms — motif,
+period, strophic (AAA), binary (AB), repeated binary (AABB), ternary (ABA),
+AABA, rondo (ABACA), seven-part rondo (ABACABA), medley (ABCD),
+through-composed, sonata, and fugue — chosen from the prompt, else from the
+style, else from the length. The prompt's length word sets a *target*; the form
+sets the real length, because a five-section rondo is five sections long.
 
-Still missing: cadence *choice* (a phrase should end on a half cadence when it
-is an antecedent), sentences, harmonically open and closed sections, and the
-12-bar blues as a form rather than a progression.
+Every section gets a role (refrain, episode, bridge, development, subject,
+answer) and a cadence. Sections whose job is to lead somewhere stop on the
+dominant; the first of a pair asks and its twin answers; the last section gets
+the most conclusive ending there is. Sections sharing a letter are the *same
+music re-ended* — only the closing chords change — so a refrain that opens and
+the same refrain that closes are recognisably one tune. In a fugue the answer
+enters a fifth above the subject.
+
+Still missing: sentences as a melodic construction, harmonically open and
+closed sections as an explicit choice, elisions, and the 12-bar blues as a form
+rather than a progression.
 
 ## 10. Texture and accompaniment
 
@@ -363,6 +381,8 @@ Accompanimental figures worth having, from Hutchinson's survey:
 | "1 (2) &" — chord on beat 1 and the upbeat after 2 | ○ |
 | 3–2 son clave, tresillo (3+3+2) | ○ |
 | Distinctive bass riffs | ○ |
+| **Ostinato** — one figure restated over every chord | ✅ `middaw/voices.py` |
+| **Arpeggio as its own voice**, not an accompaniment pattern | ✅ |
 
 A **tenth between the bass and the top voice** is what makes arpeggiated
 accompaniments sound open rather than muddy. ○
@@ -390,7 +410,9 @@ Middaw voices chords naively. The rules it should follow:
 - Add sevenths to build tension approaching tonic function — most often on
   dominant-function chords.
 
-○ all of it
+◐ The countermelody applies two of them: it moves contrary to the melody where
+it can, and it refuses parallel fifths and octaves against it. The chord
+voicings still ignore doubling, spacing and seventh resolution.
 
 ## 12. Modulation
 
@@ -450,13 +472,20 @@ widen the range of what Middaw can sound like.
 
 Middaw currently implements, in rough order of confidence: chord spelling and
 naming, mode-derived diatonic harmony, the four-function flowchart, secondary
-and substitute dominants, related II chords, motif-based melody with tonal
-inversion, a rhythm-cell vocabulary, and twelve accompaniment figures.
+and substitute dominants, related II chords, all five cadences, thirteen forms
+with per-section cadence planning, six voices (melody, countermelody, ostinato,
+arpeggio, chords, bass), motif-based melody with tonal inversion, a rhythm-cell
+vocabulary, and twelve accompaniment figures.
 
 The biggest gaps, in the order they would most improve the output:
 
-1. **Non-chord tones** — melodies that decorate rather than only land.
-2. **Cadences** — phrases should *choose* how conclusively to end.
-3. **Subdivision groupings and clave** — where rhythmic identity actually lives.
-4. **Voice leading** — guide tones and the parallel-fifths prohibition.
-5. **Modulation** — the app cannot change key at all.
+1. **Non-chord tones** — melodies that decorate rather than only land. This is
+   the single biggest remaining gap: Middaw's melodies only ever arrive on
+   chord tones, which is why they sound placed rather than sung.
+2. **Subdivision groupings and clave** — where rhythmic identity actually lives.
+3. **Voice leading for the chords** — doubling, spacing, guide tones, and
+   resolving the seventh down by step. The countermelody already avoids
+   parallel perfect intervals; nothing else does.
+4. **Modulation** — the app cannot change key at all, so a sonata exposition
+   cannot really go to the dominant and a binary form cannot really come back.
+5. **Sentences and elisions** — the melodic side of phrase construction.

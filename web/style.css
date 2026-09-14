@@ -157,3 +157,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 }
 
 .chord.repeat { color: var(--muted); border-style: dashed; }
+
+.voices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 0.9rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.voice { display: inline-flex; align-items: center; gap: 6px; }
+.voice i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }

@@ -199,7 +199,7 @@
       "label": "Classical",
       "synonyms": [
         "classic",
-        "sonata",
+        "classical",
         "concert piano"
       ],
       "tempo": [
@@ -272,10 +272,10 @@
       "label": "Baroque",
       "synonyms": [
         "bach",
-        "fugue",
         "harpsichord",
         "invention",
-        "counterpoint"
+        "counterpoint",
+        "baroque"
       ],
       "tempo": [
         84,
@@ -1844,11 +1844,11 @@
       "synonyms": [
         "quiet",
         "soft",
-        "piano",
         "delicate",
         "hushed",
         "whispered",
-        "muted"
+        "muted",
+        "pianissimo"
       ],
       "velocity_delta": -14
     },
@@ -1915,50 +1915,6 @@
     }
   },
   "roles": {
-    "melody": {
-      "synonyms": [
-        "melody",
-        "lead",
-        "tune",
-        "hook",
-        "topline",
-        "riff",
-        "motif"
-      ]
-    },
-    "chords": {
-      "synonyms": [
-        "chords",
-        "chord progression",
-        "progression",
-        "comping",
-        "harmony",
-        "pad"
-      ]
-    },
-    "bass": {
-      "synonyms": [
-        "bass",
-        "bassline",
-        "bass line",
-        "low end"
-      ]
-    },
-    "arpeggio": {
-      "synonyms": [
-        "arpeggio",
-        "arp",
-        "arpeggiated",
-        "broken chords"
-      ]
-    },
-    "ostinato": {
-      "synonyms": [
-        "ostinato",
-        "repeating figure",
-        "vamp"
-      ]
-    },
     "drums": {
       "synonyms": [
         "drums",
@@ -2059,8 +2015,6 @@
         "symphonic",
         "orchestra",
         "orchestral",
-        "concerto",
-        "sonata",
         "movement",
         "suite",
         "overture",
@@ -2073,6 +2027,182 @@
         "opus",
         "score",
         "soundtrack"
+      ]
+    }
+  },
+  "forms": {
+    "strophic": {
+      "label": "Strophic",
+      "synonyms": [
+        "strophic",
+        "aaa",
+        "verse after verse",
+        "hymn form"
+      ]
+    },
+    "binary": {
+      "label": "Binary",
+      "synonyms": [
+        "binary",
+        "binary form",
+        "two part form",
+        "ab form"
+      ]
+    },
+    "binary_repeated": {
+      "label": "Repeated binary",
+      "synonyms": [
+        "aabb",
+        "repeated binary",
+        "two reprise"
+      ]
+    },
+    "ternary": {
+      "label": "Ternary",
+      "synonyms": [
+        "ternary",
+        "ternary form",
+        "aba",
+        "three part form",
+        "da capo"
+      ]
+    },
+    "aaba": {
+      "label": "AABA",
+      "synonyms": [
+        "aaba",
+        "thirty two bar form",
+        "32 bar form",
+        "song form",
+        "middle eight form"
+      ]
+    },
+    "rondo": {
+      "label": "Rondo",
+      "synonyms": [
+        "rondo",
+        "abaca",
+        "five part rondo",
+        "refrain form"
+      ]
+    },
+    "rondo_seven": {
+      "label": "Seven-part rondo",
+      "synonyms": [
+        "abacaba",
+        "seven part rondo",
+        "rondo seven"
+      ]
+    },
+    "medley": {
+      "label": "Medley",
+      "synonyms": [
+        "medley",
+        "abcd",
+        "potpourri",
+        "suite of tunes"
+      ]
+    },
+    "through_composed": {
+      "label": "Through-composed",
+      "synonyms": [
+        "through composed",
+        "throughcomposed",
+        "no repeats",
+        "ever changing"
+      ]
+    },
+    "sonata": {
+      "label": "Sonata form",
+      "synonyms": [
+        "sonata",
+        "sonata form",
+        "sonata allegro",
+        "first movement form",
+        "concerto"
+      ]
+    },
+    "fugue": {
+      "label": "Fugue",
+      "synonyms": [
+        "fugue",
+        "fugal",
+        "fughetta",
+        "subject and answer",
+        "counterpoint piece"
+      ]
+    },
+    "motif": {
+      "label": "A single statement",
+      "synonyms": [
+        "single phrase",
+        "one idea",
+        "just a motif"
+      ]
+    }
+  },
+  "voices": {
+    "melody": {
+      "label": "Melody",
+      "synonyms": [
+        "melody",
+        "lead",
+        "tune",
+        "topline",
+        "hook line"
+      ]
+    },
+    "countermelody": {
+      "label": "Countermelody",
+      "synonyms": [
+        "countermelody",
+        "counter melody",
+        "counterpoint",
+        "counter line",
+        "second voice",
+        "contrapuntal",
+        "two voices",
+        "answering line",
+        "countersubject"
+      ]
+    },
+    "ostinato": {
+      "label": "Ostinato",
+      "synonyms": [
+        "ostinato",
+        "repeating figure",
+        "vamp",
+        "looping figure"
+      ]
+    },
+    "arpeggio": {
+      "label": "Arpeggio",
+      "synonyms": [
+        "arpeggio",
+        "arp",
+        "arpeggiated",
+        "broken chords",
+        "rolling chords"
+      ]
+    },
+    "chords": {
+      "label": "Chords",
+      "synonyms": [
+        "chords",
+        "chord progression",
+        "progression",
+        "comping",
+        "harmony",
+        "pad"
+      ]
+    },
+    "bass": {
+      "label": "Bass",
+      "synonyms": [
+        "bass",
+        "bassline",
+        "bass line",
+        "low end"
       ]
     }
   }

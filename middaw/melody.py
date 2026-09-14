@@ -89,7 +89,8 @@ def generate_melody(spec: MusicSpec, chords_by_bar: list[list[tuple[float, Chord
                     rng: random.Random,
                     intervals: dict[int, float] | None = None,
                     rhythm_bias: dict[tuple[float, ...], float] | None = None,
-                    motif_rng: random.Random | None = None) -> list[Note]:
+                    motif_rng: random.Random | None = None,
+                    cadence: str | None = None) -> list[Note]:
     """`motif_rng` invents the motif; `rng` varies it and places the notes.
 
     Passing the same `motif_rng` to two sections makes them the same melody
@@ -97,6 +98,11 @@ def generate_melody(spec: MusicSpec, chords_by_bar: list[list[tuple[float, Chord
     """
     intervals = intervals or DEFAULT_INTERVALS
     motif_rng = motif_rng or rng
+    # A perfect authentic cadence needs the tonic in the top voice; every other
+    # ending is content with a chord tone. That single note is the difference
+    # between a phrase that closes and one that merely stops.
+    from middaw.cadence import get as _cadence
+    wants_tonic = (_cadence(cadence).melody_target == "tonic") if _cadence(cadence) else True
     scale = scale_pitch_classes(spec.tonic, spec.mode)
     centre = 60 + spec.register * 3 + 7
     tonic_root = centre - (centre - (spec.tonic + 60)) % 12
@@ -153,7 +159,7 @@ def generate_melody(spec: MusicSpec, chords_by_bar: list[list[tuple[float, Chord
 
             if cadence_bar and index == len(bar_motif.rhythm) - 1:
                 target = chord.nearest_tone(pitch)
-                if is_final_bar:
+                if is_final_bar and wants_tonic:
                     target = pitch + ((spec.tonic - pitch) % 12)
                     if target - pitch > 6:
                         target -= 12

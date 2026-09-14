@@ -58,7 +58,14 @@ those words are the backlog for the vocabulary.
   aggressive, warm
 - **Descriptors**: sparse, dense, high, low, loud, quiet, swung, straight,
   slow, fast, moderate
-- **Roles**: melody, chords, bass, arpeggio, ostinato
+- **Voices**: melody, countermelody, ostinato, arpeggio, chords, bass — asked
+  for by name, or chosen by the style (a baroque prompt is scored for two
+  independent lines and a bass, not a tune over a pad)
+- **Forms**: strophic, binary, repeated binary, ternary, AABA, rondo,
+  seven-part rondo, medley, through-composed, sonata, fugue — named in the
+  prompt, or chosen by the style
+- **Cadences**: every section is built backwards from the way it ends —
+  perfect and imperfect authentic, plagal, deceptive, half
 
 All of it lives in one file, [`data/vocab/tags.json`](data/vocab/tags.json),
 which is read by both the prompt parser and the corpus labeller. Adding a

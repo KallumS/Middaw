@@ -163,15 +163,23 @@ class TestFormAndLength(unittest.TestCase):
         self.assertEqual(generate("a riff idea", seed=2).spec.form, "A")
         self.assertEqual(generate("a lo-fi loop", seed=2).spec.form, "A A'")
 
-    def test_long_generations_get_a_bridge(self):
+    def test_a_period_asks_then_answers(self):
+        from middaw import cadence as cad
+        result = generate("a lo-fi loop", seed=2)
+        first, second = result.sections
+        self.assertTrue(cad.answers(first.cadence, second.cadence),
+                        f"{first.cadence} then {second.cadence}")
+
+    def test_long_generations_get_a_contrasting_section(self):
         for prompt in ("write me a full piece", "symphony orchestra"):
             result = generate(prompt, seed=3)
             letters = {s.letter for s in result.sections}
             self.assertIn("A", letters)
-            self.assertIn("B", letters, f"{prompt} has no contrasting section")
+            self.assertGreater(len(letters), 1,
+                               f"{prompt} has no contrasting section")
 
     def test_sections_cover_the_piece_exactly(self):
-        for prompt in ("a lo-fi loop", "a verse in C", "a full piece", "symphony"):
+        for prompt in ("a lo-fi loop", "a verse in C", "a full piece", "a rondo"):
             result = generate(prompt, seed=4)
             total = sum(s.bars for s in result.sections)
             self.assertEqual(total, result.spec.bars)
@@ -190,17 +198,26 @@ class TestFormAndLength(unittest.TestCase):
         self.assertGreater(b.density, a.density)
 
     def test_sections_that_share_a_letter_share_their_harmony(self):
+        # Same music, different endings: a refrain that stops on the dominant
+        # and the same refrain that closes differ only in their last chords.
         result = generate("symphony orchestra in D minor", seed=8)
         by_letter = {}
         for section in result.sections:
-            by_letter.setdefault(section.letter, []).append(section.progression)
-        for letter, progressions in by_letter.items():
-            for progression in progressions[1:]:
-                self.assertEqual(progression, progressions[0], letter)
+            by_letter.setdefault(section.letter, []).append(section)
+        for letter, sections in by_letter.items():
+            first = sections[0]
+            for section in sections[1:]:
+                self.assertEqual(section.progression[:-2], first.progression[:-2],
+                                 f"{letter}: the openings should match")
+                if section.cadence == first.cadence:
+                    self.assertEqual(section.progression, first.progression, letter)
 
-    def test_a_sixty_four_bar_piece_is_not_one_loop_repeated(self):
+    def test_a_long_piece_is_not_one_loop_repeated(self):
+        # The length word sets a target; the form sets the real length, because
+        # a five-section rondo is five sections long whatever was asked for.
         result = generate("symphony orchestra", seed=9)
-        self.assertEqual(result.spec.bars, 64)
+        self.assertGreaterEqual(result.spec.bars, 48)
+        self.assertGreaterEqual(len(result.sections), 4)
         melody = [t for t in result.song.tracks if t.name == "Melody"][0]
         beats_per_bar = result.spec.beats_per_bar
         first = [round(n.start % (8 * beats_per_bar), 2) for n in melody.notes

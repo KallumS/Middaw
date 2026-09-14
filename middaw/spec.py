@@ -49,7 +49,10 @@ class MusicSpec:
     moods: list[str] = field(default_factory=list)
     descriptors: list[str] = field(default_factory=list)
     scales: list[str] = field(default_factory=list)
+    forms: list[str] = field(default_factory=list)
+    voices: list[str] = field(default_factory=list)
     form: str = ""
+    form_name: str = ""
     matched_terms: list[str] = field(default_factory=list)
     unmatched_terms: list[str] = field(default_factory=list)
     corpus_sources: list[str] = field(default_factory=list)
@@ -109,10 +112,12 @@ class MusicSpec:
             self.key_name,
             f"{self.tempo} BPM",
             f"{self.meter[0]}/{self.meter[1]}",
-            f"{self.bars} bars" + (f" ({self.form})" if self.form else ""),
+            f"{self.bars} bars",
+            (f"{self.form_name.replace('_', ' ')}: {self.form}"
+             if self.form else ""),
             " ".join(self.progression[:8]) + ("..." if len(self.progression) > 8 else ""),
         ]
         tags = self.genres + self.moods
         if tags:
             bits.insert(0, ", ".join(tags))
-        return " | ".join(bits)
+        return " | ".join(b for b in bits if b)

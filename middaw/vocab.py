@@ -90,6 +90,8 @@ class Vocabulary:
         self.descriptors = data.get("descriptors", {})
         self.roles = data.get("roles", {})
         self.scales = data.get("scales", {})
+        self.forms = data.get("forms", {})
+        self.voices = data.get("voices", {})
         self._phrases = self._build_phrase_index()
 
     def _build_phrase_index(self) -> list[tuple[str, str, str]]:
@@ -100,6 +102,8 @@ class Vocabulary:
             ("descriptor", self.descriptors),
             ("role", self.roles),
             ("scale", self.scales),
+            ("form", self.forms),
+            ("voice", self.voices),
         ):
             for tag, entry in group.items():
                 terms = set(entry.get("synonyms", []))
@@ -122,12 +126,15 @@ class Vocabulary:
             "descriptors": sorted(self.descriptors),
             "roles": sorted(self.roles),
             "scales": sorted(self.scales),
+            "forms": sorted(self.forms),
+            "voices": sorted(self.voices),
         }
 
     def is_known(self, kind: str, tag: str) -> bool:
         group = {"genre": self.genres, "mood": self.moods,
                  "descriptor": self.descriptors, "role": self.roles,
-                 "scale": self.scales}.get(kind, {})
+                 "scale": self.scales, "form": self.forms,
+                 "voice": self.voices}.get(kind, {})
         return tag in group
 
     def find(self, text: str) -> list[Match]:

@@ -40,7 +40,7 @@ MODE_BY_DEGREE = ("major", "dorian", "phrygian", "lydian", "mixolydian",
                   "minor", "locrian")
 # How likely each of those is a priori: most music is major or minor, and a
 # locrian tonic is close to unheard of.
-MODE_PRIOR = (0.60, 0.25, 0.10, 0.20, 0.25, 0.60, 0.0)
+MODE_PRIOR = (0.96, 0.40, 0.16, 0.32, 0.40, 0.96, 0.0)
 
 
 def detect_key(notes: list[Note]) -> tuple[int, str, float]:
@@ -57,7 +57,10 @@ def detect_key(notes: list[Note]) -> tuple[int, str, float]:
     time that falls inside the chosen collection.
 
     The weights below were swept against 120 generated pieces whose key is
-    known, and recover the tonic in about three quarters of them. The residue
+    known, and recover the tonic in about three quarters of them. They were
+    re-swept once sections gained real cadences, which is why the final bass
+    now counts for so much: a piece that ends on a perfect authentic cadence
+    says what key it is in. The residue
     is not really error: most of it is four-bar vamps that never state a tonic
     (i-bVII-i-bVII is as much G mixolydian as D dorian), and material that
     cadences does much better. Treat a low `key_confidence`, or a disagreement
@@ -89,10 +92,10 @@ def detect_key(notes: list[Note]) -> tuple[int, str, float]:
     for degree, interval in enumerate(major):
         tonic = (best_root + interval) % 12
         score = (MODE_PRIOR[degree]
-                 + 1.5 * bass_roots.get(tonic, 0) / bass_total
-                 + 0.8 * weights[tonic] / peak
-                 + (0.4 if tonic == last_bass else 0.0)
-                 + (0.8 if tonic == first_bass else 0.0))
+                 + 4.0 * bass_roots.get(tonic, 0) / bass_total
+                 + 1.5 * weights[tonic] / peak
+                 + (2.0 if tonic == last_bass else 0.0)
+                 + (1.2 if tonic == first_bass else 0.0))
         if score > best[2]:
             best = (tonic, MODE_BY_DEGREE[degree], score)
 

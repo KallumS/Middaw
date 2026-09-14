@@ -29,8 +29,14 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
+from middaw import cadence as cadences
 from middaw.theory import (PARENT_SCALE, QUALITIES, ROMAN_BY_INTERVAL, SCALES,
                            roman_for_degree, scale_pitch_classes)
+
+#: Modes where borrowing a major V is idiomatic. Dorian, phrygian and
+#: mixolydian are *modal*: their flat seventh is the whole point of them, and
+#: raising it to make a leading tone turns them into minor.
+MINOR_KEY_MODES = {"minor", "aeolian", "harmonic_minor", "melodic_minor"}
 
 TONIC = "tonic"
 PREDOMINANT = "predominant"
@@ -230,16 +236,44 @@ def _weighted(rng: random.Random, options):
     return options[-1][1]
 
 
+def closing_chords(tonic: int, mode: str, kind: str,
+                   sevenths: bool) -> list[FunctionalChord]:
+    """The chords that spell a given cadence in this key."""
+    cadence = cadences.get(kind)
+    if cadence is None:
+        return []
+    diatonic = diatonic_chords(tonic, mode, sevenths=sevenths)
+    chords = []
+    for position, degree in enumerate(cadence.degrees):
+        chord = diatonic[degree]
+        # The approach chord of an authentic or deceptive cadence wants the
+        # leading-tone pull, so a minor key borrows a major V - that is what
+        # harmonic minor exists for. A modal key keeps its own dominant.
+        if (cadence.seventh and position == 0 and degree == 4
+                and (mode in MINOR_KEY_MODES or not chord.symbol[:1].islower())):
+            chord = FunctionalChord("V7", chord.root, DOMINANT, "V7", tonic, "V")
+        chords.append(chord)
+    return chords
+
+
 def _skeleton(rng: random.Random, tonic: int, mode: str, length: int,
-              sevenths: bool) -> list[FunctionalChord]:
-    """A purely diatonic backbone of the right length, ending at home."""
+              sevenths: bool, cadence: str | None = None) -> list[FunctionalChord]:
+    """A purely diatonic backbone of the right length, ending at the cadence."""
     diatonic = diatonic_chords(tonic, mode, sevenths=sevenths)
     by_function: dict[str, list[tuple[float, FunctionalChord]]] = {
         TONIC: [], PREDOMINANT: [], DOMINANT: []}
     for degree, chord in enumerate(diatonic):
         by_function[chord.function].append((DEGREE_WEIGHT[degree], chord))
 
-    progression = [diatonic[0]]
+    progression = closing_chords(tonic, mode, cadence, sevenths) or [diatonic[0]]
+    progression = progression[-length:]
+
+    # A section that ends on a cadence still has to begin somewhere, and most
+    # begin at home - it is how the key gets established in the first place.
+    # The flowchart allows it: the tonic may progress directly to any function.
+    open_at_home = bool(cadence) and length > len(progression) and rng.random() < 0.8
+    if open_at_home:
+        length -= 1
     while len(progression) < length:
         head = progression[0]
         wanted = _weighted(rng, [(w, f) for f, w in PRECEDING_FUNCTION[head.function]])
@@ -253,6 +287,9 @@ def _skeleton(rng: random.Random, tonic: int, mode: str, length: int,
         if chord is None:
             break
         progression.insert(0, chord)
+
+    if open_at_home and progression[0].root != tonic:
+        progression.insert(0, diatonic[0])
     return progression
 
 
@@ -279,7 +316,7 @@ def _two_label(tonic: int, mode: str, dominant: FunctionalChord, diatonic) -> st
 
 def _decorate(rng: random.Random, tonic: int, mode: str,
               progression: list[FunctionalChord],
-              chromaticism: float) -> list[FunctionalChord]:
+              chromaticism: float, protect: int = 0) -> list[FunctionalChord]:
     """Tonicise chords, substitute dominants, and add related II chords.
 
     Every target here is a diatonic chord of the key, which is what keeps a
@@ -292,8 +329,11 @@ def _decorate(rng: random.Random, tonic: int, mode: str,
     home_is_minor = diatonic[0].symbol[:1].islower()
     diatonic_symbols = {c.root: c.symbol for c in diatonic}
 
+    # The cadence is the point of the phrase; decoration must not rewrite it.
+    guarded = set(range(len(out) - protect, len(out))) if protect else set()
+
     def accept(index: int, chord: FunctionalChord) -> bool:
-        if _muddies_the_tonic(chord, tonic, home_is_minor):
+        if index in guarded or _muddies_the_tonic(chord, tonic, home_is_minor):
             return False
         out[index] = chord
         return True
@@ -349,7 +389,8 @@ def _raise_the_leading_tone(rng: random.Random, tonic: int, mode: str,
     for chord in progression:
         minor_dominant = (chord.function == DOMINANT
                           and chord.root == (tonic + 7) % 12
-                          and chord.symbol[:1].islower())
+                          and chord.symbol[:1].islower()
+                          and mode in MINOR_KEY_MODES)
         if minor_dominant and rng.random() < 0.6:
             out.append(FunctionalChord("V7", chord.root, DOMINANT, "V7", tonic, "V"))
         else:
@@ -367,22 +408,33 @@ def _chord_at(tonic: int, mode: str, root: int) -> FunctionalChord:
 def generate_progression(tonic: int, mode: str, length: int = 4,
                          chromaticism: float = 0.2, sevenths: float = 0.3,
                          rng: random.Random | None = None,
-                         start_on_tonic: bool = True) -> list[FunctionalChord]:
+                         start_on_tonic: bool = True,
+                         cadence: str | None = None) -> list[FunctionalChord]:
     """Write a progression of `length` chords in the given key.
 
-    A diatonic skeleton is built backwards from home, then decorated with the
-    secondary dominants, substitutes and related II chords that `chromaticism`
-    allows. Nothing is drawn from a table of known progressions, so the result
-    can be one nobody wrote down - but every chord can still say why it is
-    there.
+    A diatonic skeleton is built backwards from the cadence - from home when
+    none is named - then decorated with the secondary dominants, substitutes
+    and related II chords that `chromaticism` allows. Nothing is drawn from a
+    table of known progressions, so the result can be one nobody wrote down,
+    but every chord can still say why it is there.
+
+    Naming a `cadence` fixes how the phrase ends and stops the closing chords
+    being decorated away, which is what lets a section ask a question and the
+    next one answer it.
     """
     rng = rng or random.Random()
     length = max(2, min(16, int(length)))
     use_sevenths = rng.random() < sevenths
 
-    progression = _skeleton(rng, tonic, mode, length, use_sevenths)
+    progression = _skeleton(rng, tonic, mode, length, use_sevenths, cadence)
     progression = _raise_the_leading_tone(rng, tonic, mode, progression)
-    progression = _decorate(rng, tonic, mode, progression, max(0.0, min(1.0, chromaticism)))
+    protect = min(length, len(cadences.get(cadence).degrees)) if cadences.get(cadence) else 0
+    progression = _decorate(rng, tonic, mode, progression,
+                            max(0.0, min(1.0, chromaticism)), protect=protect)
+
+    # A named cadence is the whole point of the phrase, so it stays at the end.
+    if cadence:
+        return progression
 
     if start_on_tonic and progression[0].root != tonic:
         # A loop is cyclic, so rotating home to the front keeps every
@@ -392,3 +444,18 @@ def generate_progression(tonic: int, mode: str, length: int = 4,
                 progression = progression[index:] + progression[:index]
                 break
     return progression
+
+
+def recadence(symbols: list[str], labels: list[str], tonic: int, mode: str,
+              kind: str, sevenths: bool = False) -> tuple[list[str], list[str]]:
+    """Re-end an existing progression with a different cadence.
+
+    A refrain that stops on the dominant and the same refrain that closes are
+    the same music differently finished, so only the closing chords change.
+    """
+    closing = closing_chords(tonic, mode, kind, sevenths)
+    if not closing or not symbols:
+        return list(symbols), list(labels)
+    tail = min(len(closing), len(symbols))
+    return (list(symbols[:len(symbols) - tail]) + [c.symbol for c in closing[-tail:]],
+            list(labels[:len(labels) - tail]) + [c.display for c in closing[-tail:]])
