@@ -67,9 +67,10 @@ those words are the backlog for the vocabulary.
   aggressive, warm
 - **Descriptors**: sparse, dense, high, low, loud, quiet, swung, straight,
   slow, fast, moderate, ornamented, plain
-- **Voices**: melody, countermelody, ostinato, arpeggio, chords, bass — asked
-  for by name, or chosen by the style (a baroque prompt is scored for two
-  independent lines and a bass, not a tune over a pad)
+- **Four tracks, every time**: melody, countermelody, harmony and bass, in that
+  order and on channels 0–3, so one instrument per part can be assigned once
+  and every result lands on the same slots. The harmony part is comped chords,
+  an ostinato or an arpeggio depending on the style — or on what you ask for
 - **Forms**: strophic, binary, repeated binary, ternary, AABA, rondo,
   seven-part rondo, medley, through-composed, sonata, fugue — named in the
   prompt, or chosen by the style

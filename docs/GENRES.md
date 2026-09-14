@@ -47,8 +47,13 @@ between them they decide every note:
 
 Two more tables live in code rather than data because they name code objects:
 `GENRE_FORMS` in `middaw/form.py` (which forms suit a style) and
-`GENRE_VOICES` in `middaw/prompt.py` (which lines play when the prompt does not
-say). `PLAGAL_GENRES` marks the styles that end IV–I rather than V–I.
+`GENRE_TREATMENT` in `middaw/prompt.py` (how the style plays its harmony part —
+comped chords, a repeating figure or a broken chord). `PLAGAL_GENRES` marks the
+styles that end IV–I rather than V–I.
+
+Every generation is the same four parts — melody, countermelody, harmony, bass
+(`middaw/parts.py`) — so a style never gets more or fewer lines than another.
+What varies is what those four *do*.
 
 **Adding a genre means filling in all of that, and the tests check it.**
 `tests/test_vocab.py` asserts every genre is completely described, that its
@@ -160,9 +165,8 @@ language; what separates them is tempo, distortion and vocal style, only one of
 which Middaw writes.
 
 **Progressive rock** — one of only two styles that weight 7/8 and 5/4 at all
-(minimalism is the other), modal (dorian, lydian, mixolydian), with
-countermelody and ostinato in the default texture and `through_composed` as its
-first form.
+(minimalism is the other), modal (dorian, lydian, mixolydian), harmony played
+as an ostinato, and `through_composed` as its first form.
 
 **Surf** — harmonic minor at 140–180, the b2–1 Spanish colour, tremolo picking
 modelled as high ornament (0.45).
@@ -205,8 +209,8 @@ idiosyncrasy: the triplet is written, not swung.
 
 **Barbershop** — the circle of fifths as a composition: I–VI7–II7–V7, every
 chord a dominant seventh resolving down a fifth. `functional` 1.0,
-`chromaticism` 0.7, four voices, close harmony, and `extensions` 0.8 so the
-barbershop seventh is actually there.
+`chromaticism` 0.7, close harmony, and `extensions` 0.8 so the barbershop
+seventh is actually there.
 
 **Lounge**, **new age**, **lullaby** — low density, low velocity, high
 `extensions` for lounge and low for lullaby. Lullaby is 6/8 and 3/4 first.
@@ -277,7 +281,7 @@ there is.
 
 **Renaissance** — modal counterpoint: dorian and mixolydian ahead of ionian,
 no sevenths (`extensions` 0.05), `functional` 0.3 because functional harmony
-had not been invented yet, three independent voices, plagal endings.
+had not been invented yet, and plagal endings.
 
 **Impressionist** — lydian, whole tone and pentatonic; `functional` 0.15 and
 `extensions` 0.95. Its stock progression Imaj7–ii7–iii7–IVmaj7 is planing: the

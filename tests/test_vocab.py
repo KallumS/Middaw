@@ -10,8 +10,9 @@ import unittest
 
 from middaw.accompaniment import PATTERNS
 from middaw.form import FORMS, GENRE_FORMS, PLAGAL_GENRES
-from middaw.prompt import (GENRE_VOICES, ALL_VOICES, parse_prompt,
-                           progression_fit, progression_is_minor)
+from middaw.parts import PARTS, TREATMENTS, VOICE_PARTS
+from middaw.prompt import (GENRE_TREATMENT, parse_prompt, progression_fit,
+                           progression_is_minor)
 from middaw.render import render
 from middaw.spec import MusicSpec
 from middaw.theory import SCALES, parse_roman
@@ -93,7 +94,10 @@ class TestGenreEntries(unittest.TestCase):
                 spec = parse_prompt(f"{entry['label']} piece", seed=3)
                 self.assertIn(tag, spec.genres)
                 song = render(spec).song
+                self.assertEqual([t.role for t in song.tracks], list(PARTS))
                 self.assertGreater(len(song.notes), 8)
+                for track in song.tracks:
+                    self.assertTrue(track.notes, f"{tag} left {track.role} silent")
                 for note in song.notes:
                     self.assertTrue(21 <= note.pitch <= 108)
 
@@ -121,6 +125,18 @@ class TestPhraseIndex(unittest.TestCase):
         self.assertIn("piece", spec.scales)
 
 
+class TestParts(unittest.TestCase):
+    def test_every_voice_word_belongs_to_a_part(self):
+        """A voice word a prompt can say has to land on one of the four parts."""
+        for tag in VOCAB.voices:
+            self.assertIn(tag, VOICE_PARTS)
+            self.assertIn(VOICE_PARTS[tag], PARTS)
+
+    def test_a_treatment_word_is_the_harmony_part(self):
+        for treatment in TREATMENTS:
+            self.assertEqual(VOICE_PARTS[treatment], "harmony")
+
+
 class TestGenreTables(unittest.TestCase):
     def test_form_and_voice_tables_name_real_tags(self):
         for tag in GENRE_FORMS:
@@ -128,10 +144,9 @@ class TestGenreTables(unittest.TestCase):
         for tag, forms in GENRE_FORMS.items():
             for form in forms:
                 self.assertIn(form, FORMS, f"{tag} asks for {form}")
-        for tag, voices in GENRE_VOICES.items():
+        for tag, treatment in GENRE_TREATMENT.items():
             self.assertIn(tag, VOCAB.genres)
-            for voice in voices:
-                self.assertIn(voice, ALL_VOICES)
+            self.assertIn(treatment, TREATMENTS)
         for tag in PLAGAL_GENRES:
             self.assertIn(tag, VOCAB.genres)
 

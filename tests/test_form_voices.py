@@ -124,12 +124,15 @@ class TestFormPlan(unittest.TestCase):
 
 
 class TestVoices(unittest.TestCase):
-    def test_requested_voices_are_the_ones_that_play(self):
-        result = generate("ostinato and arpeggio in C minor", seed=2)
-        names = {t.name for t in result.song.tracks}
-        self.assertIn("Ostinato", names)
-        self.assertIn("Arpeggio", names)
-        self.assertNotIn("Melody", names)
+    def test_asking_for_a_figure_sets_the_harmony_treatment(self):
+        """An ostinato is not a fifth track, it is how the harmony is played."""
+        result = generate("an ostinato in C minor", seed=2)
+        self.assertEqual(result.spec.harmony, "ostinato")
+        harmony = [t for t in result.song.tracks if t.role == "harmony"][0]
+        self.assertEqual(harmony.detail, "ostinato")
+        self.assertTrue(harmony.notes)
+        silent = {t.role for t in result.song.tracks if not t.notes}
+        self.assertIn("melody", silent)
 
     def test_asking_for_a_countermelody_gets_a_melody_too(self):
         spec = parse_prompt("a countermelody", seed=1)
@@ -139,9 +142,14 @@ class TestVoices(unittest.TestCase):
         self.assertIn("bass", parse_prompt("just a melody", seed=1).voices)
         self.assertEqual(parse_prompt("just a bassline", seed=1).voices, ["bass"])
 
-    def test_styles_bring_their_own_texture(self):
-        self.assertIn("countermelody", parse_prompt("baroque invention", seed=1).voices)
-        self.assertIn("ostinato", parse_prompt("minimal piano", seed=1).voices)
+    def test_a_prompt_that_names_nothing_gets_all_four_parts(self):
+        self.assertEqual(parse_prompt("a pop tune in G", seed=1).voices,
+                         ["melody", "countermelody", "harmony", "bass"])
+
+    def test_styles_bring_their_own_harmony_treatment(self):
+        self.assertEqual(parse_prompt("minimal piano", seed=1).harmony, "ostinato")
+        self.assertEqual(parse_prompt("a trance lead", seed=1).harmony, "arpeggio")
+        self.assertEqual(parse_prompt("a jazz tune", seed=1).harmony, "chords")
 
     def test_the_countermelody_stays_under_the_melody(self):
         result = generate("baroque invention in C major", seed=3)

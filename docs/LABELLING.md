@@ -197,7 +197,7 @@ captions are the supervision signal.
     "genres": ["lofi"],
     "moods": ["melancholy", "calm"],
     "descriptors": ["sparse", "swung"],
-    "roles": ["chords", "melody"]
+    "voices": ["melody", "chords"]
   },
   "annotations": [
     { "field": "genres", "value": "lofi", "by": "human", "confidence": 1.0 },

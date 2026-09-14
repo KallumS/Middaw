@@ -20,6 +20,7 @@ import re
 from middaw.form import snap_to_ladder
 from middaw.functional import generate_progression
 from middaw.spec import MusicSpec
+from middaw.parts import ALL_VOICES, PARTS, TREATMENTS, VOICE_PARTS
 from middaw.theory import (BLUES_MODES, PITCH_CLASSES, SCALES,
                            harmonic_pitch_classes, parse_note_name, parse_roman)
 from middaw.vocab import Match, Vocabulary, load_vocabulary, normalise
@@ -276,9 +277,9 @@ def parse_prompt(
         if cycle > 8 and spec.bars % cycle:
             spec.bars = cycle * max(1, round(spec.bars / cycle))
 
-    # --- voices ---
-    spec.voices = _choose_voices(requested_voices, spec, rng)
-    spec.roles = list(spec.voices)
+    # --- parts ---
+    spec.harmony = _choose_treatment(requested_voices, spec)
+    spec.voices = _choose_parts(requested_voices, spec)
 
     for key, value in overrides.items():
         if value is not None and hasattr(spec, key):
@@ -348,69 +349,65 @@ def progression_fit(chords: tuple[str, ...] | list[str], spec: MusicSpec) -> flo
     return 1.0 if total == 0 else fitting / total
 
 
-#: Textures that suit each style when the prompt does not ask for voices.
-GENRE_VOICES = {
-    "baroque": ("melody", "countermelody", "bass"),
-    "classical": ("melody", "chords", "bass", "countermelody"),
-    "romantic_era": ("melody", "chords", "bass"),
-    "minimal": ("ostinato", "arpeggio", "bass"),
-    "techno": ("ostinato", "chords", "bass"),
-    "cinematic": ("melody", "ostinato", "chords", "bass"),
-    "ambient": ("chords", "arpeggio"),
-    "chiptune": ("melody", "arpeggio", "bass"),
-    "celtic": ("melody", "countermelody", "chords"),
-    "jazz": ("melody", "chords", "bass"),
-    "gospel": ("melody", "chords", "bass"),
+#: How each style realises its harmony part when the prompt does not say.
+#: Everything unlisted comps chords.
+GENRE_TREATMENT = {
+    # The figure is the piece: a repeating cell rather than a chord bed.
+    "minimal": "ostinato",
+    "techno": "ostinato",
+    "cinematic": "ostinato",
+    "funk": "ostinato",
+    "afrobeat": "ostinato",
+    "metal": "ostinato",
+    "dubstep": "ostinato",
+    "drum_and_bass": "ostinato",
+    "trap": "ostinato",
+    "boogie_woogie": "ostinato",
+    "salsa": "ostinato",
+    "prog_rock": "ostinato",
+    "house": "ostinato",
 
-    # Counterpoint styles: independent lines, no chord bed.
-    "renaissance": ("melody", "countermelody", "bass"),
-    "dixieland": ("melody", "countermelody", "chords", "bass"),
-    "bluegrass": ("melody", "countermelody", "arpeggio", "bass"),
-    "prog_rock": ("melody", "countermelody", "ostinato", "bass"),
-    "hymn": ("melody", "countermelody", "chords", "bass"),
-    "barbershop": ("melody", "countermelody", "chords", "bass"),
-
-    # Riff styles: the figure is the tune.
-    "funk": ("ostinato", "chords", "bass"),
-    "afrobeat": ("ostinato", "countermelody", "chords", "bass"),
-    "metal": ("ostinato", "melody", "bass"),
-    "trance": ("arpeggio", "ostinato", "chords", "bass"),
-    "synthwave": ("melody", "arpeggio", "chords", "bass"),
-    "dubstep": ("ostinato", "chords", "bass"),
-    "drum_and_bass": ("ostinato", "chords", "bass"),
-    "boogie_woogie": ("melody", "ostinato", "bass"),
-    "salsa": ("melody", "ostinato", "chords", "bass"),
-
-    # Textures where the harmony carries the piece.
-    "new_age": ("arpeggio", "chords", "bass"),
-    "vaporwave": ("melody", "chords", "bass"),
-    "impressionist": ("melody", "arpeggio", "chords"),
-    "lullaby": ("melody", "arpeggio", "chords"),
+    # Broken chords: the harmony arrives one note at a time.
+    "chiptune": "arpeggio",
+    "trance": "arpeggio",
+    "synthwave": "arpeggio",
+    "new_age": "arpeggio",
+    "impressionist": "arpeggio",
+    "lullaby": "arpeggio",
+    "bluegrass": "arpeggio",
+    "bachata": "arpeggio",
 }
 
-ALL_VOICES = ("melody", "countermelody", "ostinato", "arpeggio", "chords", "bass")
 
-
-def _choose_voices(requested: list[str], spec: MusicSpec,
-                   rng: random.Random) -> list[str]:
-    """Which lines play. What was asked for, else what the style is scored for.
-
-    A melody on its own is a melody; asked for alone it still gets a bass, so
-    there is something under it.
-    """
-    if requested:
-        voices = [v for v in requested if v in ALL_VOICES]
-        if "countermelody" in voices and "melody" not in voices:
-            voices.insert(0, "melody")
-        # One line alone is a sketch, not a texture: give it a foundation.
-        if len(voices) == 1 and voices[0] not in ("bass", "chords"):
-            voices.append("bass")
-        return list(dict.fromkeys(voices))
-
+def _choose_treatment(requested: list[str], spec: MusicSpec) -> str:
+    """How the harmony part is played: comped, repeated or broken."""
+    for voice in requested:
+        if voice in TREATMENTS:
+            return voice
     for genre in spec.genres:
-        if genre in GENRE_VOICES:
-            return list(GENRE_VOICES[genre])
-    return ["melody", "chords", "bass"]
+        if genre in GENRE_TREATMENT:
+            return GENRE_TREATMENT[genre]
+    return "chords"
+
+
+def _choose_parts(requested: list[str], spec: MusicSpec) -> list[str]:
+    """Which of the four parts actually sound.
+
+    All four, unless the prompt narrows the texture on purpose. "just a
+    bassline" is one line and is taken at its word; "a countermelody" gets a
+    melody to be a counter *to*; anything else alone still gets a bass, so a
+    sketch has something underneath it.
+    """
+    if not requested:
+        return list(PARTS)
+
+    parts = [VOICE_PARTS[v] for v in requested if v in VOICE_PARTS]
+    if "countermelody" in parts and "melody" not in parts:
+        parts.insert(0, "melody")
+    if len(parts) == 1 and parts[0] not in ("bass", "harmony"):
+        parts.append("bass")
+    ordered = [part for part in PARTS if part in parts]
+    return ordered or list(PARTS)
 
 
 def _choose_progression(rng: random.Random, priors, spec: MusicSpec):

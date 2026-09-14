@@ -30,6 +30,8 @@ class Track:
     name: str
     program: int = 0          # GM program; 0 = acoustic grand piano
     channel: int = 0
+    role: str = ""            # which of the four parts this is
+    detail: str = ""          # how the part is realised, where that varies
     notes: list[Note] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -37,6 +39,8 @@ class Track:
             "name": self.name,
             "program": self.program,
             "channel": self.channel,
+            "role": self.role,
+            "detail": self.detail,
             "notes": [n.to_dict() for n in self.notes],
         }
 

@@ -14,6 +14,7 @@ from middaw.form import Section, choose_form, describe, plan_form
 from middaw.functional import generate_progression, recadence
 from middaw.melody import DEFAULT_INTERVALS, generate_melody
 from middaw.midi import song_to_bytes
+from middaw.parts import PART_NAMES, PARTS, TREATMENTS
 from middaw.voices import (generate_arpeggio, generate_countermelody,
                            generate_ostinato, make_ostinato_figure)
 from middaw.song import Note, Song, Track
@@ -161,18 +162,24 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
 
     song = Song(tempo=spec.tempo, meter=spec.meter,
                 ticks_per_beat=spec.ticks_per_beat, key_name=spec.key_name)
-    voices = spec.voices or spec.roles or ["melody", "chords", "bass"]
-    names = {"melody": "Melody", "countermelody": "Countermelody",
-             "ostinato": "Ostinato", "arpeggio": "Arpeggio",
-             "chords": "Chords", "bass": "Bass"}
-    tracks = {voice: Track(name=names[voice], program=ACOUSTIC_GRAND_PIANO,
-                           channel=index)
-              for index, voice in enumerate(v for v in names if v in voices)}
+
+    # Four tracks, always, in this order and on these channels. A generation
+    # is a four-part texture whatever the style, so a player can put an
+    # instrument on each part once and have every result land on the same
+    # slots. A part the prompt silenced is still written, just empty.
+    voiced = set(spec.voices or PARTS)
+    treatment = spec.harmony if spec.harmony in TREATMENTS else "chords"
+    tracks = {
+        part: Track(name=PART_NAMES[part], program=ACOUSTIC_GRAND_PIANO,
+                    channel=index, role=part,
+                    detail=treatment if part == "harmony" else "")
+        for index, part in enumerate(PARTS)
+    }
 
     # An ostinato is one figure restated; it is invented once for the piece,
     # not once per section, or it stops being an ostinato.
     ostinato_figure = (make_ostinato_figure(spec, random.Random(spec.seed ^ 0x05713))
-                       if "ostinato" in tracks else None)
+                       if treatment == "ostinato" else None)
 
     beats_per_bar = spec.beats_per_bar
     all_spans: list[tuple[float, float, Chord]] = []
@@ -193,7 +200,7 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
         offset = section.start_bar * beats_per_bar
 
         melody: list[Note] = []
-        if "melody" in tracks:
+        if "melody" in voiced:
             melody = generate_melody(part, _chords_by_bar(spans), rng,
                                      intervals=intervals, rhythm_bias=rhythm_bias,
                                      motif_rng=motif_rng, cadence=section.cadence)
@@ -202,9 +209,9 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
             # be decided while the note is being placed.
             melody, added = embellish(part, spans, melody, rng)
             ornaments += [replace(e, beat=e.beat + offset) for e in added]
-        if "countermelody" in tracks:
-            # Set against whatever the melody is doing, even when there is no
-            # melody track: then it is simply the only line.
+        if "countermelody" in voiced:
+            # Set against whatever the melody is doing, even when the melody
+            # itself is silent: then it is simply the only line.
             against = melody or generate_melody(
                 part, _chords_by_bar(spans), random.Random(spec.seed),
                 intervals=intervals, motif_rng=motif_rng, cadence=section.cadence)
@@ -213,23 +220,24 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
                                        amount=part.ornament * 0.6)
             ornaments += [replace(e, beat=e.beat + offset) for e in added]
             _extend(tracks["countermelody"], counter, offset)
-        if "melody" in tracks:
+        if "melody" in voiced:
             _extend(tracks["melody"], melody, offset, section.transpose)
-        if "ostinato" in tracks:
-            _extend(tracks["ostinato"],
-                    generate_ostinato(part, spans, rng, ostinato_figure), offset)
-        if "arpeggio" in tracks:
-            _extend(tracks["arpeggio"], generate_arpeggio(part, spans, rng), offset)
-        if "chords" in tracks:
-            _extend(tracks["chords"], generate_accompaniment(part, spans, rng), offset)
-        if "bass" in tracks:
+        if "harmony" in voiced:
+            if treatment == "ostinato":
+                harmony = generate_ostinato(part, spans, rng, ostinato_figure)
+            elif treatment == "arpeggio":
+                harmony = generate_arpeggio(part, spans, rng)
+            else:
+                harmony = generate_accompaniment(part, spans, rng)
+            _extend(tracks["harmony"], harmony, offset)
+        if "bass" in voiced:
             _extend(tracks["bass"], generate_bass(part, spans, rng), offset)
 
         all_spans += [(start + offset, length, chord) for start, length, chord in spans]
         all_labels += [section.progression_labels[i % len(section.progression_labels)]
                        for i in range(section.bars)]
 
-    song.tracks = [track for track in tracks.values() if track.notes]
+    song.tracks = [tracks[part] for part in PARTS]
 
     for track in song.tracks:
         _humanize_timing(spec, track.notes, rng)

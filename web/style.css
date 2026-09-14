@@ -158,6 +158,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
 .chord.repeat { color: var(--muted); border-style: dashed; }
 
+.voice.silent { opacity: 0.45; }
+
 .voices {
   display: flex;
   flex-wrap: wrap;

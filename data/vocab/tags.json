@@ -742,7 +742,8 @@
         "ambient dub",
         "space music",
         "isolationism",
-        "lowercase"
+        "lowercase",
+        "pad"
       ],
       "tempo": [
         54,
@@ -5839,7 +5840,6 @@
       "synonyms": [
         "melody",
         "lead",
-        "tune",
         "topline",
         "hook line"
       ]
@@ -5884,8 +5884,7 @@
         "chord progression",
         "progression",
         "comping",
-        "harmony",
-        "pad"
+        "harmony"
       ]
     },
     "bass": {

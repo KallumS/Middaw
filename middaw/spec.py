@@ -43,7 +43,7 @@ class MusicSpec:
     chromaticism: float = 0.25
     ornament: float = 0.35
     pattern: str = "block"               # accompaniment figure
-    roles: list[str] = field(default_factory=lambda: ["melody", "chords", "bass"])
+    harmony: str = "chords"              # chords | ostinato | arpeggio
 
     # --- provenance of the interpretation ---
     genres: list[str] = field(default_factory=list)
@@ -51,7 +51,8 @@ class MusicSpec:
     descriptors: list[str] = field(default_factory=list)
     scales: list[str] = field(default_factory=list)
     forms: list[str] = field(default_factory=list)
-    voices: list[str] = field(default_factory=list)
+    voices: list[str] = field(default_factory=lambda: ["melody", "countermelody",
+                                                      "harmony", "bass"])
     form: str = ""
     form_name: str = ""
     matched_terms: list[str] = field(default_factory=list)

@@ -2,9 +2,11 @@
 (function () {
   'use strict';
 
+  // One colour per part. Every generation is the same four tracks, so the
+  // same part is always the same colour on the roll and in the legend.
   var TRACK_COLOURS = {
-    Melody: '#7bd4a8', Countermelody: '#d8c06a', Ostinato: '#6ad8cf',
-    Arpeggio: '#9b8ad4', Chords: '#6a8fd8', Bass: '#c98bd4'
+    melody: '#7bd4a8', countermelody: '#d8c06a',
+    harmony: '#6a8fd8', bass: '#c98bd4'
   };
   var EXAMPLES = [
     'a sad lo-fi piano loop in F minor at 82 bpm',
@@ -63,7 +65,7 @@
     var notes = [];
     song.tracks.forEach(function (track) {
       track.notes.forEach(function (note) {
-        notes.push({ note: note, colour: TRACK_COLOURS[track.name] || '#8a90a4' });
+        notes.push({ note: note, colour: TRACK_COLOURS[track.role] || '#8a90a4' });
       });
     });
     if (!notes.length) { return; }
@@ -242,10 +244,13 @@
     song.tracks.forEach(function (track) {
       var chip = document.createElement('span');
       chip.className = 'voice';
+      if (!track.notes.length) { chip.className += ' silent'; }
       var swatch = document.createElement('i');
-      swatch.style.background = TRACK_COLOURS[track.name] || '#8a90a4';
+      swatch.style.background = TRACK_COLOURS[track.role] || '#8a90a4';
       chip.appendChild(swatch);
-      chip.appendChild(document.createTextNode(track.name));
+      var label = track.name + (track.detail ? ' · ' + track.detail : '');
+      if (!track.notes.length) { label += ' · silent'; }
+      chip.appendChild(document.createTextNode(label));
       el.appendChild(chip);
     });
   }

@@ -160,28 +160,39 @@ class Vocabulary:
         the length axis, and the style axis is still free for "waltz" to match
         inside it. Claiming the span outright would have let whichever phrase
         was longer silently swallow the other meaning.
+
+        The name of a style is atomic, though. "drum and bass" is a style and
+        the "bass" in it is not a request for a bass line, so a phrase that
+        names the character of the music closes its words to everything else.
+        Every other phrase is a compound whose parts keep their own meanings.
         """
         haystack = f" {normalise(text)} "
         taken = {axis: [False] * len(haystack) for axis in AXES}
+        closed = [False] * len(haystack)
         matches: list[Match] = []
         for phrase, claims in self._phrases:
             needle = f" {phrase} "
+            names_character = any(kind in CHARACTER_KINDS for kind, _ in claims)
             start = haystack.find(needle)
             while start != -1:
                 # Claim only the phrase itself, not its boundary spaces, so
                 # "celtic jig" can match both "celtic" and "jig".
                 span = range(start + 1, start + len(needle) - 1)
                 claimed = False
-                for kind, tag in claims:
-                    lane = taken[axis_of(kind)]
-                    if any(lane[i] for i in span):
-                        continue
-                    for i in span:
-                        lane[i] = True
-                    matches.append(
-                        Match(kind, tag, phrase, start, start + len(needle)))
-                    claimed = True
+                if not any(closed[i] for i in span):
+                    for kind, tag in claims:
+                        lane = taken[axis_of(kind)]
+                        if any(lane[i] for i in span):
+                            continue
+                        for i in span:
+                            lane[i] = True
+                        matches.append(
+                            Match(kind, tag, phrase, start, start + len(needle)))
+                        claimed = True
                 if claimed:
+                    if names_character:
+                        for i in span:
+                            closed[i] = True
                     break
                 start = haystack.find(needle, start + 1)
         matches.sort(key=lambda m: m.start)

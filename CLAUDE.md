@@ -131,14 +131,27 @@ dorian's flat seventh turns it into minor. `MINOR_KEY_MODES` in
 `middaw/functional.py` is the list that decides, and it deliberately excludes
 dorian, phrygian and mixolydian.
 
-## Voices, not just chords
+## Four tracks, always
 
-`middaw/voices.py`. Six lines: melody, countermelody, ostinato, arpeggio,
-chords, bass. The countermelody is a real second voice — it moves where the
-melody rests, moves contrary to it where it can, stays under it, and refuses
-parallel fifths and octaves. `_makes_parallel` compares each voice against the
-other *at the same moment*; comparing the current melody note against both
-counter notes looks plausible and detects nothing.
+`middaw/parts.py`. Every generation is the same four MIDI tracks in the same
+order on the same channels: **melody, countermelody, harmony, bass**. That is
+the standard Western texture, and keeping it fixed means a player can assign
+one instrument per part once and have every result land on the same four slots.
+A part the prompt deliberately silenced ("just a bassline") is still written,
+just empty — the slots do not move.
+
+The harmony part is one job done one of three ways: comped `chords`, an
+`ostinato`, or an `arpeggio`. A style picks the treatment (`GENRE_TREATMENT` in
+`middaw/prompt.py`), a prompt can ask for one by name, and it is carried on the
+spec as `spec.harmony` and on the track as `detail`. **It never gets its own
+track** — a repeating figure and a comping piano are the same part played
+differently, not two parts.
+
+`middaw/voices.py` writes the lines. The countermelody is a real second voice —
+it moves where the melody rests, moves contrary to it where it can, stays under
+it, and refuses parallel fifths and octaves. `_makes_parallel` compares each
+voice against the other *at the same moment*; comparing the current melody note
+against both counter notes looks plausible and detects nothing.
 
 An ostinato figure is invented once for the whole piece, not once per section.
 That repetition is what makes it an ostinato.

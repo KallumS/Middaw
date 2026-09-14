@@ -68,11 +68,20 @@ class TestRendering(unittest.TestCase):
         in_key = sum(1 for n in melody.notes if n.pitch % 12 in scale)
         self.assertGreaterEqual(in_key / len(melody.notes), 0.95)
 
-    def test_roles_are_respected(self):
+    def test_every_generation_is_the_same_four_tracks(self):
+        for prompt in PROMPTS:
+            song = generate(prompt, seed=2).song
+            self.assertEqual([t.name for t in song.tracks],
+                             ["Melody", "Countermelody", "Harmony", "Bass"])
+            self.assertEqual([t.channel for t in song.tracks], [0, 1, 2, 3])
+
+    def test_a_narrowed_texture_silences_a_part_without_dropping_it(self):
         spec = parse_prompt("just a bassline in E minor", seed=2)
-        self.assertIn("bass", spec.roles)
-        names = {t.name for t in render(spec).song.tracks}
-        self.assertIn("Bass", names)
+        self.assertEqual(spec.voices, ["bass"])
+        song = render(spec).song
+        self.assertEqual(len(song.tracks), 4)
+        playing = {t.role for t in song.tracks if t.notes}
+        self.assertEqual(playing, {"bass"})
 
     def test_no_simultaneous_duplicate_pitches_in_a_track(self):
         for seed in range(6):

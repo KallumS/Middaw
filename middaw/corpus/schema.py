@@ -134,7 +134,8 @@ def validate_entry(entry: Entry | dict, vocab=None) -> list[str]:
     # --- tier 3: tags must come from the vocabulary ---
     if vocab is not None:
         groups = {"genres": "genre", "moods": "mood",
-                  "descriptors": "descriptor", "roles": "role"}
+                  "descriptors": "descriptor", "roles": "role",
+                  "voices": "voice"}
         for group, values in entry.tags.items():
             if group not in groups:
                 problems.append(f"unknown tag group {group!r}")
