@@ -89,6 +89,46 @@ currently answers only against itself:
 This turns a MIDI folder into a measuring instrument. No trained weights, no
 copied material, and it tells us which of the rules are actually wrong.
 
+`python3 -m middaw.corpus measure <folder>` does it, against MusicXML scores and
+any RomanText analyses sitting beside them. What the first run found, against
+410 Bach chorales and the eighteen of them that carry a human analysis:
+
+| | |
+| --- | --- |
+| key: tonic and mode | **74.9%** of 410 chorales |
+| key: tonic only | **80.2%** |
+| named the relative key by mistake | 2.7% |
+| harmony: same root as the analyst | **80.5%** of 1,041 analysed chords |
+| harmony: same root and quality | **78.7%** |
+| numerals our theory could not express | 0 of 1,041 |
+
+Three things came out of that first run, and only one of them was about the
+generator:
+
+- **A bug in the reader, not the analyser.** In 156 of the 410 chorales the
+  soprano part is marked minor and the lower three major, on the same key
+  signature. Reading every part and letting the last one win called a third of
+  the collection major that is not — and the "key detection is only 45%
+  accurate" panic that produced was entirely our own mistake.
+- **A real fix, worth 12 points.** Key detection took the lowest note of the
+  last few beats as the final bass. At a cadence the dominant sits below the
+  tonic that follows it, so a I–V–I in C was read as G mixolydian. Reading the
+  bass of the *last chord* instead moved the chorales from 62% to 75% and the
+  generated set from 51% to 73% — the same change helping both, which is how
+  you tell a fix from a tuning.
+- **Something the generator is measurably wrong about.** Bach's chorale
+  melodies move by step 67% of the time. Middaw's move by step 49% and repeat
+  a note 19% of the time against Bach's 15%. The interval distributions are
+  0.19 apart. "Mostly stepwise" was marked as implemented; it is implemented
+  and it is set too low.
+
+Everything else the run touched was left alone on purpose. A sweep of the
+chord-window constants moved root accuracy between 80.4% and 81.4% across
+every setting, and the key-detection weights bought a point on the chorales for
+a point on the generated set — both of which are what noise looks like, and
+neither of which is a reason to change a constant. Eighteen analyses of one
+genre by one composer is a keyhole, not a window.
+
 **3. Learning — but only ever to produce parameters.** The ladder, in the order
 each step becomes worth doing:
 

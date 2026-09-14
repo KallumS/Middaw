@@ -118,6 +118,47 @@ def cmd_show(args) -> int:
     return 0
 
 
+def cmd_measure(args) -> int:
+    """Measure the analyser against scores somebody else wrote.
+
+    Points at a folder of MusicXML (and any RomanText analyses beside them),
+    reports how close we are, and reads nothing into the corpus: measuring is
+    not ingesting, and these files are not ours to pool. See docs/DATASET.md.
+    """
+    from middaw.corpus.measure import format_report, run
+
+    folder = Path(args.folder)
+    if not folder.is_dir():
+        print(f"{folder}: not a directory", file=sys.stderr)
+        return 1
+    report = run(folder, limit=args.limit, style=args.style, seed=args.seed)
+    if not report["scores"]:
+        print(f"no scores found in {folder}", file=sys.stderr)
+        return 1
+    print(format_report(report))
+    if args.json:
+        Path(args.json).write_text(
+            json.dumps(_jsonable(report), indent=2) + "\n", encoding="utf-8")
+        print(f"\nwrote {args.json}")
+    return 0
+
+
+def _jsonable(report: dict) -> dict:
+    """The report with its dataclasses and counters flattened."""
+    from dataclasses import asdict, is_dataclass
+
+    def convert(value):
+        if is_dataclass(value):
+            return convert(asdict(value))
+        if isinstance(value, dict):
+            return {str(k): convert(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [convert(v) for v in value]
+        return value
+
+    return convert(report)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="middaw.corpus")
     parser.add_argument("--directory", "-d", default="data/corpus")
@@ -138,6 +179,17 @@ def main(argv=None) -> int:
     show = sub.add_parser("show", help="derived labels for one file")
     show.add_argument("file")
     show.set_defaults(func=cmd_show)
+
+    measure = sub.add_parser(
+        "measure", help="check the analyser against scores and human analyses")
+    measure.add_argument("folder", help="a folder of MusicXML, and any "
+                                        "RomanText analyses beside them")
+    measure.add_argument("--limit", type=int, default=None)
+    measure.add_argument("--style", default="hymn",
+                         help="the style to generate for the melody comparison")
+    measure.add_argument("--seed", type=int, default=1)
+    measure.add_argument("--json", help="also write the full report here")
+    measure.set_defaults(func=cmd_measure)
 
     args = parser.parse_args(argv)
     return args.func(args)

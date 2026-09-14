@@ -223,6 +223,28 @@ from real music — not to be searched, recombined or memorised.
 So learning may replace how a spec is chosen; it may never replace how the
 notes are written. `MusicSpec` is the seam, and it is there for exactly this.
 
+## Measuring against real music
+
+`middaw/corpus/measure.py`, run as `python3 -m middaw.corpus measure <folder>`.
+It reads MusicXML scores and any RomanText analyses beside them, and reports
+how close our key detection and our harmonic analysis are to what a human
+wrote. `middaw/corpus/notation.py` reads both formats with the standard
+library, for the same reason `middaw/midi.py` writes MIDI by hand.
+
+Measuring is not ingesting: it reports numbers about a folder and copies
+nothing into the corpus, which is what makes it usable on files whose rights
+are not cleared. See `docs/DATASET.md` before pointing it anywhere.
+
+**A number measured against our own output is not a measurement.** Every
+accuracy figure in this project before this tool existed was produced by
+generating music and analysing it, which measures the generator against
+itself. When the two sets disagree, the real music is right.
+
+And when a measurement collapses, suspect the reader first: the first run said
+key detection was 45% accurate, and the actual fault was that 156 of the 410
+chorales mark the soprano minor and the other three parts major, so reading
+every part and keeping the last called them all major.
+
 ## Corpus discipline
 
 A MIDI file is a separate copyrightable work from the composition it
@@ -237,12 +259,18 @@ dataset and a liability. See `docs/DATASET.md`.
 
 ## Known limits, honestly
 
-- Key detection in `middaw/corpus/analyse.py` recovers the tonic in about
-  three quarters of a 120-piece sweep. Most of the residue is four-bar vamps
-  that never state a tonic — `i-bVII-i-bVII` is as much G mixolydian as D
-  dorian — and cadential material does much better. The weights were swept
-  against *generated* music, which is a calibration set, not a corpus; re-check
-  them once real files are in.
+- Key detection in `middaw/corpus/analyse.py` names tonic and mode exactly for
+  **74.9%** of 410 Bach chorales and finds the tonic for **80.2%** — measured,
+  not estimated. Most of the residue is a minor key named as one of its modes
+  (B minor read as B dorian), because the collection is picked from the major
+  scale and a raised leading tone moves it; the rest is four-bar vamps that
+  never state a tonic, where `i-bVII-i-bVII` is as much G mixolydian as D
+  dorian. Harmonic analysis agrees with a human analyst's root on **80.5%** of
+  1,041 chords.
+- **Middaw's melodies do not move by step enough.** Bach's chorale melodies
+  are 67% stepwise; ours are 49%, and we repeat a note 19% of the time against
+  his 15%. The interval distributions are 0.19 apart. That is the clearest
+  measured gap between what we write and what real music does.
 - The soundfont path (vendored file → CDN → built-in tone) has been exercised
   end to end against a locally built stand-in soundfont, but never against the
   real FluidR3 file, because the sandbox blocks both CDNs. Try it for real.

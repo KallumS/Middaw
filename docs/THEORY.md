@@ -287,7 +287,18 @@ decoration or number its suspensions.
 2. Leaps larger than a fourth, and any diminished leap, change direction after.
 3. Consecutive leaps should outline a triad.
 
-✅ rules 1 and 2; ○ rule 3
+◐ rules 1 and 2; ○ rule 3. Rule 1 is now *measured* against the chorales the
+rule came from (`python3 -m middaw.corpus measure`), and Middaw does not follow
+it closely enough:
+
+| | Bach, 410 chorales | Middaw |
+| --- | --- | --- |
+| stepwise motion | 67.1% | 49.1% |
+| repeated note | 14.7% | 18.8% |
+| leap turns back | 77.6% | 81.3% |
+
+Rule 2 we keep as well as Bach does. Rule 1 we do not, and that is the single
+clearest measured difference between our melodies and real ones.
 
 ## 8. Rhythm
 
@@ -508,12 +519,15 @@ twelve accompaniment figures.
 
 The biggest gaps, in the order they would most improve the output:
 
-1. **Subdivision groupings and clave** — where rhythmic identity actually lives.
-2. **Voice leading for the chords** — doubling, spacing, guide tones, and
+1. **Too few steps.** Measured against the chorales: Bach's melodies move by
+   step 67% of the time and ours 49%. This is now a number rather than an
+   opinion, which makes it the first thing to fix.
+2. **Subdivision groupings and clave** — where rhythmic identity actually lives.
+3. **Voice leading for the chords** — doubling, spacing, guide tones, and
    resolving the seventh down by step. The countermelody already avoids
    parallel perfect intervals; nothing else does.
-3. **Modulation** — the app cannot change key at all, so a sonata exposition
+4. **Modulation** — the app cannot change key at all, so a sonata exposition
    cannot really go to the dominant and a binary form cannot really come back.
-4. **Sentences and elisions** — the melodic side of phrase construction.
-5. **Chromatic decoration** — every non-chord tone Middaw writes is diatonic,
+5. **Sentences and elisions** — the melodic side of phrase construction.
+6. **Chromatic decoration** — every non-chord tone Middaw writes is diatonic,
    so it decorates but never leans.
