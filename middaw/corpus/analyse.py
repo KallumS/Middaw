@@ -15,14 +15,11 @@ from collections import Counter, defaultdict
 from middaw.midi import MidiFile, read_midi
 from middaw.scaleview import Key, detect_chord, key_for
 from middaw.song import Note
-from middaw.theory import SCALES
+from middaw.theory import ROMAN_BY_INTERVAL, SCALES
 
 # Krumhansl-Schmuckler key profiles.
 MAJOR_PROFILE = (6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
 MINOR_PROFILE = (6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
-
-ROMAN_BY_INTERVAL = {0: "I", 1: "bII", 2: "II", 3: "bIII", 4: "III", 5: "IV",
-                     6: "bV", 7: "V", 8: "bVI", 9: "VI", 10: "bVII", 11: "VII"}
 
 GRID = (1.0, 0.75, 2 / 3, 0.5, 1 / 3, 0.25, 1 / 6)
 

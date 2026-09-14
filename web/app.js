@@ -185,7 +185,9 @@
       chip.textContent = (chord.symbol || chord.roman) + ' ';
       var roman = document.createElement('span');
       roman.className = 'roman';
-      roman.textContent = chord.roman;
+      // What the chord is doing - "V7/vi", "SubV7/V", "ii/IV" - rather than
+      // the bare numeral, which says less.
+      roman.textContent = chord.function || chord.roman;
       chip.appendChild(roman);
       chordsEl.appendChild(chip);
     });

@@ -70,12 +70,16 @@ def name_chords(spec: MusicSpec, spans) -> list[dict]:
     in the MIDI - and it is the same routine the corpus labeller uses.
     """
     key = spec.key()
+    labels = spec.progression_labels or spec.progression
     out = []
     for bar, (start, _length, chord) in enumerate(spans):
         out.append({
             "bar": bar + 1,
             "beat": round(start, 4),
             "roman": chord.symbol,
+            # What the chord is *doing* - "V7/vi", "SubV7", "ii/IV" - which is
+            # the thing a musician wants to see, not the raw numeral.
+            "function": labels[bar % len(labels)] if labels else chord.symbol,
             "symbol": detect_chord(chord.pitch_classes, chord.bass, key) or "",
         })
     return out

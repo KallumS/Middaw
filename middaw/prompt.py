@@ -17,6 +17,7 @@ from __future__ import annotations
 import random
 import re
 
+from middaw.functional import generate_progression
 from middaw.spec import MusicSpec
 from middaw.theory import (PITCH_CLASSES, SCALES, harmonic_pitch_classes,
                            parse_note_name, parse_roman)
@@ -226,6 +227,7 @@ def parse_prompt(
             spec.bars = 16
 
     # --- content controls ---
+    spec.chromaticism = max(0.0, min(1.0, priors.chromaticism))
     spec.density = priors.density
     spec.swing = priors.swing
     spec.extensions = priors.extensions
@@ -235,7 +237,9 @@ def parse_prompt(
     spec.pattern = _pick_weighted(rng, priors.patterns, "block")
 
     # --- progression ---
-    spec.progression = list(_choose_progression(rng, priors, spec))
+    chords, labels = _choose_progression(rng, priors, spec)
+    spec.progression = list(chords)
+    spec.progression_labels = list(labels)
 
     # A long progression (a 12-bar blues, say) defines its own phrase length.
     if not bars_match:
@@ -283,7 +287,11 @@ MODE_DEFAULT_PROGRESSIONS = {
 }
 
 
-_TONIC_CHORD_RE = re.compile(r"^([b#]?)(i{1,3}|iv|vi{0,2}|I{1,3}|IV|VI{0,2})")
+# Longest numeral first: with no anchor to force backtracking, an alternation
+# that tries "I" before "IV" reads IV7 as a tonic chord and calls the whole
+# progression major.
+_TONIC_CHORD_RE = re.compile(
+    r"^([b#]?)(iii|iv|ii|i|vii|vi|v|III|IV|II|I|VII|VI|V)")
 
 
 def progression_is_minor(chords: tuple[str, ...] | list[str]) -> bool:
@@ -320,8 +328,28 @@ def progression_fit(chords: tuple[str, ...] | list[str], spec: MusicSpec) -> flo
     return 1.0 if total == 0 else fitting / total
 
 
-def _choose_progression(rng: random.Random, priors, spec: MusicSpec) -> tuple[str, ...]:
-    """Pick a progression whose tonality agrees with the chosen mode.
+def _choose_progression(rng: random.Random, priors, spec: MusicSpec):
+    """Write the progression, either from function or from the style's own loops.
+
+    Returns (symbols, labels). The grammar in `middaw.functional` builds a
+    progression out of tonic/predominant/dominant motion and can tonicise any
+    chord in the key, so it writes progressions that are in no list. Styles
+    with a signature loop - a twelve-bar blues, I-V-vi-IV - keep leaning on
+    that list, because their identity *is* the loop.
+    """
+    if rng.random() < priors.functional:
+        length = 8 if rng.random() < (0.3 + 0.3 * priors.functional) else 4
+        chords = generate_progression(
+            tonic=spec.tonic, mode=spec.mode, length=length,
+            chromaticism=spec.chromaticism, sevenths=spec.extensions, rng=rng)
+        return ([c.symbol for c in chords], [c.display for c in chords])
+
+    chosen = _choose_listed_progression(rng, priors, spec)
+    return (list(chosen), list(chosen))
+
+
+def _choose_listed_progression(rng: random.Random, priors, spec: MusicSpec) -> tuple[str, ...]:
+    """Pick a style's stock progression whose tonality agrees with the mode.
 
     A major-key ii-V-I underneath a natural-minor melody is the single most
     audible way for a generator to sound wrong, so mismatches are all but

@@ -57,6 +57,11 @@ QUALITIES = {
     "dom9": (0, 4, 7, 10, 14),
     "add9": (0, 4, 7, 14),
     "minadd9": (0, 3, 7, 14),
+    # Stacking thirds inside harmonic and melodic minor produces these, and
+    # without them a minor tonic seventh silently reads as a major triad.
+    "minmaj7": (0, 3, 7, 11),
+    "augmaj7": (0, 4, 8, 11),
+    "aug7": (0, 4, 8, 10),
 }
 
 # Suffix written on a roman numeral -> quality lookup. Resolution depends on
@@ -64,7 +69,11 @@ QUALITIES = {
 _SUFFIX_MAP = {
     "": {"maj": "maj", "min": "min", "dim": "dim", "aug": "aug"},
     "7": {"maj": "dom7", "min": "min7", "dim": "min7b5", "aug": "dom7"},
-    "maj7": {"maj": "maj7", "min": "maj7", "dim": "maj7", "aug": "maj7"},
+    # On a lower-case numeral 'maj7' means a minor triad carrying a major
+    # seventh - i minMaj7, the tonic of harmonic minor - not a major seventh.
+    "maj7": {"maj": "maj7", "min": "minmaj7", "dim": "minmaj7", "aug": "augmaj7"},
+    "+maj7": {k: "augmaj7" for k in ("maj", "min", "dim", "aug")},
+    "+7": {k: "aug7" for k in ("maj", "min", "dim", "aug")},
     "m7": {"maj": "min7", "min": "min7", "dim": "min7b5", "aug": "min7"},
     "6": {"maj": "maj6", "min": "min6", "dim": "min6", "aug": "maj6"},
     "9": {"maj": "dom9", "min": "min9", "dim": "min9", "aug": "dom9"},
@@ -80,9 +89,35 @@ _SUFFIX_MAP = {
 
 _DEGREE_VALUES = {"I": 0, "II": 1, "III": 2, "IV": 3, "V": 4, "VI": 5, "VII": 6}
 
+# Semitones above the tonic -> how that degree is written. Accidentals are
+# measured against the major scale, which is why bVII is the subtonic in both
+# C major and C minor.
+ROMAN_BY_INTERVAL = {0: "I", 1: "bII", 2: "II", 3: "bIII", 4: "III", 5: "IV",
+                     6: "bV", 7: "V", 8: "bVI", 9: "VI", 10: "bVII", 11: "VII"}
+
+PLAIN_NUMERALS = ("I", "II", "III", "IV", "V", "VI", "VII")
+MAJOR_INTERVALS = (0, 2, 4, 5, 7, 9, 11)
+
+
+def roman_for_degree(degree: int, interval: int) -> str:
+    """Spell a scale degree against the major scale: lydian's 4th is #IV.
+
+    Naming by semitone alone cannot do this - six semitones above the tonic is
+    bV in locrian and #IV in lydian, and which one it is depends on the degree
+    it occupies, not on the pitch.
+    """
+    degree %= 7
+    delta = (interval - MAJOR_INTERVALS[degree]) % 12
+    if delta > 6:
+        delta -= 12
+    accidental = {-2: "bb", -1: "b", 0: "", 1: "#", 2: "x"}.get(delta)
+    if accidental is None:
+        return ROMAN_BY_INTERVAL[interval % 12]
+    return accidental + PLAIN_NUMERALS[degree]
+
 _ROMAN_RE = re.compile(
     r"^(?P<accidental>[b#]?)(?P<numeral>i{1,3}|iv|vi{0,2}|I{1,3}|IV|VI{0,2})"
-    r"(?P<suffix>maj7|maj9|add9|sus2|sus4|m7|o7|[679]|o|0|\+)?"
+    r"(?P<suffix>\+maj7|\+7|maj7|maj9|add9|sus2|sus4|m7|o7|[679]|o|0|\+)?"
     r"(?:/(?P<secondary>[b#]?(?:i{1,3}|iv|vi{0,2}|I{1,3}|IV|VI{0,2})))?$"
 )
 
