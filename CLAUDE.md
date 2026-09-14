@@ -61,6 +61,20 @@ engine, exactly as Pro and Simple are over there. The ranking constants and
 their reasoning are ScaleView's; that repo's CLAUDE.md has the measurements
 behind each one, and they were measured, not tuned by ear.
 
+## Where the music theory lives
+
+`docs/THEORY.md` records everything taken from the source material — Kallum's
+own studies, Hutchinson's *Music Theory for the 21st-Century Classroom*, and
+the ScaleView port — and marks each item implemented, partly implemented, or
+not built. **Read it before adding musical behaviour**, and update the markers
+when you build something. It is also the backlog: the closing section ranks the
+gaps by how much they would improve the output.
+
+The generator's harmony follows Hutchinson's four-function flowchart — tonic,
+tonic prolongation, pre-dominant, dominant — not the usual three. Separating
+tonic prolongation (vi, iii) from tonic is what stops vi resolving straight
+back to I.
+
 ## Musical coherence is enforced, not hoped for
 
 Two rules in `middaw/prompt.py` that exist because breaking them is instantly

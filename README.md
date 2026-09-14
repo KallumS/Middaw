@@ -74,6 +74,8 @@ genre adds it to both at once.
 
 ## Documentation
 
+- **[docs/THEORY.md](docs/THEORY.md)** — everything the generator knows about
+  music, where it came from, and which parts are built yet
 - **[docs/LABELLING.md](docs/LABELLING.md)** — how to label the dataset, and
   why the label schema is also the prompt vocabulary
 - **[docs/DATASET.md](docs/DATASET.md)** — sourcing MIDI you are actually
