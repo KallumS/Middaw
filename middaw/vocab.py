@@ -60,7 +60,8 @@ class Priors:
             wanted = chances_from_entry(entry)
             for name in ("step", "skip", "repeat", "leap_turns_back",
                          "cadence_lands_home", "cadence_deceptive",
-                         "twin_answers", "new_motif", "bass_root", "bass_fifth"):
+                         "twin_answers", "new_motif", "bass_root", "bass_fifth",
+                         "drum_fill", "ghost_note"):
                 mine = getattr(self.chances, name)
                 setattr(self.chances, name,
                         mine * (1 - weight) + getattr(wanted, name) * weight)

@@ -137,6 +137,99 @@
     }, this);
   };
 
+  // Channel 10 is a kit, not a keyboard: playing note 36 as a piano C2 is the
+  // one thing this project exists to avoid. Until there are drum samples, the
+  // kit is synthesised — a pitched thump for the drums, filtered noise for the
+  // cymbals — which is honest about being a placeholder and still keeps time.
+  var DRUM_VOICES = {
+    36: { type: 'tone', frequency: 55, decay: 0.28, gain: 1.0 },
+    35: { type: 'tone', frequency: 48, decay: 0.32, gain: 1.0 },
+    38: { type: 'noise', frequency: 1900, decay: 0.16, gain: 0.7, body: 190 },
+    40: { type: 'noise', frequency: 2100, decay: 0.14, gain: 0.7, body: 210 },
+    37: { type: 'noise', frequency: 2600, decay: 0.06, gain: 0.4, body: 420 },
+    39: { type: 'noise', frequency: 1500, decay: 0.16, gain: 0.6 },
+    42: { type: 'noise', frequency: 8000, decay: 0.045, gain: 0.34 },
+    44: { type: 'noise', frequency: 6500, decay: 0.06, gain: 0.30 },
+    46: { type: 'noise', frequency: 7000, decay: 0.34, gain: 0.34 },
+    49: { type: 'noise', frequency: 5200, decay: 1.10, gain: 0.40 },
+    55: { type: 'noise', frequency: 6200, decay: 0.70, gain: 0.36 },
+    51: { type: 'noise', frequency: 7600, decay: 0.42, gain: 0.26 },
+    53: { type: 'noise', frequency: 5400, decay: 0.50, gain: 0.32 },
+    41: { type: 'tone', frequency: 110, decay: 0.34, gain: 0.8 },
+    47: { type: 'tone', frequency: 160, decay: 0.30, gain: 0.8 },
+    50: { type: 'tone', frequency: 220, decay: 0.28, gain: 0.8 },
+    54: { type: 'noise', frequency: 5000, decay: 0.22, gain: 0.30 },
+    56: { type: 'tone', frequency: 800, decay: 0.16, gain: 0.5 },
+    64: { type: 'tone', frequency: 190, decay: 0.24, gain: 0.7 },
+    63: { type: 'tone', frequency: 260, decay: 0.20, gain: 0.7 },
+    75: { type: 'tone', frequency: 2400, decay: 0.09, gain: 0.5 },
+    76: { type: 'tone', frequency: 1200, decay: 0.09, gain: 0.5 },
+    82: { type: 'noise', frequency: 9000, decay: 0.07, gain: 0.22 },
+    69: { type: 'noise', frequency: 7000, decay: 0.10, gain: 0.22 },
+    70: { type: 'noise', frequency: 8500, decay: 0.06, gain: 0.22 },
+    67: { type: 'tone', frequency: 900, decay: 0.14, gain: 0.5 },
+    65: { type: 'tone', frequency: 340, decay: 0.16, gain: 0.6 },
+    81: { type: 'tone', frequency: 3200, decay: 0.60, gain: 0.30 }
+  };
+
+  var DEFAULT_DRUM = { type: 'noise', frequency: 4000, decay: 0.12, gain: 0.3 };
+
+  PianoPlayer.prototype.noiseBuffer = function () {
+    if (this.noise) { return this.noise; }
+    var context = this.context;
+    var length = Math.floor(context.sampleRate * 1.2);
+    var buffer = context.createBuffer(1, length, context.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < length; i += 1) { data[i] = Math.random() * 2 - 1; }
+    this.noise = buffer;
+    return buffer;
+  };
+
+  PianoPlayer.prototype.playDrum = function (pitch, at, gainValue) {
+    var context = this.context;
+    var voice = DRUM_VOICES[pitch] || DEFAULT_DRUM;
+    var level = gainValue * voice.gain;
+    var envelope = context.createGain();
+    envelope.connect(context.destination);
+    envelope.gain.setValueAtTime(Math.max(0.0001, level), at);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, at + voice.decay);
+
+    if (voice.type === 'noise') {
+      var source = context.createBufferSource();
+      source.buffer = this.noiseBuffer();
+      var filter = context.createBiquadFilter();
+      filter.type = voice.body ? 'bandpass' : 'highpass';
+      filter.frequency.value = voice.frequency;
+      filter.Q.value = voice.body ? 0.8 : 0.7;
+      source.connect(filter).connect(envelope);
+      source.start(at);
+      source.stop(at + voice.decay + 0.05);
+      this.active.push(source);
+      if (voice.body) {                       // a snare has a drum under it
+        var tone = context.createOscillator();
+        var toneLevel = context.createGain();
+        tone.type = 'triangle';
+        tone.frequency.setValueAtTime(voice.body, at);
+        toneLevel.gain.value = 0.5;
+        tone.connect(toneLevel).connect(envelope);
+        tone.start(at);
+        tone.stop(at + voice.decay + 0.05);
+        this.active.push(tone);
+      }
+      return;
+    }
+
+    var oscillator = context.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(voice.frequency * 2.2, at);
+    oscillator.frequency.exponentialRampToValueAtTime(
+      voice.frequency, at + Math.min(0.08, voice.decay));
+    oscillator.connect(envelope);
+    oscillator.start(at);
+    oscillator.stop(at + voice.decay + 0.05);
+    this.active.push(oscillator);
+  };
+
   PianoPlayer.prototype.playSample = function (pitch, at, duration, gainValue) {
     var context = this.context;
     var buffer = this.buffers[pitch];
@@ -170,20 +263,27 @@
     return this.loadVoice().then(function () {
       var notes = [];
       song.tracks.forEach(function (track) {
-        track.notes.forEach(function (note) { notes.push(note); });
+        var kit = track.channel === 9;
+        track.notes.forEach(function (note) {
+          notes.push({ note: note, kit: kit });
+        });
       });
-      var pitches = notes.map(function (note) { return note.pitch; });
+      var pitches = notes.filter(function (item) { return !item.kit; })
+        .map(function (item) { return item.note.pitch; });
       return self.decode(pitches).then(function () {
         var secondsPerBeat = 60 / song.tempo;
         var at = context.currentTime + 0.12;
         self.startedAt = at;
         self.duration = song.lengthBeats * secondsPerBeat + 1.2;
 
-        notes.forEach(function (note) {
+        notes.forEach(function (item) {
+          var note = item.note;
           var start = at + note.start * secondsPerBeat;
           var length = Math.max(0.06, note.duration * secondsPerBeat);
           var gainValue = Math.max(0.02, (note.velocity / 127) * 0.34);
-          if (self.voice === 'soundfont') {
+          if (item.kit) {
+            self.playDrum(note.pitch, start, gainValue);
+          } else if (self.voice === 'soundfont') {
             self.playSample(note.pitch, start, length, gainValue);
           } else {
             self.playSynth(note.pitch, start, length, gainValue);

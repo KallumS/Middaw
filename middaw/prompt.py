@@ -20,7 +20,8 @@ import re
 from middaw.form import snap_to_ladder
 from middaw.functional import generate_progression
 from middaw.spec import MusicSpec
-from middaw.parts import ALL_VOICES, PARTS, TREATMENTS, VOICE_PARTS
+from middaw.parts import (ALL_VOICES, PARTS, PITCHED_PARTS, TREATMENTS,
+                          VOICE_PARTS)
 from middaw.theory import (BLUES_MODES, PITCH_CLASSES, SCALES,
                            harmonic_pitch_classes, parse_note_name, parse_roman)
 from middaw.vocab import Match, Vocabulary, load_vocabulary, normalise
@@ -281,6 +282,8 @@ def parse_prompt(
     # --- parts ---
     spec.harmony = _choose_treatment(requested_voices, spec)
     spec.voices = _choose_parts(requested_voices, spec)
+    if wants_drums(text, spec, requested_roles):
+        spec.voices.append("drums")
 
     for key, value in overrides.items():
         if value is not None and hasattr(spec, key):
@@ -391,24 +394,51 @@ def _choose_treatment(requested: list[str], spec: MusicSpec) -> str:
     return "chords"
 
 
-def _choose_parts(requested: list[str], spec: MusicSpec) -> list[str]:
-    """Which of the four parts actually sound.
+#: "no drums", and the ways people write it.
+_NO_DRUMS_RE = re.compile(
+    r"\b(?:no|without|sans)\s+(?:drums?|percussion|beat|kit)\b|\bundrummed\b|"
+    r"\bdrumless\b|\bunaccompanied\b")
 
-    All four, unless the prompt narrows the texture on purpose. "just a
-    bassline" is one line and is taken at its word; "a countermelody" gets a
-    melody to be a counter *to*; anything else alone still gets a bass, so a
-    sketch has something underneath it.
+
+def wants_drums(text: str, spec: MusicSpec, requested_roles: list[str]) -> bool:
+    """Whether this piece has a drummer.
+
+    Asking for them settles it, refusing them settles it, and otherwise the
+    style decides: a house track has a kit and a hymn does not, and giving a
+    hymn a backbeat because every other style has one would be worse than
+    silence.
+    """
+    if _NO_DRUMS_RE.search(normalise(text)):
+        return False
+    if "drums" in requested_roles:
+        return True
+    return any(genre in drum_styles() for genre in spec.genres)
+
+
+def drum_styles() -> set[str]:
+    from middaw.drums import load_kit
+    return set(load_kit()["genres"])
+
+
+def _choose_parts(requested: list[str], spec: MusicSpec) -> list[str]:
+    """Which of the parts actually sound.
+
+    All of the pitched ones, unless the prompt narrows the texture on purpose.
+    "just a bassline" is one line and is taken at its word; "a countermelody"
+    gets a melody to be a counter *to*; anything else alone still gets a bass,
+    so a sketch has something underneath it. Drums are decided separately,
+    because they are not one of the voices.
     """
     if not requested:
-        return list(PARTS)
+        return list(PITCHED_PARTS)
 
     parts = [VOICE_PARTS[v] for v in requested if v in VOICE_PARTS]
     if "countermelody" in parts and "melody" not in parts:
         parts.insert(0, "melody")
     if len(parts) == 1 and parts[0] not in ("bass", "harmony"):
         parts.append("bass")
-    ordered = [part for part in PARTS if part in parts]
-    return ordered or list(PARTS)
+    ordered = [part for part in PITCHED_PARTS if part in parts]
+    return ordered or list(PITCHED_PARTS)
 
 
 def _choose_progression(rng: random.Random, priors, spec: MusicSpec):

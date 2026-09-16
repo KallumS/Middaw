@@ -67,10 +67,16 @@ those words are the backlog for the vocabulary.
   aggressive, warm
 - **Descriptors**: sparse, dense, high, low, loud, quiet, swung, straight,
   slow, fast, moderate, ornamented, plain
-- **Four tracks, every time**: melody, countermelody, harmony and bass, in that
-  order and on channels 0–3, so one instrument per part can be assigned once
-  and every result lands on the same slots. The harmony part is comped chords,
-  an ostinato or an arpeggio depending on the style — or on what you ask for
+- **Five tracks, every time**: melody, countermelody, harmony and bass on
+  channels 0–3, and drums on channel 10, so one instrument per part can be
+  assigned once and every result lands on the same slots. The harmony part is
+  comped chords, an ostinato or an arpeggio depending on the style — or on what
+  you ask for
+- **Drums**: 29 patterns — backbeat, four on the floor, one drop, boom bap,
+  trap, two-step, shuffle, train beat, bossa, son clave, dembow, jazz ride and
+  more — chosen by style, with fills at the end of a phrase. A hymn gets no
+  drummer, "no drums" is obeyed, and a meter with no pattern written for it
+  gets silence rather than a guess
 - **Forms**: strophic, binary, repeated binary, ternary, AABA, rondo,
   seven-part rondo, medley, through-composed, sonata, fugue — named in the
   prompt, or chosen by the style

@@ -68,18 +68,25 @@ class TestRendering(unittest.TestCase):
         in_key = sum(1 for n in melody.notes if n.pitch % 12 in scale)
         self.assertGreaterEqual(in_key / len(melody.notes), 0.95)
 
-    def test_every_generation_is_the_same_four_tracks(self):
+    def test_every_generation_is_the_same_five_tracks(self):
+        """Four voices and a kit, in the same order, on the same channels."""
         for prompt in PROMPTS:
             song = generate(prompt, seed=2).song
             self.assertEqual([t.name for t in song.tracks],
-                             ["Melody", "Countermelody", "Harmony", "Bass"])
-            self.assertEqual([t.channel for t in song.tracks], [0, 1, 2, 3])
+                             ["Melody", "Countermelody", "Harmony", "Bass",
+                              "Drums"])
+            self.assertEqual([t.channel for t in song.tracks], [0, 1, 2, 3, 9])
+
+    def test_the_kit_is_on_channel_ten_and_nothing_else_is(self):
+        song = generate("a rock song in E", seed=2).song
+        for track in song.tracks:
+            self.assertEqual(track.channel == 9, track.role == "drums")
 
     def test_a_narrowed_texture_silences_a_part_without_dropping_it(self):
         spec = parse_prompt("just a bassline in E minor", seed=2)
         self.assertEqual(spec.voices, ["bass"])
         song = render(spec).song
-        self.assertEqual(len(song.tracks), 4)
+        self.assertEqual(len(song.tracks), 5)
         playing = {t.role for t in song.tracks if t.notes}
         self.assertEqual(playing, {"bass"})
 
@@ -114,8 +121,10 @@ class TestAnalysisRoundTrip(unittest.TestCase):
     def _analyse(self, prompt, seed):
         from middaw.corpus.analyse import analyse_notes
         result = generate(prompt, seed=seed)
-        return result, analyse_notes(result.song.notes, result.song.tempo,
-                                     result.song.meter)
+        # Pitched notes only: a kick drum is note 36 on channel 10, and a key
+        # detector handed a drum track finds C every time.
+        return result, analyse_notes(result.song.pitched_notes,
+                                     result.song.tempo, result.song.meter)
 
     def test_tempo_and_meter_round_trip_exactly(self):
         for prompt in self.PROMPTS[:6]:

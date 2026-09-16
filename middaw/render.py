@@ -14,7 +14,9 @@ from middaw.form import Section, choose_form, describe, plan_form
 from middaw.functional import generate_progression, recadence
 from middaw.melody import DEFAULT_INTERVALS, generate_melody
 from middaw.midi import song_to_bytes
-from middaw.parts import PART_NAMES, PARTS, TREATMENTS
+from middaw.drums import generate_drums, pattern_for
+from middaw.parts import (PART_CHANNELS, PART_NAMES, PARTS, PITCHED_PARTS,
+                          TREATMENTS)
 from middaw.voices import (generate_arpeggio, generate_countermelody,
                            generate_ostinato, make_ostinato_figure)
 from middaw.song import Note, Song, Track
@@ -123,6 +125,10 @@ def _humanize_timing(spec: MusicSpec, notes: list[Note], rng: random.Random) -> 
 #: Parts that are one note at a time. The harmony part is chords, so not it.
 MONOPHONIC_PARTS = ("melody", "countermelody", "bass")
 
+#: The kit is not pitched, so a dynamic arc and a transposition both mean
+#: something different there - a transposed drum track is a different kit.
+UNPITCHED_PARTS = ("drums",)
+
 
 def _keep_monophonic(notes: list[Note]) -> None:
     """Trim each note so it ends before the next one starts."""
@@ -176,17 +182,20 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
     song = Song(tempo=spec.tempo, meter=spec.meter,
                 ticks_per_beat=spec.ticks_per_beat, key_name=spec.key_name)
 
-    # Four tracks, always, in this order and on these channels. A generation
-    # is a four-part texture whatever the style, so a player can put an
-    # instrument on each part once and have every result land on the same
-    # slots. A part the prompt silenced is still written, just empty.
-    voiced = set(spec.voices or PARTS)
+    # Five tracks, always, in this order and on these channels: four voices
+    # and a kit. A player can put an instrument on each part once and have
+    # every result land on the same slots. A part the prompt silenced - or a
+    # style with no drummer - is still written, just empty.
+    voiced = set(spec.voices or PITCHED_PARTS)
     treatment = spec.harmony if spec.harmony in TREATMENTS else "chords"
+    beat = pattern_for(spec, random.Random(spec.seed ^ 0x0D2D5)) \
+        if "drums" in voiced else None
     tracks = {
         part: Track(name=PART_NAMES[part], program=ACOUSTIC_GRAND_PIANO,
-                    channel=index, role=part,
-                    detail=treatment if part == "harmony" else "")
-        for index, part in enumerate(PARTS)
+                    channel=PART_CHANNELS[part], role=part,
+                    detail=(treatment if part == "harmony" else
+                            (beat.label if part == "drums" and beat else "")))
+        for part in PARTS
     }
 
     # An ostinato is one figure restated; it is invented once for the piece,
@@ -245,6 +254,11 @@ def render(spec: MusicSpec, rng: random.Random | None = None,
             _extend(tracks["harmony"], harmony, offset)
         if "bass" in voiced:
             _extend(tracks["bass"], generate_bass(part, spans, rng), offset)
+        if "drums" in voiced and beat is not None:
+            # The kit plays the section, not the chords: it is the one part
+            # that does not read the harmony.
+            _extend(tracks["drums"],
+                    generate_drums(part, section.bars, rng, pattern=beat), offset)
 
         all_spans += [(start + offset, length, chord) for start, length, chord in spans]
         all_labels += [section.progression_labels[i % len(section.progression_labels)]

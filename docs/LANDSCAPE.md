@@ -13,8 +13,8 @@ own documentation.
 | Deterministic from a seed | yes | no | no | yes |
 | Language | Python, stdlib only | Python + Next.js | C++/JUCE | C++17, no deps |
 | Size | ~6,600 lines + 2,200 of tests | ~600 lines of Python + a web app | ~4,300 lines | ~182,000 lines |
-| Tracks | 4, fixed | chords, bass, drums | whatever the model returns | 9 |
-| Drums | no | yes | via the model | yes |
+| Tracks | 5, fixed | chords, bass, drums | whatever the model returns | 9 |
+| Drums | yes | yes | via the model | yes |
 | Delivery | local web app | web app with a piano roll | **VST3 plugin, inside the DAW** | WASM library, CLI, live demo |
 
 ## What each of them actually is
@@ -72,9 +72,9 @@ real songs**, which is the same idea as `docs/MEASUREMENTS.md`.
 
 ## Where we are behind
 
-1. **No drums.** Three of three have them. Half of the styles in
-   `docs/GENRES.md` keep most of their identity in a kit we do not write. This
-   is the single biggest hole in the output.
+1. ~~**No drums.**~~ Built — 29 patterns on channel 10, chosen by style, with
+   the feel measured from a CC BY 4.0 corpus. What remains is that ours is a
+   programmed pattern where theirs is a played one.
 2. **No editing.** BeatFlow has a piano roll; we render a read-only view. A
    generator you cannot adjust is a slot machine.
 3. **Four tracks against nine.** Ours is a deliberate contract, but a pad, a
@@ -111,7 +111,7 @@ For "a text box that writes usable MIDI", the honest answer is that the
 | Harmony, cadences, form, four parts, non-chord tones | done |
 | 72 styles with measured constants | done for 4 styles, defaults for the rest |
 | Measured against real corpora | done, and honest about the gaps |
-| **Drums** | not started — the biggest gap |
+| **Drums** | done; variation is the next step |
 | **Edit and regenerate a part** | not started |
 | **Stems, plugin, hosted demo** | not started |
 | Corpus-fitted constants for every style | blocked on cleared data, not on code |

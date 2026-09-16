@@ -52,9 +52,11 @@ Two more tables live in code rather than data because they name code objects:
 comped chords, a repeating figure or a broken chord). `PLAGAL_GENRES` marks the
 styles that end IV–I rather than V–I.
 
-Every generation is the same four parts — melody, countermelody, harmony, bass
-(`middaw/parts.py`) — so a style never gets more or fewer lines than another.
-What varies is what those four *do*.
+Every generation is the same five parts — melody, countermelody, harmony, bass
+and drums (`middaw/parts.py`) — so a style never gets more or fewer lines than
+another. What varies is what they *do*. Which beat a style plays, and whether
+it has a drummer at all, is in `data/vocab/drums.json`; a style missing from
+that file is one nobody drums.
 
 **Adding a genre means filling in all of that, and the tests check it.**
 `tests/test_vocab.py` asserts every genre is completely described, that its

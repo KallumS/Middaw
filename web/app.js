@@ -2,11 +2,11 @@
 (function () {
   'use strict';
 
-  // One colour per part. Every generation is the same four tracks, so the
+  // One colour per part. Every generation is the same five tracks, so the
   // same part is always the same colour on the roll and in the legend.
   var TRACK_COLOURS = {
     melody: '#7bd4a8', countermelody: '#d8c06a',
-    harmony: '#6a8fd8', bass: '#c98bd4'
+    harmony: '#6a8fd8', bass: '#c98bd4', drums: '#d88a6a'
   };
   var EXAMPLES = [
     'a sad lo-fi piano loop in F minor at 82 bpm',

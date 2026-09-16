@@ -11,7 +11,7 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 
-from middaw.song import Note, Song, Track
+from middaw.song import DRUM_CHANNEL, Note, Song, Track
 
 MICROSECONDS_PER_MINUTE = 60_000_000
 
@@ -104,6 +104,12 @@ class MidiFile:
     @property
     def notes(self) -> list[Note]:
         return sorted((n for t in self.tracks for n in t.notes), key=lambda n: (n.start, n.pitch))
+
+    @property
+    def pitched_notes(self) -> list[Note]:
+        """Everything except channel 10, where a note number is an instrument."""
+        return sorted((n for t in self.tracks if t.channel != DRUM_CHANNEL
+                       for n in t.notes), key=lambda n: (n.start, n.pitch))
 
 
 class MidiParseError(ValueError):

@@ -379,4 +379,6 @@ def analyse_notes(notes: list[Note], tempo: float, meter: tuple[int, int]) -> di
 
 def analyse_file(path) -> dict:
     midi: MidiFile = read_midi(path)
-    return analyse_notes(midi.notes, midi.tempo, midi.meter)
+    # Not `midi.notes`: a kick drum is note 36 on channel 10, and a key
+    # detector handed a drum track will find C every time.
+    return analyse_notes(midi.pitched_notes, midi.tempo, midi.meter)

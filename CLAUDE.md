@@ -131,14 +131,23 @@ dorian's flat seventh turns it into minor. `MINOR_KEY_MODES` in
 `middaw/functional.py` is the list that decides, and it deliberately excludes
 dorian, phrygian and mixolydian.
 
-## Four tracks, always
+## Four voices and a kit
 
-`middaw/parts.py`. Every generation is the same four MIDI tracks in the same
-order on the same channels: **melody, countermelody, harmony, bass**. That is
-the standard Western texture, and keeping it fixed means a player can assign
-one instrument per part once and have every result land on the same four slots.
-A part the prompt deliberately silenced ("just a bassline") is still written,
-just empty — the slots do not move.
+`middaw/parts.py`. Every generation is the same five MIDI tracks in the same
+order on the same channels: **melody, countermelody, harmony, bass** on
+channels 0–3, and **drums** on channel 10. Keeping it fixed means a player can
+assign one instrument per part once and have every result land on the same
+slots. A part the prompt deliberately silenced ("just a bassline") is still
+written, just empty — the slots do not move.
+
+**Drums are not a fifth voice.** No key, no register, no chord to belong to,
+and on channel 10 a note number names an instrument rather than a pitch. They
+sit outside `VOICE_PARTS`, they are chosen by style rather than by texture, and
+a hymn's drum track is empty rather than apologetic. Two consequences that bite
+if forgotten: a drum track must never be transposed, and it must never reach
+the key detector — `Song.pitched_notes` and `MidiFile.pitched_notes` exist for
+exactly that, because note 36 on channel 10 is a kick and a key detector handed
+one finds C every time.
 
 The harmony part is one job done one of three ways: comped `chords`, an
 `ostinato`, or an `arpeggio`. A style picks the treatment (`GENRE_TREATMENT` in
@@ -195,6 +204,27 @@ Two invariants that survive any roll: **a cadence lands in root position**, and
 **the melody, countermelody and bass are monophonic** — trimmed to the next
 onset in `middaw/render.py` after humanising, because nudged timing can push a
 note past the one after it.
+
+## The kit
+
+`middaw/drums.py`, with the patterns in `data/vocab/drums.json` and the feel
+constants measured by `tools/measure_groove.py`. Three pieces, and the split is
+the point:
+
+- **The pattern is written down.** A backbeat on 2 and 4, four on the floor, a
+  one-drop, a tresillo: facts of a style, in every textbook, no more ownable
+  than a scale. They are written the way accompaniment figures are written —
+  `X` accent, `x` normal, `o` ghost, `.` rest, one bar per line, and a test
+  checks every line is exactly one bar of the meter it claims.
+- **The feel is measured**, from the Groove MIDI Dataset (CC BY 4.0): how loud
+  each instrument is, how much quieter an off-beat hit is, how far hits scatter
+  around the grid, and how many snares are ghosted per style.
+- **The variation is rolled**, from `middaw/chance.py`: `drum_fill` and
+  `ghost_note`.
+
+A style with no pattern for the meter gets **silence, not a guess** — a 7/8
+prog-rock beat is not in the book yet, and a four-four backbeat stretched over
+seven eighths is worse than nothing.
 
 ## Genres are note-formation rules, not sounds
 
@@ -328,6 +358,11 @@ dataset and a liability. See `docs/DATASET.md`.
   `docs/MEASUREMENTS.md`. Two chorale editions of the same repertoire disagree
   about the key of 4% of the pieces they share, so nothing here is more precise
   than that.
+- **The drums are programmed and real drums are played.** Side by side with
+  the corpus (`tools/measure_groove.py <folder> <style> "<prompt>"`), our grid
+  is a clean pattern where a drummer's is a cloud: they hit nearly every
+  sixteenth *sometimes*, and we hit exactly what the pattern says. Ghost
+  density and fills close part of that gap; per-bar variation would close more.
 - The soundfont path (vendored file → CDN → built-in tone) has been exercised
   end to end against a locally built stand-in soundfont, but never against the
   real FluidR3 file, because the sandbox blocks both CDNs. Try it for real.

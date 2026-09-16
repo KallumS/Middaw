@@ -68,7 +68,10 @@
       "velocity": 68,
       "chromaticism": 0.4,
       "functional": 0.55,
-      "ornament": 0.3
+      "ornament": 0.3,
+      "chances": {
+        "ghost_note": 0.34
+      }
     },
     "jazz": {
       "label": "Jazz",
@@ -147,7 +150,10 @@
       "velocity": 78,
       "chromaticism": 0.9,
       "functional": 0.9,
-      "ornament": 0.55
+      "ornament": 0.55,
+      "chances": {
+        "ghost_note": 0.44
+      }
     },
     "blues": {
       "label": "Blues",
@@ -218,7 +224,10 @@
       "velocity": 82,
       "chromaticism": 0.5,
       "functional": 0.25,
-      "ornament": 0.45
+      "ornament": 0.45,
+      "chances": {
+        "ghost_note": 0.56
+      }
     },
     "classical": {
       "label": "Classical",
@@ -678,7 +687,10 @@
       "velocity": 82,
       "chromaticism": 0.15,
       "functional": 0.3,
-      "ornament": 0.25
+      "ornament": 0.25,
+      "chances": {
+        "ghost_note": 0.24
+      }
     },
     "ballad": {
       "label": "Ballad",
@@ -954,7 +966,10 @@
       "velocity": 86,
       "chromaticism": 0.2,
       "functional": 0.4,
-      "ornament": 0.15
+      "ornament": 0.15,
+      "chances": {
+        "ghost_note": 0.37
+      }
     },
     "techno": {
       "label": "Techno",
@@ -1015,7 +1030,10 @@
       "velocity": 88,
       "chromaticism": 0.05,
       "functional": 0.15,
-      "ornament": 0.08
+      "ornament": 0.08,
+      "chances": {
+        "ghost_note": 0.37
+      }
     },
     "trap": {
       "label": "Trap",
@@ -1076,7 +1094,10 @@
       "velocity": 84,
       "chromaticism": 0.15,
       "functional": 0.25,
-      "ornament": 0.15
+      "ornament": 0.15,
+      "chances": {
+        "ghost_note": 0.34
+      }
     },
     "rnb": {
       "label": "R&B",
@@ -1133,7 +1154,10 @@
       "velocity": 72,
       "chromaticism": 0.65,
       "functional": 0.75,
-      "ornament": 0.4
+      "ornament": 0.4,
+      "chances": {
+        "ghost_note": 0.39
+      }
     },
     "gospel": {
       "label": "Gospel",
@@ -1197,7 +1221,10 @@
       "velocity": 88,
       "chromaticism": 0.85,
       "functional": 0.85,
-      "ornament": 0.55
+      "ornament": 0.55,
+      "chances": {
+        "ghost_note": 0.21
+      }
     },
     "waltz": {
       "label": "Waltz",
@@ -1416,7 +1443,10 @@
       "velocity": 70,
       "chromaticism": 0.8,
       "functional": 0.85,
-      "ornament": 0.4
+      "ornament": 0.4,
+      "chances": {
+        "ghost_note": 0.47
+      }
     },
     "minimal": {
       "label": "Minimalism",
@@ -1619,7 +1649,10 @@
       "velocity": 92,
       "chromaticism": 0.1,
       "functional": 0.3,
-      "ornament": 0.2
+      "ornament": 0.2,
+      "chances": {
+        "ghost_note": 0.32
+      }
     },
     "punk": {
       "label": "Punk",
@@ -1694,7 +1727,10 @@
       "velocity": 104,
       "chromaticism": 0.05,
       "functional": 0.35,
-      "ornament": 0.05
+      "ornament": 0.05,
+      "chances": {
+        "ghost_note": 0.28
+      }
     },
     "metal": {
       "label": "Metal",
@@ -1787,7 +1823,10 @@
       "velocity": 106,
       "chromaticism": 0.3,
       "functional": 0.3,
-      "ornament": 0.15
+      "ornament": 0.15,
+      "chances": {
+        "ghost_note": 0.28
+      }
     },
     "prog_rock": {
       "label": "Progressive rock",
@@ -2071,7 +2110,10 @@
       "velocity": 96,
       "chromaticism": 0.25,
       "functional": 0.4,
-      "ornament": 0.45
+      "ornament": 0.45,
+      "chances": {
+        "ghost_note": 0.56
+      }
     },
     "bebop": {
       "label": "Bebop",
@@ -2142,7 +2184,10 @@
       "velocity": 82,
       "chromaticism": 1.0,
       "functional": 1.0,
-      "ornament": 0.8
+      "ornament": 0.8,
+      "chances": {
+        "ghost_note": 0.44
+      }
     },
     "big_band": {
       "label": "Big band",
@@ -2223,7 +2268,10 @@
       "velocity": 92,
       "chromaticism": 0.6,
       "functional": 0.85,
-      "ornament": 0.4
+      "ornament": 0.4,
+      "chances": {
+        "ghost_note": 0.44
+      }
     },
     "dixieland": {
       "label": "Dixieland",
@@ -2521,7 +2569,10 @@
       "velocity": 90,
       "chromaticism": 0.35,
       "functional": 0.65,
-      "ornament": 0.35
+      "ornament": 0.35,
+      "chances": {
+        "ghost_note": 0.47
+      }
     },
     "samba": {
       "label": "Samba",
@@ -2589,7 +2640,10 @@
       "velocity": 84,
       "chromaticism": 0.5,
       "functional": 0.7,
-      "ornament": 0.35
+      "ornament": 0.35,
+      "chances": {
+        "ghost_note": 0.47
+      }
     },
     "flamenco": {
       "label": "Flamenco",
@@ -2726,7 +2780,10 @@
       "velocity": 84,
       "chromaticism": 0.2,
       "functional": 0.6,
-      "ornament": 0.25
+      "ornament": 0.25,
+      "chances": {
+        "ghost_note": 0.47
+      }
     },
     "reggae": {
       "label": "Reggae",
@@ -2798,7 +2855,10 @@
       "velocity": 80,
       "chromaticism": 0.1,
       "functional": 0.3,
-      "ornament": 0.15
+      "ornament": 0.15,
+      "chances": {
+        "ghost_note": 0.57
+      }
     },
     "ska": {
       "label": "Ska",
@@ -2865,7 +2925,10 @@
       "velocity": 92,
       "chromaticism": 0.15,
       "functional": 0.5,
-      "ornament": 0.2
+      "ornament": 0.2,
+      "chances": {
+        "ghost_note": 0.47
+      }
     },
     "afrobeat": {
       "label": "Afrobeat",
@@ -2946,7 +3009,10 @@
       "velocity": 86,
       "chromaticism": 0.15,
       "functional": 0.1,
-      "ornament": 0.3
+      "ornament": 0.3,
+      "chances": {
+        "ghost_note": 0.28
+      }
     },
     "country": {
       "label": "Country",
@@ -3022,7 +3088,10 @@
       "velocity": 84,
       "chromaticism": 0.1,
       "functional": 0.65,
-      "ornament": 0.25
+      "ornament": 0.25,
+      "chances": {
+        "ghost_note": 0.55
+      }
     },
     "bluegrass": {
       "label": "Bluegrass",
@@ -4203,7 +4272,10 @@
       "velocity": 88,
       "chromaticism": 0.35,
       "functional": 0.4,
-      "ornament": 0.25
+      "ornament": 0.25,
+      "chances": {
+        "ghost_note": 0.34
+      }
     },
     "disco": {
       "label": "Disco",
@@ -4344,7 +4416,10 @@
       "velocity": 92,
       "chromaticism": 0.15,
       "functional": 0.15,
-      "ornament": 0.35
+      "ornament": 0.35,
+      "chances": {
+        "ghost_note": 0.47
+      }
     },
     "soul": {
       "label": "Soul",
@@ -4426,7 +4501,10 @@
       "velocity": 86,
       "chromaticism": 0.35,
       "functional": 0.8,
-      "ornament": 0.45
+      "ornament": 0.45,
+      "chances": {
+        "ghost_note": 0.39
+      }
     },
     "doo_wop": {
       "label": "Doo-wop",

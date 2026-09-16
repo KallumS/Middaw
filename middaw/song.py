@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+#: MIDI channel 10, counted from zero, where note numbers name instruments.
+DRUM_CHANNEL = 9
+
 
 @dataclass
 class Note:
@@ -30,7 +33,7 @@ class Track:
     name: str
     program: int = 0          # GM program; 0 = acoustic grand piano
     channel: int = 0
-    role: str = ""            # which of the four parts this is
+    role: str = ""            # which part this is: a voice, or the kit
     detail: str = ""          # how the part is realised, where that varies
     notes: list[Note] = field(default_factory=list)
 
@@ -56,6 +59,16 @@ class Song:
     @property
     def notes(self) -> list[Note]:
         return [n for t in self.tracks for n in t.notes]
+
+    @property
+    def pitched_notes(self) -> list[Note]:
+        """Everything except the kit.
+
+        On channel 10 a note number is an instrument, not a pitch: note 36 is a
+        kick drum, and handing it to a key detector produces a piece in C.
+        """
+        return [n for t in self.tracks if t.channel != DRUM_CHANNEL
+                for n in t.notes]
 
     @property
     def length_beats(self) -> float:

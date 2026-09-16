@@ -118,6 +118,44 @@ out at 55%, because chord-tone snapping, the register window and the cadence
 all act after the dice. So the dials move the output in the right direction
 without landing on the number, and the output is what gets measured.
 
+### The kit
+
+From the Groove MIDI Dataset (CC BY 4.0), 491 beats, 470,000 hits, measured
+with `tools/measure_groove.py`. These are the numbers `middaw/drums.py` uses.
+
+| | hits | velocity | on the beat | off it | scatter, in 16ths |
+| --- | --- | --- | --- | --- | --- |
+| snare | 116,465 | 67.7 | 80.5 | 60.9 | ±0.21 |
+| kick | 84,399 | 58.4 | 64.3 | 52.9 | ±0.19 |
+| hi-hat | 64,239 | 69.1 | 81.3 | 63.1 | ±0.15 |
+| pedal hat | 49,812 | 65.5 | 62.9 | 67.2 | ±0.19 |
+| ride | 43,862 | 71.9 | 78.1 | 68.5 | ±0.17 |
+| tom | 26,142 | 87.1 | 91.1 | 85.3 | ±0.19 |
+| open hat | 13,811 | 85.1 | 89.5 | 83.0 | ±0.17 |
+| crash | 3,513 | 77.3 | 86.0 | 68.1 | ±0.18 |
+
+**A hit off the beat is about 0.78 of one on it.** That single ratio is most of
+what separates a played bar from a programmed one, and it holds across the kit.
+
+Ghosted snares — the share played below velocity 45 — are a style constant and
+are now set per style: reggae 57%, funk and latin 47%, jazz 44%, soul 39%,
+hip-hop 34%, rock 32%, punk and afrobeat 28%, pop 24%, gospel 21%.
+
+**The one we nearly published was wrong.** The first run said every drummer on
+the record played 0.05 of a sixteenth *early* — every instrument, every style,
+the same amount. A result that tidy is almost always the measurement's own
+fault, and it was: a recorded take does not begin on beat zero, and nothing had
+found the grid before measuring distance from it. `grid_phase` now finds the
+sixteenth grid per performance and `beat_offset` finds which sixteenth is the
+beat. Aligned, the rush disappears — +0.008 of a sixteenth for a snare, −0.001
+for a kick — and what is left is the scatter, which is real and is what the
+generator uses. The third time this project has been caught by its own reader.
+
+Swing stayed unpublished. Measured off the ride and hi-hat it needs beats
+played *in two* to say anything, and after filtering for those there are 56
+usable beats of jazz — too few to set a constant from, and the styles' existing
+swing values stand until there is more.
+
 ### What the corpora found in our code
 
 Each of these was a bug in the *reader*, found because a measurement collapsed:

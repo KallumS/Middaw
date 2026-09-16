@@ -143,7 +143,10 @@ class TestVoices(unittest.TestCase):
         self.assertEqual(parse_prompt("just a bassline", seed=1).voices, ["bass"])
 
     def test_a_prompt_that_names_nothing_gets_all_four_parts(self):
+        """Four voices, and a kit when the style has one."""
         self.assertEqual(parse_prompt("a pop tune in G", seed=1).voices,
+                         ["melody", "countermelody", "harmony", "bass", "drums"])
+        self.assertEqual(parse_prompt("a hymn in F", seed=1).voices,
                          ["melody", "countermelody", "harmony", "bass"])
 
     def test_styles_bring_their_own_harmony_treatment(self):
