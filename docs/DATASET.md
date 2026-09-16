@@ -177,6 +177,66 @@ the files for 12.29% of them (31,221 songs), recommending the
 domain. For research that is a reasonable risk to carry. For a product with
 your name on it, it is the Lakh problem with better paperwork.
 
+## Drum corpora, checked
+
+The question that comes with drums is whether anyone has published genre-tagged
+patterns you are allowed to use. One answer, and it is a good one.
+
+**[Magenta Groove MIDI Dataset](https://magenta.tensorflow.org/datasets/groove)
+— CC BY 4.0.** Verified by downloading it: the archive ships the Creative
+Commons Attribution 4.0 licence text, and `info.csv` labels every file.
+
+| | |
+| --- | --- |
+| files | 1,150 MIDI performances, 13.6 hours |
+| played by | 10 session drummers on a Roland TD-11 electronic kit |
+| labelled with | style, tempo, time signature, and **beat or fill** |
+| styles | rock 341, funk 160, jazz 101, latin 97, hip-hop 95, soul 63, afro-cuban 60, punk 58, New Orleans 53, country 29, pop 27, reggae 20, gospel 19, afrobeat 13, dance 7, blues 4, highlife 2, middle-eastern 1 |
+| tempo | 50–290 bpm |
+| meter | 1,138 of 1,150 are 4/4 |
+
+It is the best-released dataset in this whole area: properly licensed, properly
+labelled, and *played* rather than programmed, so the velocities and the
+microtiming are real. `middaw/midi.py` reads its files already — the pitches are
+General MIDI percussion with a few Roland-specific hi-hat numbers (22 and 26)
+that fold into the standard classes.
+
+Two limits to know before leaning on it:
+
+- **It is a drummer's corpus, not a machine's.** Rock, funk, jazz, latin,
+  hip-hop and New Orleans are well covered; house, techno, trap, drum and bass
+  and dubstep are effectively absent (7 "dance" files in total). Those are
+  exactly the styles whose patterns are programmed rather than played — and
+  exactly the ones a rule can state precisely, because they *are* rules.
+- **It is nearly all 4/4.** Nothing here calibrates a 7/8 prog-rock beat.
+
+**Everything else is worse.** Hydrogen and LMMS ship patterns under the GPL,
+which is a copyleft licence we have no reason to invite into a data file. The
+GitHub transcriptions of drum-machine pattern *books* carry the book's
+compilation copyright whatever the individual rhythms are worth. Free packs
+from commercial vendors are free to download and not free to redistribute.
+Audio libraries are audio.
+
+**And the patterns themselves are style facts.** A backbeat on 2 and 4, four on
+the floor, a tresillo, a one-drop: these are documented in every textbook and
+are no more ownable than a scale. We already write our own progressions and
+accompaniment figures for exactly that reason, and drums are the same job. The
+corpus's real value is the half a rule cannot state — **how hard each hit is,
+how far off the grid it sits, and where a fill goes** — which is precisely what
+`docs/APPROACH.md` says a corpus is for.
+
+Extracting a style's grid takes seconds with the reader we already have. From
+2,656 bars of rock and 1,579 of funk, at a 40% threshold for a firm hit:
+
+```
+rock   kick  |X.x.|X..x|x.x.|x.xx|      funk   kick  |X.Xx|.x.x|x.Xx|....|
+       snare |x.x.|X.xx|xxx.|X.xx|             snare |xXx.|XxxX|xXxx|XXxX|
+       hat   |X.x.|x.X.|x.x.|X.x.|             hat   |XxXx|XxXx|XxXx|XxXx|
+```
+
+The backbeat and the sixteenth-note funk hat fall out of the data unprompted,
+which is the check that the corpus and our reader agree about what a bar is.
+
 ## The part that actually differentiates you
 
 Public-domain data is classical and folk. **A model trained on Bach chorales

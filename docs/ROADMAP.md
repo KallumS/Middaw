@@ -75,9 +75,14 @@ beat either alone for a long while.
 - **Instruments.** `Track.program` is already carried through; the front end
   is piano-only by choice. Multi-timbral playback is a soundfont selector, not
   a rearchitecture.
-- **Drums.** Channel 10 plus the Groove MIDI Dataset (CC BY 4.0, commercially
-  usable, expressively played) — the one genuinely clean, genuinely modern
-  dataset available.
+- **Drums.** The biggest hole in the output, and the one every comparable
+  project has already filled (`docs/LANDSCAPE.md`). Channel 10, a fifth part,
+  and patterns written the way progressions are written — from the style
+  knowledge in `docs/GENRES.md`, because a backbeat is a fact rather than
+  somebody's property. The Groove MIDI Dataset (CC BY 4.0, 1,150 labelled
+  performances by ten session drummers) then supplies the half a rule cannot
+  state: how hard each hit is, how far off the grid it sits, and where a fill
+  goes. See `docs/DATASET.md` for what it does and does not cover.
 - **Edit, don't just regenerate.** Regenerate one part against the others,
   lock a progression and vary the melody, nudge tempo/density with the spec
   exposed as controls. The `MusicSpec` is designed for this.
