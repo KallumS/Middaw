@@ -107,6 +107,8 @@ genre adds it to both at once.
   piece rather than learning one, and what a corpus is actually for
 - **[docs/MEASUREMENTS.md](docs/MEASUREMENTS.md)** — every measurement taken
   against music Middaw did not write, per corpus, with the caveats
+- **[docs/LANDSCAPE.md](docs/LANDSCAPE.md)** — the adjacent projects, what they
+  solved that we have not, and what we are doing that nobody else is
 - **[docs/LABELLING.md](docs/LABELLING.md)** — how to label the dataset, and
   why the label schema is also the prompt vocabulary
 - **[docs/DATASET.md](docs/DATASET.md)** — sourcing MIDI you are actually
