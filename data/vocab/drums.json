@@ -1,0 +1,649 @@
+{
+  "version": 1,
+  "note": "Drum patterns and the kit they play on. A pattern is a grid of strokes: X accent, x normal, o ghost, . rest. The patterns are style facts written from docs/GENRES.md; the feel constants in middaw/drums.py are measured from the Groove MIDI Dataset. See docs/DATASET.md.",
+  "kit": {
+    "kick": 36,
+    "snare": 38,
+    "rim": 37,
+    "clap": 39,
+    "hat": 42,
+    "openhat": 46,
+    "pedalhat": 44,
+    "ride": 51,
+    "bell": 53,
+    "crash": 49,
+    "splash": 55,
+    "tom": 47,
+    "hitom": 50,
+    "lowtom": 41,
+    "shaker": 82,
+    "tambourine": 54,
+    "cowbell": 56,
+    "conga": 64,
+    "hiconga": 63,
+    "clave": 75,
+    "woodblock": 76,
+    "timbale": 65,
+    "agogo": 67,
+    "cabasa": 69,
+    "maraca": 70,
+    "triangle": 81
+  },
+  "classes": {
+    "36": "kick",
+    "38": "snare",
+    "37": "rim",
+    "39": "clap",
+    "42": "hat",
+    "46": "openhat",
+    "44": "pedalhat",
+    "51": "ride",
+    "53": "bell",
+    "49": "crash",
+    "55": "splash",
+    "47": "tom",
+    "50": "hitom",
+    "41": "lowtom",
+    "82": "shaker",
+    "54": "tambourine",
+    "56": "cowbell",
+    "64": "conga",
+    "63": "hiconga",
+    "75": "clave",
+    "76": "woodblock",
+    "65": "timbale",
+    "67": "agogo",
+    "69": "cabasa",
+    "70": "maraca",
+    "81": "triangle",
+    "35": "kick",
+    "40": "snare",
+    "22": "hat",
+    "26": "openhat",
+    "59": "ride",
+    "57": "crash",
+    "48": "tom",
+    "45": "tom",
+    "43": "tom",
+    "52": "crash",
+    "62": "conga",
+    "61": "conga"
+  },
+  "default_by_meter": {
+    "4/4": "backbeat",
+    "2/4": "polka_two",
+    "3/4": "waltz_kit",
+    "6/8": "compound"
+  },
+  "patterns": {
+    "backbeat": {
+      "label": "Rock backbeat",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X..x....",
+      "snare": "....X.......X...",
+      "hat": "x.x.x.x.x.x.x.x."
+    },
+    "backbeat_eighths": {
+      "label": "Straight eights",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X.......",
+      "snare": "....X.......X...",
+      "hat": "x.x.x.x.x.x.x.x."
+    },
+    "driving_eighths": {
+      "label": "Punk drive",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X...X...X...X...",
+      "snare": "....X.......X...",
+      "hat": "X.X.X.X.X.X.X.X."
+    },
+    "half_time": {
+      "label": "Half time",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X.X.....",
+      "snare": "........X.......",
+      "hat": "x.x.x.x.x.x.x.x."
+    },
+    "funk_sixteenths": {
+      "label": "Funk sixteenths",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X..x..X...x.X...",
+      "snare": ".o..X..o.o..X..o",
+      "hat": "XxxxXxxxXxxxXxxx"
+    },
+    "boom_bap": {
+      "label": "Boom bap",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.....X...X.....",
+      "snare": "....X.......X...",
+      "hat": "x.x.x.x.x.x.x.x."
+    },
+    "trap": {
+      "label": "Trap",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.....x...X..x..",
+      "snare": "........X.......",
+      "hat": "x.x.xxx.x.x.xxxx"
+    },
+    "four_on_the_floor": {
+      "label": "Four on the floor",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X...X...X...X...",
+      "clap": "....X.......X...",
+      "hat": "..x...x...x...x.",
+      "openhat": "..x...x...x...x."
+    },
+    "disco": {
+      "label": "Disco",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X...X...X...X...",
+      "snare": "....X.......X...",
+      "hat": "x.x.x.x.x.x.x.x.",
+      "openhat": "..x...x...x...x."
+    },
+    "two_step": {
+      "label": "Two step",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X......x..X.....",
+      "snare": "....X.....x.X...",
+      "hat": "x.xxx.x.x.xxx.x."
+    },
+    "drum_and_bass": {
+      "label": "Drum and bass",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X......x..X.....",
+      "snare": "....X.......X...",
+      "hat": "x.x.x.x.x.x.x.x.",
+      "ride": "..x...x...x...x."
+    },
+    "dubstep": {
+      "label": "Dubstep half time",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.........X.....",
+      "snare": "........X.......",
+      "hat": "..x...x...x...x."
+    },
+    "swing": {
+      "label": "Jazz ride",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "ride": "X..xX...X..xX...",
+      "pedalhat": "....X.......X...",
+      "snare": "..o....o..o....o",
+      "kick": "x.......x......."
+    },
+    "shuffle": {
+      "label": "Shuffle",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X.......",
+      "snare": "....X.......X...",
+      "hat": "X..xX..xX..xX..x"
+    },
+    "train_beat": {
+      "label": "Train beat",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X.......",
+      "snare": "oXoooXoooXoooXoo",
+      "hat": "x...x...x...x..."
+    },
+    "one_drop": {
+      "label": "One drop",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "........X.......",
+      "snare": "........X.......",
+      "hat": "x.x.x.x.x.x.x.x.",
+      "rim": "....x.......x..."
+    },
+    "steppers": {
+      "label": "Steppers",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X...X...X...X...",
+      "snare": "........X.......",
+      "hat": "..x...x...x...x."
+    },
+    "ska_upstroke": {
+      "label": "Ska",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X.......",
+      "snare": "....X.......X...",
+      "hat": "..x...x...x...x."
+    },
+    "bossa": {
+      "label": "Bossa nova",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X..x..X...x..X..",
+      "rim": "..x..x..x.x..x..",
+      "hat": "x.x.x.x.x.x.x.x."
+    },
+    "samba": {
+      "label": "Samba",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X..X..X.X..X..X.",
+      "shaker": "xXxxxXxxxXxxxXxx",
+      "agogo": "..x.x..x..x.x..x"
+    },
+    "son_clave": {
+      "label": "Son clave",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "clave": "x..x..x...x.x...",
+      "conga": "..x.x...x.x.x...",
+      "kick": "X..x..X...x.....",
+      "hat": "x.x.x.x.x.x.x.x."
+    },
+    "tresillo": {
+      "label": "Dembow",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X..X..X...X..X..",
+      "snare": "...x....X...x...",
+      "hat": "x.x.x.x.x.x.x.x."
+    },
+    "cumbia": {
+      "label": "Cumbia",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X...X...X...X...",
+      "conga": "..xx..x...xx..x.",
+      "hat": "..x...x...x...x."
+    },
+    "bluegrass": {
+      "label": "Bluegrass brush",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "snare": "..x.X...x.x.X...",
+      "kick": "X.......X......."
+    },
+    "march_two": {
+      "label": "March",
+      "steps": 8,
+      "meters": [
+        "2/4"
+      ],
+      "kick": "X...X...",
+      "snare": "xoxoxoxo",
+      "crash": "X......."
+    },
+    "polka_two": {
+      "label": "Polka",
+      "steps": 8,
+      "meters": [
+        "2/4"
+      ],
+      "kick": "X...x...",
+      "snare": "..x...x.",
+      "hat": "x.x.x.x."
+    },
+    "waltz_kit": {
+      "label": "Waltz",
+      "steps": 12,
+      "meters": [
+        "3/4"
+      ],
+      "kick": "X...........",
+      "snare": "....x...x...",
+      "hat": "x...x...x..."
+    },
+    "jazz_waltz": {
+      "label": "Jazz waltz",
+      "steps": 12,
+      "meters": [
+        "3/4"
+      ],
+      "ride": "X...x.x.x.x.",
+      "pedalhat": "....X...X...",
+      "kick": "x..........."
+    },
+    "compound": {
+      "label": "Six-eight",
+      "steps": 12,
+      "meters": [
+        "6/8"
+      ],
+      "kick": "X.....x.....",
+      "snare": "......X.....",
+      "hat": "x.x.x.x.x.x."
+    }
+  },
+  "fills": {
+    "tom_fill": {
+      "label": "Tom fill",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X.......",
+      "snare": "....X...x.x.....",
+      "hitom": "............x.x.",
+      "tom": "..........x.....",
+      "lowtom": ".............x.x",
+      "crash": "................"
+    },
+    "snare_roll": {
+      "label": "Snare roll",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X.......",
+      "snare": "....X...xxXxxxXx"
+    },
+    "simple_fill": {
+      "label": "Two-beat fill",
+      "steps": 16,
+      "meters": [
+        "4/4"
+      ],
+      "kick": "X.......X.......",
+      "snare": "....X.......x.x.",
+      "tom": "..............x.",
+      "hat": "x.x.x.x........."
+    },
+    "two_four_fill": {
+      "label": "Fill in two",
+      "steps": 8,
+      "meters": [
+        "2/4"
+      ],
+      "kick": "X.......",
+      "snare": "..x.xxXx"
+    },
+    "three_four_fill": {
+      "label": "Fill in three",
+      "steps": 12,
+      "meters": [
+        "3/4",
+        "6/8"
+      ],
+      "kick": "X...........",
+      "snare": "....x.x.xxXx"
+    }
+  },
+  "genres": {
+    "rock": {
+      "backbeat": 4,
+      "backbeat_eighths": 3,
+      "driving_eighths": 1
+    },
+    "punk": {
+      "driving_eighths": 5,
+      "backbeat_eighths": 2
+    },
+    "metal": {
+      "driving_eighths": 4,
+      "backbeat": 2,
+      "half_time": 2
+    },
+    "prog_rock": {
+      "backbeat": 2,
+      "half_time": 2
+    },
+    "surf": {
+      "backbeat_eighths": 3,
+      "train_beat": 1
+    },
+    "rockabilly": {
+      "train_beat": 3,
+      "shuffle": 2,
+      "backbeat": 1
+    },
+    "blues": {
+      "shuffle": 5,
+      "backbeat": 1
+    },
+    "boogie_woogie": {
+      "shuffle": 5
+    },
+    "funk": {
+      "funk_sixteenths": 6,
+      "backbeat": 1
+    },
+    "disco": {
+      "disco": 6,
+      "four_on_the_floor": 2
+    },
+    "soul": {
+      "backbeat": 4,
+      "funk_sixteenths": 2
+    },
+    "rnb": {
+      "backbeat": 3,
+      "funk_sixteenths": 3,
+      "half_time": 1
+    },
+    "gospel": {
+      "backbeat": 3,
+      "funk_sixteenths": 2
+    },
+    "pop": {
+      "backbeat": 5,
+      "backbeat_eighths": 2
+    },
+    "synthpop": {
+      "backbeat_eighths": 4,
+      "four_on_the_floor": 2
+    },
+    "synthwave": {
+      "backbeat_eighths": 3,
+      "four_on_the_floor": 2
+    },
+    "city_pop": {
+      "backbeat": 3,
+      "funk_sixteenths": 2,
+      "disco": 1
+    },
+    "vaporwave": {
+      "half_time": 3,
+      "backbeat": 1
+    },
+    "ballad": {
+      "backbeat": 3,
+      "half_time": 1
+    },
+    "doo_wop": {
+      "backbeat": 3,
+      "shuffle": 2
+    },
+    "lofi": {
+      "boom_bap": 5,
+      "half_time": 2
+    },
+    "boom_bap": {
+      "boom_bap": 6
+    },
+    "trap": {
+      "trap": 6
+    },
+    "reggaeton": {
+      "tresillo": 6
+    },
+    "trip_hop": {
+      "boom_bap": 4,
+      "half_time": 3
+    },
+    "house": {
+      "four_on_the_floor": 6,
+      "disco": 2
+    },
+    "techno": {
+      "four_on_the_floor": 6
+    },
+    "trance": {
+      "four_on_the_floor": 6
+    },
+    "uk_garage": {
+      "two_step": 6
+    },
+    "drum_and_bass": {
+      "drum_and_bass": 6
+    },
+    "dubstep": {
+      "dubstep": 6,
+      "half_time": 2
+    },
+    "reggae": {
+      "one_drop": 5,
+      "steppers": 3
+    },
+    "ska": {
+      "ska_upstroke": 5,
+      "backbeat_eighths": 2
+    },
+    "afrobeat": {
+      "funk_sixteenths": 3,
+      "son_clave": 2,
+      "cumbia": 1
+    },
+    "bossa": {
+      "bossa": 6
+    },
+    "samba": {
+      "samba": 6
+    },
+    "salsa": {
+      "son_clave": 6
+    },
+    "cumbia": {
+      "cumbia": 6
+    },
+    "bachata": {
+      "cumbia": 3,
+      "backbeat": 2
+    },
+    "mariachi": {
+      "polka_two": 3,
+      "waltz_kit": 2
+    },
+    "jazz": {
+      "swing": 6,
+      "jazz_waltz": 1
+    },
+    "bebop": {
+      "swing": 6
+    },
+    "big_band": {
+      "swing": 6
+    },
+    "dixieland": {
+      "train_beat": 3,
+      "swing": 2,
+      "march_two": 2
+    },
+    "modal_jazz": {
+      "swing": 5,
+      "jazz_waltz": 2
+    },
+    "smooth_jazz": {
+      "backbeat": 3,
+      "funk_sixteenths": 2
+    },
+    "country": {
+      "train_beat": 5,
+      "backbeat": 2
+    },
+    "bluegrass": {
+      "bluegrass": 5
+    },
+    "zydeco": {
+      "train_beat": 3,
+      "polka_two": 2
+    },
+    "klezmer": {
+      "polka_two": 3,
+      "backbeat_eighths": 2
+    },
+    "polka": {
+      "polka_two": 6
+    },
+    "march": {
+      "march_two": 6
+    },
+    "waltz": {
+      "waltz_kit": 5,
+      "jazz_waltz": 1
+    },
+    "tango": {
+      "backbeat": 2,
+      "tresillo": 2
+    },
+    "cinematic": {
+      "half_time": 2,
+      "backbeat": 1
+    },
+    "chiptune": {
+      "backbeat_eighths": 4,
+      "driving_eighths": 2
+    },
+    "minimal": {
+      "four_on_the_floor": 3,
+      "boom_bap": 1
+    }
+  }
+}
