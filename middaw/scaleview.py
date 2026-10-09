@@ -1,6 +1,6 @@
 """Scales, key-aware spelling and chord reading.
 
-Ported from ScaleView Pro (github.com/KallumS/scaleview-for-reaper, MIT), the
+Ported from ScaleView Pro (github.com/KallumS/scaleview-for-reaper, GPL v3), the
 same author's REAPER script, so Middaw and ScaleView agree on what a scale is
 and on what a set of notes is called. Two things come across:
 

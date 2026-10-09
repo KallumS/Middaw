@@ -149,4 +149,4 @@ for generation by default. This is enforced rather than documented because
 
 ## Licence
 
-MIT. `middaw/scaleview.py` is ported from ScaleView for REAPER, also MIT.
+GNU General Public License v3 - see [LICENSE](LICENSE). `middaw/scaleview.py` is ported from ScaleView for REAPER, also GPL v3.

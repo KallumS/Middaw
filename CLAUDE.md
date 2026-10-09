@@ -58,7 +58,7 @@ it is driven by what people type, not by what we imagine they type.
 ## The ScaleView port
 
 `middaw/scaleview.py` is a Python port of
-[ScaleView Pro](https://github.com/KallumS/scaleview-for-reaper) (MIT, same
+[ScaleView Pro](https://github.com/KallumS/scaleview-for-reaper) (GPL v3, same
 author). It is the authority here for scales, key-aware spelling and chord
 naming — `middaw/theory.py` sources its scale table from it rather than
 keeping a second copy.
