@@ -23,6 +23,20 @@ project exists to avoid, so no part of the pipeline may reintroduce it.
   melodies stay in key, notes stay on an 88-key piano and what Middaw writes
   its own labeller reads back.
 
+## Words on the page
+
+The page follows Apple's writing guidelines, as the user's other apps do
+(Noterator's decision 0053): buttons and headings title-style ("Another
+Take", "Download MIDI File"); messages, hints, placeholders and the status
+line in sentence case, full stop only on a complete sentence; "…" (one
+character) for work in progress ("Composing…"); curly apostrophes; an
+error says what happened, then what to do, with no "we", "please" or
+programmer words. The server's errors are read on the page, so they are
+written the same way (`server/app.py`'s `UNREADABLE`, `TOO_LONG`,
+`FAILED`). The example prompts and the summary line are what the user types
+and what the parser read, and stay as they are. CLI help keeps argparse's
+lowercase convention. Session log: `docs/sessions/2026-10-14-apple-writing.md`.
+
 ## `MusicSpec` is the contract
 
 `middaw/spec.py`. A prompt is parsed *into* a spec; a spec is rendered *into*

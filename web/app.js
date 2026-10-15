@@ -44,6 +44,11 @@
   var current = null;
   var frame = null;
 
+  /* An error the server wrote for the page, as against the request failing. */
+  function ServerError(message) { this.message = message; }
+  ServerError.prototype = Object.create(Error.prototype);
+  ServerError.prototype.name = 'ServerError';
+
   function setStatus(message, isError) {
     statusEl.textContent = message || '';
     statusEl.classList.toggle('error', Boolean(isError));
@@ -180,12 +185,13 @@
       playButton.textContent = 'Stop';
       voiceNote.textContent = voice === 'soundfont'
         ? ''
-        : 'No piano soundfont reachable, so this is the built-in fallback tone. '
-          + 'Run tools/fetch_soundfont.py to vendor one locally.';
+        : 'The piano sound couldn’t be loaded, so this is the built-in tone. '
+          + 'To hear a piano, run tools/fetch_soundfont.py once.';
       frame = requestAnimationFrame(animate);
     }).catch(function (error) {
       playButton.disabled = false;
-      setStatus('Could not start audio: ' + error.message, true);
+      if (window.console) { console.error(error); }
+      setStatus('The sound couldn’t start. Click Play to try again.', true);
     });
   }
 
@@ -231,7 +237,7 @@
       badge.className = 'chord repeat';
       badge.textContent = shown < length
         ? '+' + (length - shown) + ' more'
-        : 'repeats every ' + length + ' bars';
+        : 'Repeats every ' + length + ' bars';
       chordsEl.appendChild(badge);
     }
     chordsEl.dataset.cycle = length;
@@ -280,7 +286,7 @@
     var prompt = promptInput.value.trim();
     stopPlayback();
     generateButton.disabled = true;
-    setStatus('Composing...');
+    setStatus('Composing…');
 
     var body = { prompt: prompt };
     if (options && options.seed) { body.seed = options.seed; }
@@ -291,15 +297,25 @@
       body: JSON.stringify(body)
     }).then(function (response) {
       return response.json().then(function (data) {
-        if (!response.ok) { throw new Error(data.error || 'request failed'); }
+        if (!response.ok) {
+          throw new ServerError(data.error || 'Middaw couldn’t compose this. Try again.');
+        }
         return data;
+      }, function () {
+        throw new ServerError('Middaw’s server sent an answer that couldn’t be read. '
+          + 'Reload the page and try again.');
       });
     }).then(function (data) {
       generateButton.disabled = false;
       show(data);
     }).catch(function (error) {
       generateButton.disabled = false;
-      setStatus(error.message, true);
+      // A server error is already written for the page; anything else means
+      // the request never got an answer, and the browser's own words
+      // ("Failed to fetch") say nothing a musician can act on.
+      setStatus(error instanceof ServerError ? error.message
+        : 'Middaw’s server can’t be reached. Check that it’s still running, '
+          + 'then try again.', true);
     });
   }
 
@@ -339,6 +355,6 @@
     var entries = (data.corpus && data.corpus.entries) || 0;
     corpusNote.textContent = genres + ' genres and ' + moods + ' moods understood · '
       + (entries ? entries + ' labelled corpus files in use'
-                 : 'no corpus loaded yet, using built-in musical priors');
+                 : 'no corpus loaded yet, so built-in musical rules are used');
   }).catch(function () { /* the app works without this */ });
 }());
