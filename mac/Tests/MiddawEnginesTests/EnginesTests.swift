@@ -72,7 +72,9 @@ final class EnginesTests: XCTestCase {
         XCTAssertFalse(names.isEmpty)
         let o = try engines.callAny("orchestration", [String: Int]()) as? [String: Any]
         let entries = o?["entries"] as? [[String: Any]] ?? []
-        XCTAssertTrue(entries.contains { ($0["summary"] as? String ?? "").contains("—") || ($0["summary"] as? String ?? "").contains("é") })
+        let text = String(decoding: try JSONSerialization.data(withJSONObject: entries), as: UTF8.self)
+        XCTAssertTrue(text.contains("—") && text.contains("’"), "the guide's dashes and quotes arrive as themselves")
+        XCTAssertFalse(text.contains("\u{FFFD}"), "nothing was decoded wrongly")
     }
 
     func testAnEngineErrorIsAnErrorNotACrash() throws {
