@@ -287,7 +287,49 @@
       String(a.path).split('.').forEach(function (k) { v = v === undefined ? undefined : L.index(v, isNaN(+k) ? k : +k); });
       return v instanceof L.LFloat ? v.n : js(v);
     },
-    passSave: function () { return L.fromBytes(L.first(L.call(L.index(battlePass().G, 'serialize'))(passState))); }
+    passSave: function () { return L.fromBytes(L.first(L.call(L.index(battlePass().G, 'serialize'))(passState))); },
+
+    // AutoCC (the JSFX, unchanged) run over a clip's notes: the curves it
+    // would play, as controller lanes {number: [[beat, value], ...]}. Only a
+    // point where the value turns is kept, not every step.
+    autoCC: function (a) {
+      var J = G.MiddawJSFX;
+      if (!J) throw new Error('the JSFX runtime is not loaded');
+      var fx = new J.JSFX(a.source, {});
+      Object.keys(a.sliders || {}).forEach(function (k) { fx.setSliderByIndex(Number(k), a.sliders[k]); });
+      var sr = 48000, bs = 256;
+      fx.init(sr);
+      fx.setTime({ tempo: a.tempo, playState: 1, num: a.meter[0], den: a.meter[1] });
+      var ev = [];
+      (a.notes || []).forEach(function (n) {
+        ev.push([n.start, [0x90, n.pitch, n.vel]]);
+        ev.push([n.start + n.len, [0x80, n.pitch, 0]]);
+      });
+      ev.sort(function (x, y) { return x[0] - y[0]; });
+      var spb = sr * 60 / a.tempo, total = Math.ceil(a.length * spb / bs) + 8, k = 0, lanes = {};
+      for (var b = 0; b < total; b++) {
+        var midi = [];
+        while (k < ev.length && ev[k][0] * spb < (b + 1) * bs) {
+          midi.push({ offset: Math.max(0, Math.round(ev[k][0] * spb - b * bs)), data: ev[k][1] }); k++;
+        }
+        fx.setTime({ beat: b * bs / spb, seconds: b * bs / sr });
+        fx.process(bs, null, null, midi).forEach(function (m) {
+          if ((m.data[0] & 0xF0) !== 0xB0) return;
+          var beat = (b * bs + m.offset) / spb;
+          if (beat > a.length) return;
+          (lanes[m.data[1]] = lanes[m.data[1]] || []).push([Math.round(beat * 1000) / 1000, m.data[2]]);
+        });
+      }
+      Object.keys(lanes).forEach(function (num) {
+        var pts = lanes[num], out = [];
+        pts.forEach(function (pt, i) {
+          var prev = out[out.length - 1];
+          if (!prev || i === pts.length - 1 || Math.abs(pt[1] - prev[1]) >= 2) out.push(pt);
+        });
+        lanes[num] = out;
+      });
+      return lanes;
+    }
   };
 
   G.MiddawHost = {

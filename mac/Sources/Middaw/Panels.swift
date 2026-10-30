@@ -74,8 +74,11 @@ struct TrackInspector: View {
                 HStack(spacing: 6) {
                     Button("Vary…") { s.inspector = .generate; GenerateModel.request = "midi-variator" }.house()
                     Button("Suggest…") { s.inspector = .generate; GenerateModel.request = "midi-suggester" }.house()
-                    Menu("Transform") { ForEach(Session.Shape.allCases, id: \.self) { sh in Button(sh.rawValue) { s.transform(sh) } } }
-                        .fixedSize()
+                    Menu("More") {
+                        Menu("Transform") { ForEach(Session.Shape.allCases, id: \.self) { sh in Button(sh.rawValue) { s.transform(sh) } } }
+                        Button("Draw Dynamics with AutoCC") { s.drawDynamics() }
+                    }
+                    .fixedSize()
                 }
             }
 
@@ -173,8 +176,8 @@ struct SoundPanel: View {
                     .contentShape(Rectangle())
                     .onTapGesture { choose() }
                     .onDrop(of: [.fileURL], isTargeted: $dropping) { providers in
-                        providers.first?.loadObject(ofClass: URL.self) { url, _ in
-                            if let u = url { DispatchQueue.main.async { load(u) } }
+                        _ = providers.first?.loadObject(ofClass: URL.self) { url, _ in
+                            if let u = url { Task { @MainActor in load(u) } }
                         }
                         return true
                     }

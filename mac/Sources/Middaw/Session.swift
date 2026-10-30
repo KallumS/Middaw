@@ -411,6 +411,21 @@ final class Session: ObservableObject {
         }
     }
 
+    /// AutoCC, the JSFX itself, run over the clip: its curves written into the
+    /// clip's controller lanes, to edit like any other automation.
+    func drawDynamics() {
+        guard let c = clip, let t = track else { say("Choose a clip first."); return }
+        guard let e = Studio.shared.engines else { say("The engines are still loading."); return }
+        let fam = Studio.shared.instrument(t.instrument)?.family
+        let style: Double = fam == "Strings" ? 1 : fam == "Brass" ? 2 : fam == "Woodwind" ? 3 : 0
+        do {
+            let lanes = try e.autoCC(notes: c.notes, length: c.length, project: project, sliders: [1: style])
+            guard !lanes.isEmpty else { say("AutoCC drew nothing for this clip."); return }
+            updateClip("Draw Dynamics with AutoCC") { cl, _ in for (k, v) in lanes { cl.cc[k] = v } }
+            say("AutoCC drew CC\(lanes.keys.sorted().map(String.init).joined(separator: ", CC")) into the clip.", undoable: true)
+        } catch { say("AutoCC stopped: \(error)", warning: true) }
+    }
+
     // ---------------------------------------------------------- notes ---
     func setNotes(_ notes: [Note], label: String) { updateClip(label) { cl, _ in cl.notes = notes } }
 

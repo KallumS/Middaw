@@ -81,6 +81,21 @@ test('the Battle Pass starts, counts what you do and saves as its own text', () 
   assert.ok(call('passGet', { path: 'xp' }) !== undefined || call('passGet', { path: 'level' }) !== undefined);
 });
 
+test('AutoCC draws dynamics for a clip, from its own JSFX', () => {
+  require(path.join(ROOT, 'runtime', 'jsfx', 'jsfx.js'));
+  const source = fs.readFileSync(path.join(ROOT, 'family', 'devices', 'AutoCC.jsfx'), 'utf8');
+  const notes = [0, 1, 2, 3].map((i) => ({ start: i, len: 0.9, pitch: 60 + i, vel: 60 + 15 * i }));
+  const lanes = call('autoCC', { source, notes, tempo: 100, meter: [4, 4], length: 4, sliders: { 1: 1 } });
+  const nums = Object.keys(lanes);
+  assert.ok(nums.length >= 1, 'some lane');
+  for (const n of nums) {
+    for (const [beat, value] of lanes[n]) {
+      assert.ok(beat >= 0 && beat <= 4, 'beat ' + beat);
+      assert.ok(value >= 0 && value <= 127, 'value ' + value);
+    }
+  }
+});
+
 test('an error comes back as text, not a crash', () => {
   const r = JSON.parse(H.call('newSession', JSON.stringify({ generator: 'nope' })));
   assert.strictEqual(r.ok, false);

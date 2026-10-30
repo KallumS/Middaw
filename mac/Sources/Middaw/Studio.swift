@@ -30,7 +30,7 @@ final class Studio: ObservableObject {
         guard !started else { return }
         started = true
         do { try audio.start() } catch { problem = "The sound card would not start: \(error.localizedDescription)" }
-        midi.onMessage = { s, d1, d2 in DispatchQueue.main.async { Studio.shared.fromKeyboard(s, d1, d2) } }
+        midi.onMessage = { s, d1, d2 in Task { @MainActor in Studio.shared.fromKeyboard(s, d1, d2) } }
         midi.start()
         let root = Engines.defaultRoot()
         Task.detached(priority: .userInitiated) {
@@ -119,10 +119,12 @@ final class KeyMonitor {
         guard !installed else { return }
         installed = true
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            if event.modifierFlags.contains(.command) { return event }
-            if let responder = NSApp.keyWindow?.firstResponder, responder is NSText { return event }
-            guard let s = Studio.shared.active, s.window === NSApp.keyWindow else { return event }
-            return s.handleKey(event) ? nil : event
+            MainActor.assumeIsolated {
+                if event.modifierFlags.contains(.command) { return event }
+                if let responder = NSApp.keyWindow?.firstResponder, responder is NSText { return event }
+                guard let s = Studio.shared.active, s.window === NSApp.keyWindow else { return event }
+                return s.handleKey(event) ? nil : event
+            }
         }
     }
 }

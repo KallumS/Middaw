@@ -206,7 +206,7 @@ struct PianoRoll: View {
         let clip = s.clip
         let track = s.track
         let inst = track.flatMap { studio.instrument($0.instrument) }
-        let preview = drag.map { previewNotes($0) }
+        let preview = drag.flatMap { previewNotes($0) }
         return Canvas { g, size in
             let noteBottom = size.height - laneHeight
             let inKey = p.key.pitchClasses

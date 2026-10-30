@@ -26,11 +26,17 @@ final class ScrollMonitor {
     private func install() {
         guard !installed else { return }
         installed = true
-        NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .magnify]) { [weak self] e in
-            guard let self = self, let w = e.window, let content = w.contentView else { return e }
+        NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .magnify]) { e in
+            MainActor.assumeIsolated { ScrollMonitor.shared.handle(e) }
+        }
+    }
+
+    private func handle(_ e: NSEvent) -> NSEvent? {
+        do {
+            guard let w = e.window, let content = w.contentView else { return e }
             let p = content.convert(e.locationInWindow, from: nil)
             let pt = CGPoint(x: p.x, y: content.isFlipped ? p.y : content.bounds.height - p.y)
-            for (_, r) in self.regions where r.window === w && r.frame.contains(pt) {
+            for (_, r) in regions where r.window === w && r.frame.contains(pt) {
                 if e.type == .scrollWheel {
                     let k: CGFloat = e.hasPreciseScrollingDeltas ? 1 : 12
                     r.scroll(e.scrollingDeltaX * k, e.scrollingDeltaY * k, e.modifierFlags)

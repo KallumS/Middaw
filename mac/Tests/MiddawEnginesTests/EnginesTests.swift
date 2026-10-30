@@ -58,6 +58,23 @@ final class EnginesTests: XCTestCase {
         XCTAssertTrue(e.ops.contains { if case .text(let s) = $0.first ?? .other { return s == "line" }; return false })
     }
 
+    func testAutoCCDrawsDynamicsFromItsOwnJSFX() throws {
+        let notes = (0..<4).map { Note(start: Double($0), len: 0.9, pitch: 60 + $0, vel: 60 + 15 * $0) }
+        let lanes = try engines.autoCC(notes: notes, length: 4, project: Project(tempo: 100), sliders: [1: 1])
+        XCTAssertFalse(lanes.isEmpty)
+        for pts in lanes.values { XCTAssertTrue(pts.allSatisfy { $0.beat >= 0 && $0.beat <= 4 && (0...127).contains($0.value) }) }
+    }
+
+    /// Strings the engines pass through intact, accents and all - JavaScriptCore
+    /// has no TextDecoder of its own.
+    func testUnicodeCrossesTheBridge() throws {
+        let names = try engines.instruments().map(\.name)
+        XCTAssertFalse(names.isEmpty)
+        let o = try engines.callAny("orchestration", [String: Int]()) as? [String: Any]
+        let entries = o?["entries"] as? [[String: Any]] ?? []
+        XCTAssertTrue(entries.contains { ($0["summary"] as? String ?? "").contains("—") || ($0["summary"] as? String ?? "").contains("é") })
+    }
+
     func testAnEngineErrorIsAnErrorNotACrash() throws {
         XCTAssertThrowsError(try engines.session("no-such-generator"))
     }

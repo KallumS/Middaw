@@ -118,7 +118,8 @@ public final class Engines {
         }
         ctx.setObject(log, forKeyedSubscript: "__middawLog" as NSString)
         ctx.setObject(read, forKeyedSubscript: "__middawRead" as NSString)
-        for file in ["runtime/polyfill.js", "runtime/lua/lua_parse.js", "runtime/lua/lua_runtime.js", "runtime/lua/lua_compile.js", "runtime/host.js"] {
+        for file in ["runtime/polyfill.js", "runtime/lua/lua_parse.js", "runtime/lua/lua_runtime.js", "runtime/lua/lua_compile.js",
+                     "runtime/jsfx/jsfx.js", "runtime/host.js"] {
             let url = root.appendingPathComponent(file)
             guard let src = try? String(contentsOf: url, encoding: .utf8) else {
                 throw Failure(description: "missing \(file) under \(root.path)")
@@ -219,6 +220,26 @@ public final class Engines {
     }
 
     public func instruments() throws -> [Instrument] { try call("instruments", Empty()) }
+
+    // ---------------------------------------------------------- devices --
+    struct AutoCCArgs: Encodable {
+        let source: String; let notes: [Note]; let tempo: Double; let meter: [Int]; let length: Double; let sliders: [String: Double]
+    }
+
+    /// AutoCC, the JSFX itself, run over a clip: the dynamics and expression
+    /// curves it would play, as the clip's controller lanes.
+    public func autoCC(notes: [Note], length: Double, project p: Project, sliders: [Int: Double]) throws -> [Int: [CCPoint]] {
+        let url = root.appendingPathComponent("family/devices/AutoCC.jsfx")
+        guard let src = try? String(contentsOf: url, encoding: .utf8) else { throw Failure(description: "AutoCC is missing") }
+        let raw: [String: [[Double]]] = try call("autoCC", AutoCCArgs(source: src, notes: notes, tempo: p.tempo, meter: p.meter, length: length,
+                                                                       sliders: Dictionary(uniqueKeysWithValues: sliders.map { (String($0.key), $0.value) })))
+        var out: [Int: [CCPoint]] = [:]
+        for (k, pts) in raw {
+            guard let n = Int(k) else { continue }
+            out[n] = pts.compactMap { $0.count >= 2 ? CCPoint(beat: $0[0], value: Int($0[1].rounded())) : nil }
+        }
+        return out
+    }
 
     // --------------------------------------------------------- notation --
     public struct Engraving: Decodable {

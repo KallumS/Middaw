@@ -1,4 +1,55 @@
-# The DAW
+# The browser version (archived)
+
+Middaw was a browser DAW before it was a native Mac app. It was retired on
+30 October 2026 in favour of the native app (`mac/`), and its code was taken
+out of the tree. This page is what to know if it is ever revisited.
+
+## Getting it back
+
+The last commit with the browser DAW in it is **`845bcd7`** on
+`claude/festive-shannon-x82vht`:
+
+```sh
+git checkout 845bcd7 -- web server tools/mac tests/test_server.py tests/test_style.py tests/test_mac_app.py tests/js/test_model.js
+```
+
+Since then the shared pieces have moved: `web/lua/` is `runtime/lua/`,
+`web/jsfx/` is `runtime/jsfx/`, `web/engines/` is `family/engines/` and
+`web/devices/` is `family/devices/`. A restored browser app needs those paths
+put back in `web/index.html` and `web/app/*.js`.
+
+## What it was
+
+- `server/app.py`: a standard-library server for Compose (`/api/compose`),
+  MIDI in and out, and a small store for the Battle Pass.
+- `web/`: vanilla JavaScript, no build step. Canvas arrange view, piano roll
+  and score; an inspector; a browser; a mixer; Web Audio with one
+  AudioWorklet per track; Web MIDI input.
+- The family's JSFX devices (AutoCC, Midi Evolver, MIDI Production Center,
+  Instrument Creator, Transient Shuffler, Reverberator) ran **inside the
+  AudioWorklets**, compiled by `runtime/jsfx/jsfx.js`. That is the one thing
+  the native app does not do yet (see `docs/DAW.md`).
+- `tools/mac/make_app.sh` wrapped it as a Mac app that opened Chrome in app
+  mode.
+
+## Why it was retired
+
+The person it is for wanted a Mac app, not a web page: native windows,
+documents, menus and audio. Safari also has no Web MIDI, so a MIDI keyboard
+needed Chrome.
+
+## What carried over
+
+Everything that was not the browser: the Lua 5.4 and EEL2 runtimes (now run
+by JavaScriptCore), the family's engines and devices, the song file format
+(`.middaw` files open in the native app unchanged), the instrument presets
+(ported to Swift sample for sample), and the placement rules.
+
+---
+
+What follows is the browser version's own documentation, as it was.
+
+## The browser DAW, as documented then
 
 Middaw is a DAW that is generative from the first screen: describe the music
 and it is written as five parts on five tracks, or start from an ensemble and

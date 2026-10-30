@@ -385,6 +385,7 @@ struct ArrangeView: View {
             Menu("Transform") {
                 ForEach(Session.Shape.allCases, id: \.self) { shape in Button(shape.rawValue) { s.select(clip: c.id, on: tid); s.transform(shape) } }
             }
+            Button("Draw Dynamics with AutoCC") { s.select(clip: c.id, on: tid); s.drawDynamics() }
             Divider()
             Button("Duplicate") { s.select(clip: c.id, on: tid); s.duplicate() }
             Button("Split at the Caret") { s.select(clip: c.id, on: tid); s.split() }

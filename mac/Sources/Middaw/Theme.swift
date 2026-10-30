@@ -40,14 +40,26 @@ struct HouseButtonStyle: ButtonStyle {
     var on = false
     var primary = false
     var compact = false
-    @Environment(\.isEnabled) var enabled
-    @State private var hover = false
 
     func makeBody(configuration: Configuration) -> some View {
+        HouseButtonBody(label: configuration.label, pressed: configuration.isPressed, on: on, primary: primary, compact: compact)
+    }
+}
+
+struct HouseButtonBody<Label: View>: View {
+    let label: Label
+    let pressed: Bool
+    let on: Bool
+    let primary: Bool
+    let compact: Bool
+    @Environment(\.isEnabled) private var enabled
+    @State private var hover = false
+
+    var body: some View {
         let lit = on || primary
-        let fill: Color = configuration.isPressed ? (lit ? Theme.hex(0xD1C600) : Theme.controlHeld)
+        let fill: Color = pressed ? (lit ? Theme.hex(0xD1C600) : Theme.controlHeld)
             : hover ? (lit ? Theme.accentHover : Theme.controlHover) : (lit ? Theme.accent : Theme.control)
-        return configuration.label
+        return label
             .font(.system(size: 13))
             .foregroundStyle(Theme.ink)
             .lineLimit(1)

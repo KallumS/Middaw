@@ -5,7 +5,6 @@ import MiddawCore
 extension UTType {
     /// A Middaw song: the same JSON the browser version saved.
     static let middawSong = UTType(exportedAs: "com.kallums.middaw.song", conformingTo: .json)
-    static let standardMIDI = UTType(importedAs: "public.midi-audio", conformingTo: .audio)
 }
 
 /// One song in one window. Every change is one undo step with a name, on the
@@ -14,7 +13,7 @@ extension UTType {
 final class SongDocument: ReferenceFileDocument, ObservableObject {
     @Published private(set) var project: Project
 
-    static var readableContentTypes: [UTType] { [.middawSong, .standardMIDI, .midi, .json] }
+    static var readableContentTypes: [UTType] { [.middawSong, .midi, .json] }
     static var writableContentTypes: [UTType] { [.middawSong] }
 
     init() {
