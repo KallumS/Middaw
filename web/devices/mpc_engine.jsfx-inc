@@ -1,0 +1,755 @@
+// mpc_engine.jsfx-inc
+// MIDI Production Center - playback engine: output scheduler, the note FX
+// chain, pad voices with stutter, live sampling, script import and @block.
+//
+// Timing model: one absolute sample clock (mpc_now). Everything is scheduled
+// in absolute samples and only turned into a block offset when sent.
+//
+// Copyright (c) 2026 KallumS. GPL v3 (see LICENSE).
+
+@init
+
+// ---------------------------------------------------------------------------
+// Output scheduler
+// ---------------------------------------------------------------------------
+function mpc_q_reset() local(i)
+(
+  i = 0;
+  loop(MAX_Q, QUEUE[i * Q_ST] = 0; QFREE[i] = MAX_Q - 1 - i; i += 1; );
+  q_free_n = MAX_Q; q_used = 0;
+);
+
+function mpc_q_push(t, type, a, b, c, id, owner) local(i, e)
+(
+  q_free_n > 0 ? (
+    q_free_n -= 1;
+    i = QFREE[q_free_n];
+    e = QUEUE + i * Q_ST;
+    e[0] = 1; e[1] = t; e[2] = type; e[3] = a; e[4] = b; e[5] = c; e[6] = id; e[7] = owner;
+    q_used += 1;
+  );
+);
+
+function mpc_q_free(i)
+(
+  QUEUE[i * Q_ST] = 0;
+  QFREE[q_free_n] = i; q_free_n += 1;
+  q_used -= 1;
+);
+
+// Schedules one note. A note is only ever scheduled with its note-off, so
+// nothing can be left hanging.
+function mpc_out(t, p, vel, ch, len_s, owner)
+(
+  p = floor(p + 0.5);
+  vel = min(floor(vel + 0.5), 127);
+  p >= 0 && p <= 127 && vel >= 1 && q_free_n >= 2 ? (
+    note_id += 1;
+    mpc_q_push(t, QT_ON, ch, p, vel, note_id, owner);
+    mpc_q_push(t + max(len_s, 1), QT_OFF, ch, p, 0, note_id, owner);
+  );
+);
+
+function mpc_q_rank(type) ( type == QT_OFF ? 0 : type == QT_RAW ? 1 : 2; );
+
+function mpc_q_after(i, k) local(a, b)
+(
+  a = QUEUE + i * Q_ST; b = QUEUE + k * Q_ST;
+  a[1] > b[1] || (a[1] === b[1] && mpc_q_rank(a[2]) > mpc_q_rank(b[2]));
+);
+
+// Sends every event due in this block, in time order. A (channel, pitch) pair
+// can only sound once in MIDI, so a note-on over a sounding pair sends that
+// pair's note-off first, and a note-off only goes out if its note still owns
+// the pair.
+function mpc_q_run() local(endt, i, n, cnt, e, j, k, m, off, s)
+(
+  endt = mpc_now + samplesblock;
+  n = 0; i = 0; cnt = 0;
+  while (i < MAX_Q && cnt < q_used) (
+    e = QUEUE + i * Q_ST;
+    e[0] ? (
+      cnt += 1;
+      e[1] < endt ? ( DUE[n] = i; n += 1; );
+    );
+    i += 1;
+  );
+  j = 1;
+  while (j < n) (
+    k = DUE[j]; m = j - 1;
+    while (m >= 0 && mpc_q_after(DUE[m], k)) ( DUE[m + 1] = DUE[m]; m -= 1; );
+    DUE[m + 1] = k;
+    j += 1;
+  );
+  j = 0;
+  loop(n,
+    i = DUE[j];
+    e = QUEUE + i * Q_ST;
+    off = mpc_clamp(floor(e[1] - mpc_now), 0, max(samplesblock - 1, 0));
+    e[2] == QT_ON ? (
+      s = SOUND + (e[3] * 128 + e[4]) * 3;
+      s[0] ? midisend(off, $x80 | e[3], e[4], 0);
+      midisend(off, $x90 | e[3], e[4], e[5]);
+      s[0] = e[6]; s[1] = e[7];
+      diag_out_n += 1;
+    ) : e[2] == QT_OFF ? (
+      s = SOUND + (e[3] * 128 + e[4]) * 3;
+      s[0] === e[6] ? (
+        midisend(off, $x80 | e[3], e[4], 0);
+        s[0] = 0;
+      );
+    ) : (
+      midisend(off, e[3], e[4], e[5]);
+      (e[3] & $xF0) == $x90 ? diag_out_n += 1;
+    );
+    mpc_q_free(i);
+    j += 1;
+  );
+);
+
+// ---------------------------------------------------------------------------
+// Note FX. Pitch is the "frequency" axis and velocity the "level" axis.
+// ---------------------------------------------------------------------------
+
+// Where a pitch sits on the filter/EQ axis: the note number, or (Relative)
+// its place between the lowest and highest note of the pad's slice, 0..127.
+function mpc_axis(p, v) local(vv, lo, hi)
+(
+  p_axis ? (
+    vv = VOICE + v * V_ST; lo = vv[V_LO]; hi = vv[V_HI];
+    hi > lo ? (p - lo) / (hi - lo) * 127 : 64;
+  ) : p;
+);
+
+// Filter: 1 = untouched, 0 = removed, in between = quieter. d is how far the
+// note is past the corner, on the side the filter removes.
+function mpc_filter_gain(x) local(d, g)
+(
+  p_flt_type == 0 ? d = x - p_flt_cut :
+  p_flt_type == 1 ? d = p_flt_cut - x :
+  (
+    d = abs(x - p_flt_cut) - p_flt_width / 2;
+    p_flt_type == 3 ? d = -d;
+  );
+  g = d <= 0 ? 1 : p_flt_slope > 0 ? max(1 - d / p_flt_slope, 0) : 0;
+  // resonance lifts notes sitting right at the corner
+  g > 0 ? g *= 1 + p_flt_res / 100 * 0.6 * max(1 - abs(d) / 3, 0);
+  g;
+);
+
+// EQ: a velocity multiplier from a low shelf, a bell and a high shelf.
+function mpc_eq_gain(x) local(lo, hi, bell)
+(
+  lo = mpc_clamp((p_eq_lf + 3 - x) / 6, 0, 1);
+  hi = mpc_clamp((x - p_eq_hf + 3) / 6, 0, 1);
+  bell = exp(-0.5 * sqr((x - p_eq_mf) / max(p_eq_mw / 2, 0.5)));
+  1 + p_eq_lg / 100 * lo + p_eq_mg / 100 * bell + p_eq_hg / 100 * hi;
+);
+
+// Compressor, one rule for every target: whatever lies further than the
+// threshold from the reference is pulled in by the ratio.
+function mpc_comp_amount(d, thr) local(ad)
+(
+  ad = abs(d);
+  ad > thr ? sign(d) * (thr + (ad - thr) / max(p_cmp_ratio, 1)) : d;
+);
+
+// Timing target: pulls note starts towards the nearest 1/16. Applied when a
+// voice's play list is built, because a note can't be moved earlier once its
+// time has come.
+function mpc_tighten(q) local(g, n)
+(
+  g = 0.25;
+  n = floor(q / g + 0.5) * g;
+  n + mpc_comp_amount(q - n, p_cmp_thr / 127 * g / 2);
+);
+
+// Swing: delays every second 1/16 (50% = straight, 66% = triplet feel).
+function mpc_swing(q) local(P, A, M, base, ph)
+(
+  P = 0.5; A = 0.25; M = P * p_swing / 100;
+  base = floor(q / P) * P; ph = q - base;
+  base + (ph <= A ? ph * M / A : M + (ph - A) * (P - M) / (P - A));
+);
+
+// Pitch correction: returns the corrected note, or -1 to remove it.
+function mpc_pc_note(p) local(m, pc, up, dn)
+(
+  m = SCALEM[mpc_clamp(p_pc_scale | 0, 0, 11)];
+  pc = (p - (p_pc_key | 0) + 120) % 12;
+  (m >> pc) & 1 ? p : p_pc_mode == 3 ? -1 : (
+    up = 1;
+    while (up < 12 && !((m >> ((pc + up) % 12)) & 1)) ( up += 1; );
+    dn = 1;
+    while (dn < 12 && !((m >> ((pc - dn + 12) % 12)) & 1)) ( dn += 1; );
+    p_pc_mode == 1 ? p + up : p_pc_mode == 2 ? p - dn : dn <= up ? p - dn : p + up;
+  );
+);
+
+// Last stage: pitch correction, then out.
+function mpc_final(t, p, vel, ch, len_s, owner)
+(
+  p_pc ? p = mpc_pc_note(floor(p + 0.5));
+  p >= 0 ? mpc_out(t, p, vel, ch, len_s, owner);
+);
+
+// The chain: filter -> EQ -> compressor -> delay -> pitch correction.
+function mpc_fx(t, p, vel, ch, len_s, v) local(x, vv, c, dt, mix, dry, wet, wv, k)
+(
+  x = mpc_axis(p, v);
+  p_flt ? vel *= mpc_filter_gain(x);
+  p_eq ? vel *= mpc_eq_gain(x);
+  vel >= 0.5 ? (
+    p_cmp ? (
+      p_cmp_tgt == 0 ? (
+        vel = mpc_comp_amount(vel, p_cmp_thr) + p_cmp_make;
+        vel = mpc_clamp(vel, 1, 127);
+      ) : p_cmp_tgt == 1 ? (
+        vv = VOICE + v * V_ST;
+        c = (vv[V_LO] + vv[V_HI]) / 2;
+        p = floor(c + mpc_comp_amount(p - c, p_cmp_thr * 24 / 127) + 0.5);
+      );
+    );
+    p_dly ? (
+      dt = DELV[mpc_clamp(p_dly_time | 0, 0, 11)] * 60 / max(tempo, 1) * srate;
+      mix = p_dly_mix / 100;
+      dry = min(2 * (1 - mix), 1); wet = min(2 * mix, 1);
+      mpc_final(t, p, vel * dry, ch, len_s, v);
+      wv = vel * wet; k = 1;
+      loop(p_dly_rep | 0,
+        wv >= 1 ? mpc_final(t + k * dt, p + k * p_dly_pitch, wv, ch, min(len_s, dt * 0.9), v + TAIL);
+        wv *= p_dly_fb / 100; k += 1;
+      );
+    ) : (
+      mpc_final(t, p, vel, ch, len_s, v);
+    );
+  );
+);
+
+// ---------------------------------------------------------------------------
+// Voices
+// ---------------------------------------------------------------------------
+
+// One play-list entry of voice v, sounding at absolute time t.
+function mpc_emit(v, t, e, rate) local(vv, a, p, vel, len, ch, sens, rep)
+(
+  vv = VOICE + v * V_ST; a = PAD + vv[V_PAD] * P_ST;
+  p = e[2] + a[PF_TRANS];
+  sens = a[PF_VSENS] / 100;
+  vel = e[3] * a[PF_LEVEL] / 100 * p_master / 100 * (1 - sens + sens * vv[V_VEL] / 127);
+  len = e[1];
+  vv[V_STUT] ? (
+    rep = vv[V_SREP];
+    p += p_st_pitch * rep;
+    vel *= (1 - p_st_decay / 100) ^ rep;
+    len = min(len, st_size) * p_st_gate / 100;
+  );
+  ch = a[PF_CHAN] > 0 ? a[PF_CHAN] - 1 : p_outch > 0 ? p_outch - 1 : e[4];
+  a[PF_FX] ? mpc_fx(t, p, vel, ch, len / rate, v) : mpc_out(t, p, vel, ch, len / rate, v);
+);
+
+// Emits the entries of voice v whose position lies in [from, to); t0 is the
+// absolute time at `from`. The list index travels in mpc_si.
+function mpc_scan(v, lst, n, from, to, t0, rate) local(e)
+(
+  while (mpc_si < n && lst[mpc_si * L_ST] < to) (
+    e = lst + mpc_si * L_ST;
+    e[0] >= from - 0.0000001 ? mpc_emit(v, t0 + (e[0] - from) / rate, e, rate);
+    mpc_si += 1;
+  );
+);
+
+// First index whose position is >= x.
+function mpc_seek(lst, n, x) local(lo, hi, mid)
+(
+  lo = 0; hi = n;
+  while (lo < hi) (
+    mid = floor((lo + hi) / 2);
+    lst[mid * L_ST] < x - 0.0000001 ? lo = mid + 1 : hi = mid;
+  );
+  lo;
+);
+
+function mpc_vlist(v) ( VLIST + v * VL_MAX * L_ST; );
+
+// Moves the real play position on without playing anything (while stuttering,
+// the pad keeps time underneath so it comes back in the right place).
+function mpc_real_advance(v, dt, rate) local(vv, L, pos)
+(
+  vv = VOICE + v * V_ST; L = vv[V_L];
+  pos = vv[V_POS] + dt * rate;
+  pos >= L ? (
+    vv[V_LOOP] && L > 0.01 ? pos -= floor(pos / L) * L : ( pos = L; vv[V_END] = 1; );
+  );
+  vv[V_POS] = pos;
+);
+
+function mpc_stut_end(v) local(vv)
+(
+  vv = VOICE + v * V_ST;
+  vv[V_STUT] = 0;
+  vv[V_IDX] = mpc_seek(mpc_vlist(v), vv[V_N], vv[V_POS]);
+  vv[V_END] ? vv[V_ON] = 0;
+);
+
+// The stutter window is the grid cell the pad is currently in: the rest of it
+// plays, then it repeats.
+function mpc_stut_begin(v) local(vv)
+(
+  vv = VOICE + v * V_ST;
+  vv[V_STUT] = 1;
+  vv[V_SSTART] = floor(vv[V_POS] / st_size + EPS) * st_size;
+  vv[V_SPOS] = vv[V_POS];
+  vv[V_SIDX] = vv[V_IDX];
+  vv[V_SREP] = 0;
+);
+
+// Plays voice v forward from its position for up to `remain` samples, or to
+// the end of its slice. Returns the samples consumed.
+function mpc_play_step(v, t, remain, rate) local(vv, lst, L, pos, dte, adv, used)
+(
+  vv = VOICE + v * V_ST; lst = mpc_vlist(v);
+  L = vv[V_L]; pos = vv[V_POS];
+  dte = (L - pos) / rate;
+  mpc_si = vv[V_IDX];
+  dte > remain ? (
+    adv = pos + remain * rate;
+    mpc_scan(v, lst, vv[V_N], pos, adv, t, rate);
+    vv[V_POS] = adv; used = remain;
+  ) : (
+    mpc_scan(v, lst, vv[V_N], pos, L, t, rate);
+    used = max(dte, 0);
+    vv[V_LOOP] && L > 0.01 ? (
+      vv[V_POS] = 0; mpc_si = 0;
+    ) : (
+      vv[V_ON] = 0; used = remain;
+    );
+  );
+  vv[V_IDX] = mpc_si;
+  used;
+);
+
+// Same, inside the stutter window, which wraps until the repeats are used up.
+function mpc_stut_step(v, t, remain, rate) local(vv, lst, n, ss, se, sp, dte, adv, used, done)
+(
+  vv = VOICE + v * V_ST; lst = mpc_vlist(v); n = vv[V_N];
+  ss = vv[V_SSTART];
+  se = min(ss + st_size, vv[V_L]);
+  se <= ss + EPS ? se = ss + st_size;
+  sp = mpc_clamp(vv[V_SPOS], ss, se);
+  dte = (se - sp) / rate;
+  mpc_si = vv[V_SIDX];
+  done = 0;
+  dte > remain ? (
+    adv = sp + remain * rate;
+    mpc_scan(v, lst, n, sp, adv, t, rate);
+    vv[V_SPOS] = adv; used = remain;
+  ) : (
+    mpc_scan(v, lst, n, sp, se, t, rate);
+    used = max(dte, 0);
+    vv[V_SREP] += 1;
+    vv[V_SPOS] = ss;
+    mpc_si = mpc_seek(lst, n, ss);
+    p_st_rep > 0 && vv[V_SREP] > p_st_rep ? done = 1;
+  );
+  vv[V_SIDX] = mpc_si;
+  mpc_real_advance(v, used, rate);
+  done ? ( vv[V_SDONE] = 1; mpc_stut_end(v); );
+  used;
+);
+
+// Source beats per sample for voice v.
+function mpc_voice_rate(v) local(vv, a, bps, fit)
+(
+  vv = VOICE + v * V_ST; a = PAD + vv[V_PAD] * P_ST;
+  fit = FITV[mpc_clamp(a[PF_FIT] | 0, 0, 7)];
+  fit > 0 ? (
+    bps = tempo / 60 * max(vv[V_L], EPS) / fit;          // squeeze the slice into `fit` beats
+  ) : (
+    bps = p_timemode == 1 ? src_tempo / 60 : tempo / 60; // 1 source beat = 1 project beat
+  );
+  bps *= 100 / max(a[PF_STRETCH], 1);
+  a[PF_TAPE] ? bps *= 2 ^ (a[PF_TRANS] / 12);            // pitch drags speed, like tape
+  max(bps, 0.001) / srate;
+);
+
+function mpc_voice_run(v) local(vv, t, endt, remain, rate, used, guard)
+(
+  vv = VOICE + v * V_ST;
+  endt = mpc_now + samplesblock;
+  t = vv[V_T]; remain = endt - t;
+  rate = mpc_voice_rate(v);
+  guard = 0;
+  while (vv[V_ON] && remain > 0.000001 && guard < 256) (
+    used = vv[V_STUT] ? mpc_stut_step(v, t, remain, rate) : mpc_play_step(v, t, remain, rate);
+    t += used; remain -= used; guard += 1;
+  );
+  vv[V_T] = endt;
+);
+
+// Silences voice v at time t: its sounding notes get a note-off, and notes it
+// scheduled that have not started are dropped. Delay tails keep ringing.
+function mpc_voice_cut(v, t) local(k, s, i, e)
+(
+  k = 0;
+  loop(2048,
+    s = SOUND + k * 3;
+    s[0] && s[1] === v ? mpc_q_push(t, QT_OFF, floor(k / 128), k & 127, 0, s[0], v);
+    k += 1;
+  );
+  i = 0;
+  loop(MAX_Q,
+    e = QUEUE + i * Q_ST;
+    e[0] && e[2] == QT_ON && e[7] === v && e[1] >= t ? mpc_q_free(i);
+    i += 1;
+  );
+  VOICE[v * V_ST + V_ON] = 0;
+);
+
+function mpc_pad_active(p) local(i, n)
+(
+  n = 0; i = 0;
+  loop(MAX_V, VOICE[i * V_ST + V_ON] && VOICE[i * V_ST + V_PAD] == p ? n += 1; i += 1; );
+  n;
+);
+
+function mpc_pad_stop(p, t) local(i)
+(
+  i = 0;
+  loop(MAX_V, VOICE[i * V_ST + V_ON] && VOICE[i * V_ST + V_PAD] == p ? mpc_voice_cut(i, t); i += 1; );
+);
+
+// A free voice, or the oldest one (cut) when all are busy.
+function mpc_voice_alloc(t) local(i, best, age)
+(
+  best = -1; i = 0;
+  while (i < MAX_V && best < 0) ( !VOICE[i * V_ST + V_ON] ? best = i; i += 1; );
+  best < 0 ? (
+    best = 0; age = VOICE[V_AGE]; i = 1;
+    loop(MAX_V - 1,
+      VOICE[i * V_ST + V_AGE] < age ? ( best = i; age = VOICE[i * V_ST + V_AGE]; );
+      i += 1;
+    );
+    mpc_voice_cut(best, t);
+  );
+  best;
+);
+
+// Starts pad p at absolute time t. `note` is what releases it later. An empty
+// pad does nothing but is reported (diag_empty) so the panel can say why.
+function mpc_trigger(p, vel, t, note) local(a, i, vv, op, v, lst, n, rev, S, E, L, k, q, warp)
+(
+  a = PAD + p * P_ST;
+  S = a[PF_S]; E = a[PF_E];
+  E - S <= EPS ? (
+    diag_empty = p + 1; diag_empty_n += 1;
+  ) : (
+    a[PF_MODE] == MODE_TOGGLE && mpc_pad_active(p) ? (
+      mpc_pad_stop(p, t);
+    ) : (
+      // mono pads cut themselves; pads in the same choke group cut each other
+      i = 0;
+      loop(MAX_V,
+        vv = VOICE + i * V_ST;
+        vv[V_ON] ? (
+          op = vv[V_PAD];
+          (op == p && !a[PF_POLY]) || (a[PF_CHOKE] > 0 && PAD[op * P_ST + PF_CHOKE] == a[PF_CHOKE]) ?
+            mpc_voice_cut(i, t);
+        );
+        i += 1;
+      );
+      v = mpc_voice_alloc(t);
+      vv = VOICE + v * V_ST;
+      rev = a[PF_REV] ? 1 : 0;
+      L = E - S;
+      lst = mpc_vlist(v);
+      n = mpc_region_list(lst, VL_MAX, S, E, rev);
+      // groove is baked into the voice's own copy of the list
+      warp = (a[PF_FX] && p_cmp && p_cmp_tgt == 2) + 2 * (p_swing > 50);
+      warp ? (
+        k = 0;
+        loop(n,
+          q = lst[k * L_ST];
+          warp & 1 ? q = mpc_tighten(q);
+          warp & 2 ? q = mpc_swing(q);
+          lst[k * L_ST] = mpc_clamp(q, 0, max(L - EPS, 0));
+          k += 1;
+        );
+      );
+      memset(vv, 0, V_ST);
+      vv[V_ON] = 1; vv[V_PAD] = p; vv[V_T] = t; vv[V_N] = n; vv[V_L] = L;
+      vv[V_LOOP] = a[PF_MODE] == MODE_LOOP || a[PF_MODE] == MODE_TOGGLE;
+      vv[V_VEL] = vel; vv[V_NOTE] = note; vv[V_HELD] = 1;
+      vv[V_LO] = rl_lo; vv[V_HI] = rl_hi;
+      vv[V_AGE] = t; vv[V_FX] = a[PF_FX]; vv[V_REV] = rev;
+      vv[V_SLICE] = a[PF_SLICE]; vv[V_S] = S;
+      st_engaged && a[PF_FX] ? mpc_stut_begin(v);
+      PADHIT[p] = t;
+    );
+  );
+);
+
+// A key going up releases the voices it started (Gate and Loop pads stop).
+function mpc_release(note, t) local(i, vv, m)
+(
+  i = 0;
+  loop(MAX_V,
+    vv = VOICE + i * V_ST;
+    vv[V_ON] && vv[V_HELD] && vv[V_NOTE] == note ? (
+      vv[V_HELD] = 0;
+      m = PAD[vv[V_PAD] * P_ST + PF_MODE];
+      m == MODE_GATE || m == MODE_LOOP ? mpc_voice_cut(i, t);
+    );
+    i += 1;
+  );
+);
+
+function mpc_note_on(note, vel, t) local(p, hit)
+(
+  hit = 0; p = 0;
+  loop(MAX_PADS,
+    PAD[p * P_ST + PF_NOTE] == note ? ( mpc_trigger(p, vel, t, note); hit += 1; );
+    p += 1;
+  );
+  hit;
+);
+
+function mpc_note_off(note, t) local(p, hit)
+(
+  hit = 0; p = 0;
+  loop(MAX_PADS, PAD[p * P_ST + PF_NOTE] == note ? hit += 1; p += 1; );
+  hit ? mpc_release(note, t);
+  hit;
+);
+
+// Everything off, now.
+function mpc_panic() local(k, s)
+(
+  memset(VOICE, 0, MAX_V * V_ST);
+  mpc_q_reset();
+  k = 0;
+  loop(2048,
+    s = SOUND + k * 3;
+    s[0] ? ( midisend(0, $x80 | floor(k / 128), k & 127, 0); s[0] = 0; );
+    k += 1;
+  );
+);
+
+function mpc_engine_reset()
+(
+  memset(VOICE, 0, MAX_V * V_ST);
+  mpc_q_reset();
+  memset(SOUND, 0, 2048 * 3);
+  memset(PADHIT, 0, MAX_PADS);
+  cap_armed = 0; cap_rec = 0;
+  st_engaged = 0; st_note_held = 0;
+  was_playing = 0;
+);
+
+// ---------------------------------------------------------------------------
+// Live sampling: record the MIDI arriving on the track while REAPER plays.
+// ---------------------------------------------------------------------------
+function mpc_cap_start()
+(
+  cap_rec = 1; cap_n = 0; cap_last = beat_position;
+  cap_tempo = tempo; cap_tsn = ts_num; cap_tsd = ts_denom;
+  memset(CAPP, 0, 2048);
+);
+
+function mpc_cap_note(beat, on, p, vel, ch) local(key, i, a)
+(
+  key = ch * 128 + p;
+  i = CAPP[key];
+  i ? (
+    a = CAPT + (i - 1) * N_ST;
+    a[1] = max(beat - a[0], MINLEN);
+    CAPP[key] = 0;
+  );
+  on && cap_n < MAX_NOTES ? (
+    a = CAPT + cap_n * N_ST;
+    a[0] = beat; a[1] = -1; a[2] = p; a[3] = vel; a[4] = ch;
+    cap_n += 1;
+    CAPP[key] = cap_n;
+  );
+  cap_last = max(cap_last, beat);
+);
+
+// Turns the capture into the new phrase, starting on the beat of the first
+// note and rounded up to whole bars.
+function mpc_cap_finish() local(i, a, first, last, org, bar)
+(
+  cap_rec = 0; cap_armed = 0;
+  cap_n > 0 ? (
+    first = 1000000000; last = 0; i = 0;
+    loop(cap_n,
+      a = CAPT + i * N_ST;
+      a[1] < 0 ? a[1] = max(cap_last - a[0], 0.25);
+      first = min(first, a[0]); last = max(last, a[0] + a[1]);
+      i += 1;
+    );
+    org = floor(first + EPS);
+    bar = cap_tsd > 0 ? cap_tsn * 4 / cap_tsd : 4;
+    src_n = 0; i = 0;
+    loop(cap_n, a = CAPT + i * N_ST; mpc_src_add(a[0] - org, a[1], a[2], a[3], a[4]); i += 1; );
+    src_len = max(ceil((last - org) / bar - EPS), 1) * bar;
+    src_tempo = cap_tempo; src_tsn = cap_tsn; src_tsd = cap_tsd;
+    mark_ui_n = 0; mark_rev += 1;
+    strcpy(#src_name, "Sampled phrase");
+    mpc_src_finalize();
+    mpc_panic();
+  );
+);
+
+// ---------------------------------------------------------------------------
+// Import from the loader script, through shared memory (gmem). Layout:
+//   [0] sequence (written last)  [1] target instance ID  [2] note count
+//   [3] length (beats)  [4] tempo  [5] ts num  [6] ts denom  [7] marker count
+//   [8] name length   [10] ack: sequence loaded  [11] ack: notes loaded
+//   [20] load request: instance ID  [21] load request sequence
+//   [30] loader heartbeat
+//   [100 + 5i ...] notes: start, length, pitch, velocity, channel
+//   [60000 + i] markers (beats)   [61000 + i] name characters
+// ---------------------------------------------------------------------------
+function mpc_import_check() local(n, m, i, g, c)
+(
+  gmem[0] !== imp_seq ? (
+    imp_seq = gmem[0];
+    gmem[1] === slider48 && slider48 > 0 ? (
+      n = mpc_clamp(gmem[2] | 0, 0, MAX_NOTES);
+      src_n = 0; i = 0;
+      loop(n, g = 100 + i * 5; mpc_src_add(gmem[g], gmem[g + 1], gmem[g + 2], gmem[g + 3], gmem[g + 4]); i += 1; );
+      src_len = gmem[3]; src_tempo = gmem[4]; src_tsn = gmem[5]; src_tsd = gmem[6];
+      m = mpc_clamp(gmem[7] | 0, 0, MAX_MARK);
+      i = 0;
+      loop(m, MARK_UI[i] = gmem[60000 + i]; i += 1; );
+      mark_ui_n = m; mark_rev += 1;
+      strcpy(#src_name, "");
+      i = 0;
+      loop(mpc_clamp(gmem[8] | 0, 0, 64),
+        c = gmem[61000 + i];
+        c >= 32 ? ( sprintf(#imp_ch, "%c", c); strcat(#src_name, #imp_ch); );
+        i += 1;
+      );
+      strlen(#src_name) == 0 ? strcpy(#src_name, "Imported item");
+      // markers placed in REAPER are almost certainly meant as chop points
+      m > 0 ? ( slider1 = 3; sliderchange(slider1); p_chop = 3; );
+      mpc_src_finalize();
+      mpc_panic();
+      cap_armed = 0; cap_rec = 0;
+      gmem[11] = src_n;
+      gmem[10] = imp_seq;
+    );
+  );
+);
+
+// ---------------------------------------------------------------------------
+// Boot and the per-block driver
+// ---------------------------------------------------------------------------
+function mpc_boot()
+(
+  !pads_ok ? ( mpc_pads_default(); pads_ok = 1; );
+  !src_ok ? ( mpc_src_demo(); src_ok = 1; );
+  mpc_engine_reset();
+  slider48 < 1 ? (
+    // clock fraction + rand(), so two sessions don't hand out the same IDs
+    id_t = time_precise() * 1000;
+    id_x = (id_t - floor(id_t)) * 899999 + rand(899999);
+    id_x >= 899999 ? id_x -= 899999;
+    slider48 = 100000 + floor(id_x);
+  );
+  imp_seq = gmem[0];             // ignore whatever an earlier session left there
+  chop_force = 1;
+  mpc_read_params();
+);
+
+function mpc_block() local(playing, ofs, m1, m2, m3, st, ch, t, beat, hit, i, want)
+(
+  mpc_read_params();
+  st_size = STUTV[mpc_clamp(p_st_size | 0, 0, 7)];
+
+  // transport: stopping, starting or jumping (loop, seek) clears the slate
+  playing = play_state == 1 || play_state == 5;
+  playing != was_playing || (playing && abs(beat_position - exp_beat) > 0.05) ? (
+    cap_rec ? mpc_cap_finish();
+    mpc_panic();
+  );
+  playing && cap_armed && !cap_rec ? mpc_cap_start();
+  was_playing = playing;
+  exp_beat = beat_position + samplesblock / srate * tempo / 60;
+
+  mpc_import_check();
+  mpc_chop_if_needed();
+  ui_req_xfer ? (
+    // "transfer to pads" from the panel: done here, after the latest chop
+    xfer_count = mpc_transfer(ui_req_xfer - 1, 0);
+    ui_req_xfer = 0; xfer_done += 1;
+  );
+
+  // requests from the panel (which runs on another thread)
+  ui_req_panic ? ( ui_req_panic = 0; mpc_panic(); );
+  ui_req_cap ? (
+    ui_req_cap = 0;
+    cap_armed ? ( cap_rec ? mpc_cap_finish() : cap_armed = 0; ) : ( cap_armed = 1; mpc_panic(); );
+  );
+  ui_req_demo ? ( ui_req_demo = 0; mpc_src_demo(); mpc_panic(); );
+  ui_aud_on ? ( mpc_trigger(ui_aud_on - 1, ui_aud_vel, mpc_now, 1000 + ui_aud_on); ui_aud_on = 0; );
+  ui_aud_off ? ( mpc_release(1000 + ui_aud_off, mpc_now); ui_aud_off = 0; );
+
+  while (midirecv(ofs, m1, m2, m3)) (
+    t = mpc_now + ofs;
+    st = m1 & $xF0; ch = m1 & $x0F;
+    diag_in_n += 1;
+    beat = beat_position + ofs / srate * tempo / 60;
+    st == $x90 && m3 > 0 ? (
+      cap_armed ? (
+        cap_rec ? mpc_cap_note(beat, 1, m2, m3, ch);
+        mpc_q_push(t, QT_RAW, m1, m2, m3, 0, 0);
+      ) : ui_learn > 0 ? (
+        PAD[(ui_learn - 1) * P_ST + PF_NOTE] = m2; ui_learn = 0;
+      ) : p_st_note > 0 && m2 == p_st_note - 1 ? (
+        st_note_held = 1;
+      ) : (
+        hit = mpc_note_on(m2, m3, t);
+        !hit && p_thru ? mpc_q_push(t, QT_RAW, m1, m2, m3, 0, 0);
+      );
+    ) : st == $x80 || st == $x90 ? (
+      cap_armed ? (
+        cap_rec ? mpc_cap_note(beat, 0, m2, 0, ch);
+        mpc_q_push(t, QT_RAW, m1, m2, m3, 0, 0);
+      ) : p_st_note > 0 && m2 == p_st_note - 1 ? (
+        st_note_held = 0;
+      ) : (
+        hit = mpc_note_off(m2, t);
+        !hit && p_thru ? mpc_q_push(t, QT_RAW, m1, m2, m3, 0, 0);
+      );
+    ) : (
+      st == $xB0 && (m2 == 120 || m2 == 123) ? mpc_panic();
+      mpc_q_push(t, QT_RAW, m1, m2, m3, 0, 0);
+    );
+  );
+
+  // stutter engages on every pad that is sending to the FX
+  want = p_st || st_note_held;
+  want && !st_engaged ? (
+    i = 0;
+    loop(MAX_V, VOICE[i * V_ST + V_ON] && VOICE[i * V_ST + V_FX] ? mpc_stut_begin(i); i += 1; );
+  );
+  !want && st_engaged ? (
+    i = 0;
+    loop(MAX_V,
+      VOICE[i * V_ST + V_SDONE] = 0;
+      VOICE[i * V_ST + V_ON] && VOICE[i * V_ST + V_STUT] ? mpc_stut_end(i);
+      i += 1;
+    );
+  );
+  st_engaged = want;
+
+  i = 0;
+  loop(MAX_V, VOICE[i * V_ST + V_ON] ? mpc_voice_run(i); i += 1; );
+
+  cap_rec ? cap_last = max(cap_last, beat_position + samplesblock / srate * tempo / 60);
+
+  mpc_q_run();
+  mpc_now += samplesblock;
+  blk_count += 1;
+);

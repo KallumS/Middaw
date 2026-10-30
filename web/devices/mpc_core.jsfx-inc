@@ -1,0 +1,500 @@
+// mpc_core.jsfx-inc
+// MIDI Production Center - memory map, source phrase, chop analysis, pads and
+// project state (@serialize).
+//
+// Imported files may only DEFINE functions in @init: statements placed here
+// are not guaranteed to run. MIDI_Production_Center.jsfx calls everything.
+// No function may call one declared after it (EEL2 has no recursion or
+// forward references), so the order in this file matters.
+//
+// Copyright (c) 2026 KallumS. GPL v3 (see LICENSE).
+
+@init
+
+// ---------------------------------------------------------------------------
+// Memory map - the ONLY place addresses are defined.
+// ---------------------------------------------------------------------------
+function mpc_consts()
+(
+  EPS = 0.0001;              // beat tolerance used everywhere
+  MINLEN = 0.001;            // shortest note, in beats
+
+  // source phrase: one record per note
+  MAX_NOTES = 8192; N_ST = 5;          // start, length (beats), pitch, vel, chan
+  // chop markers (beats). MARK_UI is edited by the panel, MARK is the audio
+  // thread's sorted copy (the two run on different threads).
+  MAX_MARK = 256;
+  // slices: the current chops (start, end in beats), at most 64
+  MAX_SLICES = 64; SL_ST = 2; SF_S = 0; SF_E = 1;
+  NO_SLICE = 64;                        // pad label: empty
+  // play-list entry: q (beats from the region start), len, pitch, vel, chan
+  L_ST = 5;
+  // pads: 4 banks x 16. A pad holds its OWN region of the phrase (PF_S..PF_E,
+  // beats), set by "transfer to pads" or by dropping a slice on it, so
+  // re-chopping never changes a pad by itself. PF_SLICE is only a label: the
+  // slice it came from (-1 = whole phrase, NO_SLICE = empty).
+  MAX_PADS = 64; P_ST = 16;
+  PF_SLICE = 0; PF_NOTE = 1; PF_MODE = 2; PF_TRANS = 3; PF_TAPE = 4; PF_STRETCH = 5;
+  PF_FIT = 6; PF_LEVEL = 7; PF_VSENS = 8; PF_REV = 9; PF_CHOKE = 10; PF_POLY = 11;
+  PF_FX = 12; PF_CHAN = 13; PF_S = 14; PF_E = 15;
+  MODE_ONESHOT = 0; MODE_GATE = 1; MODE_LOOP = 2; MODE_TOGGLE = 3;
+  // voices, each with a private (warped) copy of its slice's play list
+  MAX_V = 32; V_ST = 32; VL_MAX = 4096;
+  V_ON = 0; V_PAD = 1; V_T = 2; V_POS = 3; V_IDX = 4; V_N = 5; V_L = 6; V_LOOP = 7;
+  V_VEL = 8; V_NOTE = 9; V_LO = 10; V_HI = 11; V_STUT = 12; V_SPOS = 13; V_SSTART = 14;
+  V_SIDX = 15; V_SREP = 16; V_END = 17; V_AGE = 18; V_FX = 19; V_REV = 20; V_SLICE = 21;
+  V_S = 22; V_HELD = 23; V_SDONE = 24;
+  // output scheduler
+  MAX_Q = 8192; Q_ST = 8;
+  // event types; owner = voice index, +TAIL for FX tails (delay repeats),
+  // which releasing or choking a pad must not cut
+  QT_ON = 1; QT_OFF = 2; QT_RAW = 3; TAIL = 64;
+  MAX_CAND = 8192;
+
+  SRC     = 1024;
+  MARK    = SRC + MAX_NOTES * N_ST;
+  MARK_UI = MARK + MAX_MARK;
+  SLICE   = MARK_UI + MAX_MARK;
+  CHOPS   = SLICE + MAX_SLICES * SL_ST;
+  PAD     = CHOPS + MAX_SLICES + 8;
+  PADCLIP = PAD + MAX_PADS * P_ST;               // copy / paste buffer
+  VOICE   = PADCLIP + P_ST;
+  VLIST   = VOICE + MAX_V * V_ST;
+  QUEUE   = VLIST + MAX_V * VL_MAX * L_ST;
+  QFREE   = QUEUE + MAX_Q * Q_ST;                // free-slot stack
+  DUE     = QFREE + MAX_Q;                       // this block's due events
+  SOUND   = DUE + MAX_Q;                         // 2048 keys x (id, voice, flag)
+  CAPT    = SOUND + 2048 * 3;                    // live capture buffer
+  CAPP    = CAPT + MAX_NOTES * N_ST;             // capture: pending note per key
+  CAND    = CAPP + 2048;                         // onset candidates (pos, strength)
+  PADHIT  = CAND + MAX_CAND * 2;                 // last trigger time per pad
+  TBL     = PADHIT + MAX_PADS;                   // lookup tables, below
+  CTL     = TBL + 512;                           // panel controls
+  MEM_END = CTL + 256 * 24;
+
+  // value tables for enum sliders
+  GRIDV = TBL;        // chop grid (beats; bars resolved at use)
+  GRIDV[0] = 0.125; GRIDV[1] = 0.25; GRIDV[2] = 0.5; GRIDV[3] = 1; GRIDV[4] = 2;
+  GRIDV[5] = -1; GRIDV[6] = -2;                  // negative = bars
+  DELV = TBL + 16;    // delay times (beats)
+  DELV[0] = 0.125; DELV[1] = 1/6; DELV[2] = 0.25; DELV[3] = 0.375; DELV[4] = 1/3;
+  DELV[5] = 0.5; DELV[6] = 0.75; DELV[7] = 2/3; DELV[8] = 1; DELV[9] = 1.5;
+  DELV[10] = 2; DELV[11] = 4;
+  STUTV = TBL + 32;   // stutter window (beats)
+  STUTV[0] = 0.0625; STUTV[1] = 0.125; STUTV[2] = 1/6; STUTV[3] = 0.25;
+  STUTV[4] = 1/3; STUTV[5] = 0.5; STUTV[6] = 1; STUTV[7] = 2;
+  FITV = TBL + 48;    // pad "fit to" lengths (beats)
+  FITV[0] = 0; FITV[1] = 0.5; FITV[2] = 1; FITV[3] = 2; FITV[4] = 4;
+  FITV[5] = 8; FITV[6] = 16; FITV[7] = 32;
+  // scales as 12-bit pitch-class masks (bit k = pitch class k above the key)
+  SCALEM = TBL + 64;
+  SCALEM[0] = 2741; SCALEM[1] = 1453; SCALEM[2] = 2477; SCALEM[3] = 2733;
+  SCALEM[4] = 1709; SCALEM[5] = 1451; SCALEM[6] = 2773; SCALEM[7] = 1717;
+  SCALEM[8] = 1387; SCALEM[9] = 661;  SCALEM[10] = 1193; SCALEM[11] = 1257;
+
+  ONSET_WIN = 0.04;          // notes starting this close together are one hit
+  MIN_GAP = 0.0625;          // shortest transient slice (a 1/64 note)
+  TAIL_MIN = 0.01;           // a held note must reach this far into a slice
+);
+
+function mpc_clamp(v, a, b) ( v < a ? a : v > b ? b : v; );
+
+// ---------------------------------------------------------------------------
+// Sorting: iterative heapsort over fixed-stride records, keyed on field kf
+// with field k2 as the tie-break. (No recursion is available.)
+// ---------------------------------------------------------------------------
+function mpc_rec_less(a, b, kf, k2)
+(
+  a[kf] < b[kf] || (a[kf] === b[kf] && a[k2] < b[k2]);
+);
+
+function mpc_rec_swap(a, b, st) local(i, t)
+(
+  i = 0;
+  loop(st, t = a[i]; a[i] = b[i]; b[i] = t; i += 1; );
+);
+
+function mpc_sift(base, root, lim, st, kf, k2) local(child, sw)
+(
+  while (root * 2 + 1 < lim) (
+    child = root * 2 + 1;
+    sw = root;
+    mpc_rec_less(base + sw * st, base + child * st, kf, k2) ? sw = child;
+    child + 1 < lim && mpc_rec_less(base + sw * st, base + (child + 1) * st, kf, k2) ? sw = child + 1;
+    sw == root ? (
+      root = lim;
+    ) : (
+      mpc_rec_swap(base + root * st, base + sw * st, st);
+      root = sw;
+    );
+  );
+);
+
+function mpc_sort(base, n, st, kf, k2) local(i)
+(
+  n > 1 ? (
+    i = floor((n - 2) / 2);
+    while (i >= 0) ( mpc_sift(base, i, n, st, kf, k2); i -= 1; );
+    i = n - 1;
+    while (i > 0) (
+      mpc_rec_swap(base, base + i * st, st);
+      mpc_sift(base, 0, i, st, kf, k2);
+      i -= 1;
+    );
+  );
+);
+
+// ---------------------------------------------------------------------------
+// Parameters: sliders fanned out into named globals once per block.
+// ---------------------------------------------------------------------------
+function mpc_read_params()
+(
+  p_chop = slider1; p_sens = slider2; p_grid = slider3; p_equal = slider4; p_tails = slider5;
+  p_timemode = slider6; p_swing = slider7; p_axis = slider8; p_thru = slider9;
+  p_outch = slider10; p_master = slider11;
+  p_flt = slider12; p_flt_type = slider13; p_flt_cut = slider14; p_flt_slope = slider15;
+  p_flt_res = slider16; p_flt_width = slider17;
+  p_eq = slider18; p_eq_lf = slider19; p_eq_lg = slider20; p_eq_mf = slider21;
+  p_eq_mg = slider22; p_eq_mw = slider23; p_eq_hf = slider24; p_eq_hg = slider25;
+  p_cmp = slider26; p_cmp_tgt = slider27; p_cmp_thr = slider28; p_cmp_ratio = slider29;
+  p_cmp_make = slider30;
+  p_dly = slider31; p_dly_time = slider32; p_dly_fb = slider33; p_dly_rep = slider34;
+  p_dly_pitch = slider35; p_dly_mix = slider36;
+  p_st = slider37; p_st_size = slider38; p_st_rep = slider39; p_st_decay = slider40;
+  p_st_pitch = slider41; p_st_gate = slider42; p_st_note = slider43;
+  p_pc = slider44; p_pc_key = slider45; p_pc_scale = slider46; p_pc_mode = slider47;
+  mpc_params_dirty = 0;
+);
+
+function mpc_bar_beats() ( src_tsd > 0 ? src_tsn * 4 / src_tsd : 4; );
+
+function mpc_grid_beats(i) local(g)
+(
+  g = GRIDV[mpc_clamp(i | 0, 0, 6)];
+  g < 0 ? -g * mpc_bar_beats() : g;
+);
+
+// ---------------------------------------------------------------------------
+// Pads
+// ---------------------------------------------------------------------------
+function mpc_pad_default(p) local(a)
+(
+  a = PAD + p * P_ST;
+  memset(a, 0, P_ST);
+  a[PF_SLICE] = NO_SLICE;          // empty until a transfer fills it
+  a[PF_NOTE] = min(36 + p, 127);   // note 36 upwards, chromatic
+  a[PF_MODE] = MODE_ONESHOT;
+  a[PF_STRETCH] = 100;
+  a[PF_LEVEL] = 100;
+  a[PF_VSENS] = 50;
+  a[PF_FX] = 1;
+);
+
+function mpc_pads_default() local(p)
+(
+  p = 0;
+  loop(MAX_PADS, mpc_pad_default(p); p += 1; );
+);
+
+// ---------------------------------------------------------------------------
+// Source phrase
+// ---------------------------------------------------------------------------
+function mpc_src_add(s, l, p, v, c) local(a)
+(
+  src_n < MAX_NOTES ? (
+    a = SRC + src_n * N_ST;
+    a[0] = max(s, 0); a[1] = max(l, MINLEN);
+    a[2] = mpc_clamp(p | 0, 0, 127); a[3] = mpc_clamp(v | 0, 1, 127);
+    a[4] = mpc_clamp(c | 0, 0, 15);
+    src_n += 1;
+  );
+);
+
+// Longest note (so region scans know how far back a held note can start);
+// returns the latest note end.
+function mpc_src_stats() local(i, e)
+(
+  e = 0; src_maxlen = 0; i = 0;
+  loop(src_n,
+    e = max(e, SRC[i * N_ST] + SRC[i * N_ST + 1]);
+    src_maxlen = max(src_maxlen, SRC[i * N_ST + 1]);
+    i += 1;
+  );
+  e;
+);
+
+// First phrase index whose start is >= x (the phrase is sorted by start).
+function mpc_src_find(x) local(lo, hi, mid)
+(
+  lo = 0; hi = src_n;
+  while (lo < hi) (
+    mid = floor((lo + hi) / 2);
+    SRC[mid * N_ST] < x - 0.0000001 ? lo = mid + 1 : hi = mid;
+  );
+  lo;
+);
+
+// Notes starting in [S, E).
+function mpc_count_in(S, E) ( mpc_src_find(E - EPS) - mpc_src_find(S - EPS); );
+
+// Sorts the phrase by start (then pitch), fills in a missing length and tells
+// everything downstream that the source changed. A new phrase is transferred
+// to the pads automatically once it has been chopped.
+function mpc_src_finalize() local(e)
+(
+  mpc_sort(SRC, src_n, N_ST, 0, 2);
+  e = mpc_src_stats();
+  src_len <= EPS ? src_len = ceil(e - EPS);
+  src_len <= EPS ? src_len = 4;
+  src_tempo < 1 ? src_tempo = 120;
+  src_tsn < 1 ? src_tsn = 4;
+  src_tsd < 1 ? src_tsd = 4;
+  src_rev += 1;
+  xfer_pending = 1;
+);
+
+// A two-bar groove so the plug-in does something the moment it is loaded:
+// drums on channel 10 plus a chord part, which shows off the pitch-based FX.
+function mpc_src_demo() local(b, k)
+(
+  src_n = 0; src_len = 8; src_tempo = 96; src_tsn = 4; src_tsd = 4;
+  b = 0;
+  loop(2,
+    mpc_src_add(b + 0,    0.25, 36, 118, 9);
+    mpc_src_add(b + 0.75, 0.25, 36, 92,  9);
+    mpc_src_add(b + 2.5,  0.25, 36, 110, 9);
+    mpc_src_add(b + 1,    0.25, 38, 112, 9);
+    mpc_src_add(b + 3,    0.25, 38, 116, 9);
+    k = 0;
+    loop(8, mpc_src_add(b + k * 0.5, 0.2, 42, k & 1 ? 58 : 88, 9); k += 1; );
+    b += 4;
+  );
+  // Cm9 / Abmaj7 / Fm9 / G7
+  mpc_src_add(0, 1.5, 48, 84, 0); mpc_src_add(0, 1.5, 63, 76, 0);
+  mpc_src_add(0, 1.5, 67, 72, 0); mpc_src_add(0, 1.5, 70, 70, 0); mpc_src_add(0, 1.5, 74, 66, 0);
+  mpc_src_add(2, 1.5, 44, 82, 0); mpc_src_add(2, 1.5, 60, 74, 0);
+  mpc_src_add(2, 1.5, 63, 70, 0); mpc_src_add(2, 1.5, 67, 68, 0);
+  mpc_src_add(4, 1.5, 41, 84, 0); mpc_src_add(4, 1.5, 60, 74, 0);
+  mpc_src_add(4, 1.5, 63, 70, 0); mpc_src_add(4, 1.5, 67, 70, 0); mpc_src_add(4, 1.5, 68, 64, 0);
+  mpc_src_add(6, 1.75, 43, 86, 0); mpc_src_add(6, 1.75, 59, 76, 0);
+  mpc_src_add(6, 1.75, 62, 72, 0); mpc_src_add(6, 1.75, 65, 70, 0); mpc_src_add(6, 1.75, 67, 68, 0);
+  // a short melody on top
+  mpc_src_add(1.5, 0.5, 79, 90, 0); mpc_src_add(2.5, 0.5, 77, 84, 0);
+  mpc_src_add(3.5, 0.5, 75, 88, 0); mpc_src_add(5.5, 0.5, 72, 86, 0);
+  mpc_src_add(7,   0.5, 74, 92, 0); mpc_src_add(7.5, 0.5, 71, 80, 0);
+  mark_ui_n = 0; mark_rev += 1;
+  strcpy(#src_name, "Demo groove");
+  mpc_src_finalize();
+);
+
+// ---------------------------------------------------------------------------
+// Chopping
+// ---------------------------------------------------------------------------
+
+// Fills CHOPS[] with slice start positions and returns how many there are.
+function mpc_chop_starts() local(n, i, j, s, str, maxs, thr, last, g, k, cnt, m)
+(
+  n = 0;
+  src_n > 0 && src_len > EPS ? (
+    p_chop == 0 ? (
+      // Transient: a "hit" is every group of notes starting within ONSET_WIN.
+      // Its strength is the summed velocity, like the energy of an audio
+      // transient. Sensitivity sets how strong a hit must be (relative to the
+      // strongest) to start a slice. The first hit always starts one.
+      ncand = 0; maxs = 0; i = 0;
+      while (i < src_n) (
+        s = SRC[i * N_ST]; str = 0; j = i;
+        while (j < src_n && SRC[j * N_ST] - s < ONSET_WIN) (
+          str += SRC[j * N_ST + 3]; j += 1;
+        );
+        ncand < MAX_CAND ? ( CAND[ncand * 2] = s; CAND[ncand * 2 + 1] = str; ncand += 1; );
+        maxs = max(maxs, str);
+        i = j;
+      );
+      thr = maxs * (1 - p_sens / 100) * 0.999;
+      last = -1000; i = 0;
+      while (i < ncand && n < MAX_SLICES) (
+        (i == 0 || CAND[i * 2 + 1] >= thr) && CAND[i * 2] - last >= MIN_GAP ? (
+          CHOPS[n] = CAND[i * 2]; last = CHOPS[n]; n += 1;
+        );
+        i += 1;
+      );
+    ) : p_chop == 1 ? (
+      g = max(mpc_grid_beats(p_grid), 0.03125);
+      k = 0;
+      while (k * g < src_len - EPS && n < MAX_SLICES) ( CHOPS[n] = k * g; n += 1; k += 1; );
+    ) : p_chop == 2 ? (
+      cnt = mpc_clamp(p_equal | 0, 1, MAX_SLICES);
+      k = 0;
+      loop(cnt, CHOPS[n] = src_len * k / cnt; n += 1; k += 1; );
+    ) : (
+      // Markers: every marker starts a slice, plus the phrase start if any
+      // notes come before the first marker.
+      m = mark_n > 0 ? MARK[0] : src_len;
+      mark_n == 0 || SRC[0] < m - EPS ? ( CHOPS[0] = 0; n = 1; );
+      i = 0;
+      while (i < mark_n && n < MAX_SLICES) (
+        m = MARK[i];
+        (n == 0 || m > CHOPS[n - 1] + EPS) && m >= 0 && m < src_len - EPS ? ( CHOPS[n] = m; n += 1; );
+        i += 1;
+      );
+    );
+  );
+  n;
+);
+
+// Writes the notes of region [S, E) to dst as a play list (at most maxn
+// entries): q = beats from S in playing order, notes clipped to the region,
+// held notes crossing S included when "Held notes" is on. Reversed, a note
+// [q, q+len] plays at L - (q + len), so its length survives. Returns the
+// count; rl_lo / rl_hi get the pitch range.
+function mpc_region_list(dst, maxn, S, E, rev) local(i, a, b, s, e, cs, ce, n, L)
+(
+  n = 0; rl_lo = 128; rl_hi = -1; L = E - S;
+  i = mpc_src_find(S - src_maxlen - EPS);
+  while (i < src_n && SRC[i * N_ST] < E - EPS && n < maxn) (
+    a = SRC + i * N_ST;
+    s = a[0]; e = s + a[1];
+    s >= S - EPS || (p_tails && e > S + TAIL_MIN) ? (
+      cs = max(s, S); ce = min(e, E);
+      ce < cs + MINLEN ? ce = cs + MINLEN;
+      b = dst + n * L_ST;
+      b[0] = rev ? max(L - (ce - S), 0) : cs - S;
+      b[1] = ce - cs; b[2] = a[2]; b[3] = a[3]; b[4] = a[4];
+      rl_lo = min(rl_lo, a[2]); rl_hi = max(rl_hi, a[2]);
+      n += 1;
+    );
+    i += 1;
+  );
+  rev ? mpc_sort(dst, n, L_ST, 0, 2);
+  n == 0 ? ( rl_lo = 60; rl_hi = 60; );
+  n;
+);
+
+// ---------------------------------------------------------------------------
+// Pad regions and "transfer to pads"
+// ---------------------------------------------------------------------------
+function mpc_pad_has(p) ( PAD[p * P_ST + PF_E] > PAD[p * P_ST + PF_S] + EPS; );
+
+// Gives pad p the region of slice si (-1 = whole phrase, anything past the
+// chops = empty).
+function mpc_pad_set_slice(p, si) local(a)
+(
+  a = PAD + p * P_ST;
+  si = si | 0;
+  si < 0 ? (
+    a[PF_SLICE] = -1; a[PF_S] = 0; a[PF_E] = src_len;
+  ) : si < slice_n ? (
+    a[PF_SLICE] = si; a[PF_S] = SLICE[si * SL_ST + SF_S]; a[PF_E] = SLICE[si * SL_ST + SF_E];
+  ) : (
+    a[PF_SLICE] = NO_SLICE; a[PF_S] = 0; a[PF_E] = 0;
+  );
+);
+
+// Fills the pads from `first` onwards with the current slices, in order,
+// carrying on into the next banks if needed. Pads after the last one filled
+// are emptied to the end of its bank (to pad 64 if `all`). Other pad settings
+// are kept. Returns how many slices went onto pads.
+function mpc_transfer(first, all) local(p, i, last)
+(
+  first = mpc_clamp(first | 0, 0, MAX_PADS - 1);
+  p = first; i = 0;
+  while (i < slice_n && p < MAX_PADS) ( mpc_pad_set_slice(p, i); p += 1; i += 1; );
+  last = all ? MAX_PADS : min(max(ceil(p / 16), floor(first / 16) + 1) * 16, MAX_PADS);
+  while (p < last) ( mpc_pad_set_slice(p, NO_SLICE); p += 1; );
+  xfer_chop_rev = chop_rev;
+  i;
+);
+
+// Re-cuts the phrase into SLICE. Pads keep their own regions, so this never
+// changes what a pad plays until the next transfer.
+function mpc_chop() local(n, i, sl)
+(
+  // the audio thread's sorted copy of the panel's markers
+  mark_n = mpc_clamp(mark_ui_n | 0, 0, MAX_MARK);
+  memcpy(MARK, MARK_UI, mark_n);
+  mpc_sort(MARK, mark_n, 1, 0, 0);
+
+  n = mpc_chop_starts();
+  slice_n = min(n, MAX_SLICES);
+  i = 0;
+  loop(n,
+    sl = SLICE + i * SL_ST;
+    sl[SF_S] = CHOPS[i];
+    sl[SF_E] = i + 1 < n ? CHOPS[i + 1] : src_len;
+    i += 1;
+  );
+  chop_rev += 1;
+
+  // projects saved by version 1 stored a slice number per pad, not a region
+  pads_migrate ? (
+    i = 0;
+    loop(MAX_PADS, mpc_pad_set_slice(i, PAD[i * P_ST + PF_SLICE]); i += 1; );
+    pads_migrate = 0;
+    xfer_chop_rev = chop_rev;
+  );
+  // a new phrase goes straight onto the pads
+  xfer_pending ? ( mpc_transfer(0, 1); xfer_pending = 0; );
+);
+
+// Everything the slices depend on. Compared field by field each block so the
+// chop only re-runs when something relevant changed.
+function mpc_chop_if_needed() local(changed)
+(
+  changed = chop_force ||
+    ck_src !== src_rev || ck_mark !== mark_rev || ck_mode !== p_chop ||
+    ck_sens !== p_sens || ck_grid !== p_grid || ck_eq !== p_equal || ck_tails !== p_tails;
+  changed ? (
+    ck_src = src_rev; ck_mark = mark_rev; ck_mode = p_chop; ck_sens = p_sens;
+    ck_grid = p_grid; ck_eq = p_equal; ck_tails = p_tails;
+    chop_force = 0;
+    mpc_chop();
+  );
+);
+
+// ---------------------------------------------------------------------------
+// Project state
+// ---------------------------------------------------------------------------
+function mpc_serialize()
+(
+  file_avail(0) >= 0 ? (
+    // load
+    ser_ver = 0;
+    file_var(0, ser_ver);
+    ser_ver >= 1 ? (
+      file_var(0, ser_n);
+      ser_n = mpc_clamp(ser_n | 0, 0, MAX_NOTES);
+      file_var(0, src_len); file_var(0, src_tempo);
+      file_var(0, src_tsn); file_var(0, src_tsd);
+      ser_n > 0 ? file_mem(0, SRC, ser_n * N_ST);
+      src_n = ser_n;
+      mpc_src_stats();
+      file_var(0, ser_m);
+      ser_m = mpc_clamp(ser_m | 0, 0, MAX_MARK);
+      ser_m > 0 ? file_mem(0, MARK_UI, ser_m);
+      mark_ui_n = ser_m;
+      file_mem(0, PAD, MAX_PADS * P_ST);
+      file_var(0, ui_pad); file_var(0, ui_tab); file_var(0, ui_fx);
+      file_string(0, #src_name);
+      ser_ver == 1 ? pads_migrate = 1;
+      // the saved pads win over any automatic transfer queued before this
+      // load (e.g. of the demo phrase, if @init ran first)
+      xfer_pending = 0;
+      pads_ok = 1; src_ok = 1;
+      src_rev += 1; mark_rev += 1;
+    );
+  ) : (
+    // save
+    ser_ver = 2; ser_n = src_n; ser_m = mark_ui_n;
+    file_var(0, ser_ver);
+    file_var(0, ser_n);
+    file_var(0, src_len); file_var(0, src_tempo);
+    file_var(0, src_tsn); file_var(0, src_tsd);
+    ser_n > 0 ? file_mem(0, SRC, ser_n * N_ST);
+    file_var(0, ser_m);
+    ser_m > 0 ? file_mem(0, MARK_UI, ser_m);
+    file_mem(0, PAD, MAX_PADS * P_ST);
+    file_var(0, ui_pad); file_var(0, ui_tab); file_var(0, ui_fx);
+    file_string(0, #src_name);
+  );
+);
