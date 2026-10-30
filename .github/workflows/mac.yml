@@ -1,0 +1,17 @@
+name: Mac
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  app:
+    runs-on: macos-15          # Apple silicon
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version && uname -m && sw_vers
+      - name: Build
+        working-directory: mac
+        run: swift build 2>&1 | tail -200
+      - name: Test
+        working-directory: mac
+        run: swift test 2>&1 | tail -200
