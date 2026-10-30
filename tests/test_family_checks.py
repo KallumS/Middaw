@@ -1,7 +1,7 @@
 """Midi Evolver's own engine checks, run unchanged against Middaw's JSFX.
 
 tests/family/midi_evolver_enginecheck.py was written for a ysfx host;
-tools/jsfx_host.js speaks the same commands over web/jsfx/jsfx.js."""
+tools/jsfx_host.js speaks the same commands over runtime/jsfx/jsfx.js."""
 
 import os
 import shutil
@@ -25,7 +25,7 @@ class TestMidiEvolverEngine(unittest.TestCase):
             host.chmod(host.stat().st_mode | stat.S_IEXEC)
             result = subprocess.run(
                 [sys.executable, str(ROOT / "tests" / "family" / "midi_evolver_enginecheck.py"),
-                 "--host", str(host), "--jsfx", str(ROOT / "web" / "devices" / "Midi Evolver.jsfx")],
+                 "--host", str(host), "--jsfx", str(ROOT / "family" / "devices" / "Midi Evolver.jsfx")],
                 capture_output=True, text=True, timeout=900)
         tail = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else result.stderr
         self.assertEqual(result.returncode, 0, result.stdout[-4000:] + result.stderr[-2000:])

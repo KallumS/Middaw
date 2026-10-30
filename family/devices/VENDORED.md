@@ -1,7 +1,7 @@
 # The devices, and where they came from
 
 Every .jsfx and .jsfx-inc here is copied **unchanged** from the family's
-repositories and runs in Middaw's JSFX runtime (`web/jsfx/jsfx.js`): the same
+repositories and runs in Middaw's JSFX runtime (`runtime/jsfx/jsfx.js`): the same
 @init, @slider, @block, @sample and @serialize code REAPER runs. Middaw draws
 each device's controls from its sliders instead of running @gfx. Fix a device
 in its own repository and copy it here.

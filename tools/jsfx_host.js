@@ -5,7 +5,7 @@
  *
  *   python3 Midi-Evolver/tools/enginecheck.py   (with HOST pointing here)
  *
- *   node tools/jsfx_host.js "web/devices/Midi Evolver.jsfx" < commands
+ *   node tools/jsfx_host.js "family/devices/Midi Evolver.jsfx" < commands
  *
  * The window commands (size, mouse, key, menu, shot, log) are accepted and do
  * nothing: Middaw does not run @gfx. `frame` runs one audio block, as the
@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const J = require(path.join(__dirname, '..', 'web', 'jsfx', 'jsfx.js'));
+const J = require(path.join(__dirname, '..', 'runtime', 'jsfx', 'jsfx.js'));
 
 const file = process.argv[2];
 if (!file) { console.error('usage: jsfx_host.js fx.jsfx < commands'); process.exit(1); }

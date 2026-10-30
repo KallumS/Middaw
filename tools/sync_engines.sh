@@ -1,10 +1,10 @@
 #!/bin/sh
-# Copy the family's Lua engines into web/engines/, unchanged.
+# Copy the family's Lua engines into family/engines/, unchanged.
 #   tools/sync_engines.sh ../repos     (a folder holding the repositories)
-# Then update web/engines/VENDORED.md and run tools/lua_goldens.sh.
+# Then update family/engines/VENDORED.md and run tools/lua_goldens.sh.
 set -e
 SRC=${1:?folder holding Good-Idea, Midi-Catalogue, ... checkouts}
-DST="$(dirname "$0")/../web/engines"
+DST="$(dirname "$0")/../family/engines"
 cp "$SRC/Good-Idea/reascripts/gi_theory.lua" "$SRC/Good-Idea/reascripts/gi_idea.lua" "$DST/good-idea/"
 cp "$SRC/Midi-Catalogue/reascripts/mc_theory.lua" "$SRC/Midi-Catalogue/reascripts/mc_orchestra.lua" \
    "$SRC/Midi-Catalogue/reascripts/mc_catalogue.lua" "$DST/midi-catalogue/"

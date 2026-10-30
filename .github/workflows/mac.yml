@@ -2,16 +2,25 @@ name: Mac
 on:
   push:
   workflow_dispatch:
+defaults:
+  run:
+    shell: bash            # -eo pipefail, so a failing build fails the step
 jobs:
   app:
-    runs-on: macos-15          # Apple silicon
+    runs-on: macos-15      # Apple silicon
     steps:
       - uses: actions/checkout@v4
       - name: Toolchain
         run: swift --version && uname -m && sw_vers
       - name: Build
         working-directory: mac
-        run: swift build 2>&1 | tail -200
+        run: swift build 2>&1 | grep -v "^\[" | tail -300
       - name: Test
         working-directory: mac
-        run: swift test 2>&1 | tail -200
+        run: swift test 2>&1 | grep -vE "^\[|' (started|passed) " | tail -300
+  composer:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python tests on the Mac's own Python
+        run: /usr/bin/python3 --version && /usr/bin/python3 -m unittest discover -s tests -t . 2>&1 | tail -30

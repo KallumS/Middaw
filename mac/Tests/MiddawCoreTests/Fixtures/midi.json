@@ -1,0 +1,196 @@
+[
+ {
+  "name": "plain",
+  "tempo": 120,
+  "meter": [
+   4,
+   4
+  ],
+  "root": 1,
+  "scale": 1,
+  "tracks": [
+   {
+    "name": "Piano",
+    "channel": 0,
+    "program": 0,
+    "notes": [
+     [
+      0,
+      1,
+      60,
+      100
+     ],
+     [
+      1,
+      1,
+      64,
+      90
+     ],
+     [
+      2,
+      2,
+      67,
+      80
+     ]
+    ],
+    "controls": []
+   }
+  ],
+  "midi": "TVRoZAAAAAYAAQACAeBNVHJrAAAAIwD/UQMHoSAA/1gEBAIYCAD/WQIAAAD/AwZNaWRkYXcA/y8ATVRyawAAACsA/wMFUGlhbm8AwAAAkDxkg2CAPEAAkEBag2CAQEAAkENQh0CAQ0AA/y8A"
+ },
+ {
+  "name": "flats, odd meter, rounding",
+  "tempo": 97,
+  "meter": [
+   7,
+   8
+  ],
+  "root": 16,
+  "scale": 2,
+  "tracks": [
+   {
+    "name": "Melody",
+    "channel": 0,
+    "program": 0,
+    "notes": [
+     [
+      0.0010416666666666667,
+      0.25,
+      70,
+      64.7
+     ],
+     [
+      0.003125,
+      0.5,
+      72,
+      127.9
+     ],
+     [
+      3.333333,
+      0.1,
+      74,
+      0
+     ],
+     [
+      5,
+      1e-06,
+      75,
+      50
+     ],
+     [
+      6,
+      0.5,
+      130,
+      200
+     ]
+    ],
+    "controls": [
+     [
+      0,
+      11,
+      40
+     ],
+     [
+      0,
+      1,
+      0
+     ],
+     [
+      2.5,
+      64,
+      127
+     ],
+     [
+      3.0001,
+      11,
+      300
+     ]
+    ]
+   },
+   {
+    "name": "Kit",
+    "channel": 9,
+    "program": 0,
+    "notes": [
+     [
+      0,
+      0.25,
+      36,
+      110
+     ],
+     [
+      0,
+      0.25,
+      42,
+      80
+     ],
+     [
+      1,
+      0.25,
+      38,
+      100
+     ],
+     [
+      1,
+      0.25,
+      36,
+      90
+     ]
+    ],
+    "controls": []
+   }
+  ],
+  "midi": "TVRoZAAAAAYAAQADAeBNVHJrAAAAIwD/UQMJcD0A/1gEBwMYCAD/WQL7AQD/AwZNaWRkYXcA/y8ATVRyawAAAE8A/wMGTWVsb2R5AMAAALALKACwAQAAkEZAApBIf3aARkB6gEhAhz6wQH+BcLALf4EgkEoBMIBKQIVwkEsyAYBLQINfkH9/gXCAf0AA/y8ATVRyawAAAC8A/wMDS2l0AMkAAJkkbgCZKlB4iSRAAIkqQIJomSZkAJkkWniJJkAAiSRAAP8vAA=="
+ },
+ {
+  "name": "repeated notes retrigger, unicode name",
+  "tempo": 60,
+  "meter": [
+   3,
+   4
+  ],
+  "root": 9,
+  "scale": 5,
+  "tracks": [
+   {
+    "name": "Violin I — détaché xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "channel": 2,
+    "program": 40,
+    "notes": [
+     [
+      0,
+      1,
+      62,
+      90
+     ],
+     [
+      1,
+      1,
+      62,
+      90
+     ],
+     [
+      1,
+      0.5,
+      66,
+      80
+     ],
+     [
+      2.75,
+      0.25,
+      69,
+      70
+     ]
+    ],
+    "controls": [
+     [
+      1,
+      7,
+      100
+     ]
+    ]
+   }
+  ],
+  "midi": "TVRoZAAAAAYAAQACAeBNVHJrAAAAIwD/UQMPQkAA/1gEAwIYCAD/WQIEAQD/AwZNaWRkYXcA/y8ATVRyawAAAHMA/wNAVmlvbGluIEkg4oCUIGTDqXRhY2jDqSB4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eADCKACSPlqDYLIHZACCPkAAkj5aAJJCUIFwgkJAgXCCPkCCaJJFRniCRUAA/y8A"
+ }
+]

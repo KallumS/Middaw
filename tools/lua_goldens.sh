@@ -6,5 +6,5 @@ set -e
 cd "$(dirname "$0")/.."
 LUA=${LUA:-lua5.4}
 "$LUA" tests/js/lua/conformance.lua > tests/js/lua/conformance.expected
-"$LUA" tests/js/lua/engines_golden.lua web/engines/ > tests/js/lua/engines.expected
+"$LUA" tests/js/lua/engines_golden.lua family/engines/ > tests/js/lua/engines.expected
 echo "goldens written with $("$LUA" -v 2>&1 | head -1)"

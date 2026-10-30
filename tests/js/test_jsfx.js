@@ -4,9 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
-const J = require('../../web/jsfx/jsfx.js');
+const J = require('../../runtime/jsfx/jsfx.js');
 
-const DEV = path.join(__dirname, '..', '..', 'web', 'devices');
+const DEV = path.join(__dirname, '..', '..', 'family', 'devices');
 function device(name) {
   return new J.JSFX(fs.readFileSync(path.join(DEV, name), 'utf8'),
     { readImport: (n) => fs.readFileSync(path.join(DEV, n), 'utf8') });

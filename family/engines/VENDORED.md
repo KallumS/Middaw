@@ -1,7 +1,7 @@
 # The engines, and where they came from
 
 Everything here except this file is copied **unchanged** from the family's
-own repositories and runs in Middaw's Lua (`web/lua/`), exactly as it runs in
+own repositories and runs in Middaw's Lua (`runtime/lua/`), exactly as it runs in
 REAPER, Miderator and Noterator. Do not edit these files here: fix them in
 their own repository, then run `tools/sync_engines.sh` and update this table.
 

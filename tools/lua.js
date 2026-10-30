@@ -6,7 +6,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const root = path.join(__dirname, '..', 'web', 'lua');
+const root = path.join(__dirname, '..', 'runtime', 'lua');
 require(path.join(root, 'lua_parse.js'));
 require(path.join(root, 'lua_runtime.js'));
 const L = require(path.join(root, 'lua_compile.js'));

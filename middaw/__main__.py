@@ -35,7 +35,9 @@ def main(argv=None) -> int:
 
     if args.json:
         import json
-        print(json.dumps(result.to_dict(), indent=2))
+        data = result.to_dict()
+        data["summary"] = spec.summary()
+        print(json.dumps(data, indent=2))
     else:
         print(spec.summary())
         print("  " + "  ".join(c["symbol"] for c in result.chords[:8]))

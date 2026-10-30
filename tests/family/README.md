@@ -7,4 +7,4 @@ commands. A check that passes here passes for the same reason it passes there.
 
 | File | From | Commit |
 | --- | --- | --- |
-| `midi_evolver_enginecheck.py` | KallumS/Midi-Evolver `tools/enginecheck.py` | see web/devices/VENDORED.md |
+| `midi_evolver_enginecheck.py` | KallumS/Midi-Evolver `tools/enginecheck.py` | see family/devices/VENDORED.md |

@@ -25,7 +25,7 @@ test('the language and the library print what Lua 5.4 prints', () => {
 });
 
 test('every engine, every setting, every seed: the same notes as Lua 5.4', () => {
-  const mine = run('tests/js/lua/engines_golden.lua', ['web/engines/']).split('\n');
+  const mine = run('tests/js/lua/engines_golden.lua', ['family/engines/']).split('\n');
   const real = expected('engines.expected').split('\n');
   for (let i = 0; i < Math.max(mine.length, real.length); i++) {
     if (mine[i] !== real[i]) assert.fail('line ' + (i + 1) + ' differs\n  lua5.4: ' + real[i] + '\n  middaw: ' + mine[i]);

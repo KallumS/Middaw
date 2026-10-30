@@ -8,7 +8,7 @@
  * midirecv() and leaves through midisend() with its sample offset.
  *
  * @gfx is not run: Middaw draws each device's controls itself from the
- * sliders, so a device looks like the rest of the app (see web/devices.js).
+ * sliders, so a device looks like the rest of the app (see family/devices.js).
  *
  * Everything in EEL2 is a double. Variables live in one Float64Array, so the
  * generated code reads `v[12]`; memory (`buf[i]`) is EEL2's 8M words, given

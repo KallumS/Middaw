@@ -5,9 +5,9 @@
      are printed with tostring, so a float that should be an integer (or the
      other way round) shows up too.
 
-       lua5.4 tests/js/lua/engines_golden.lua web/engines/ > tests/js/lua/engines.expected
+       lua5.4 tests/js/lua/engines_golden.lua family/engines/ > tests/js/lua/engines.expected
 ]]
-local ROOT = arg and arg[1] or "web/engines/"
+local ROOT = arg and arg[1] or "family/engines/"
 local cache = {}
 function engine(name)
   if cache[name] == nil then
