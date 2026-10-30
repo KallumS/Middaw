@@ -39,7 +39,7 @@ public final class AudioEngine {
     public func start() throws {
         guard !running else { return }
         let me = self
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: r.sampleRate, channels: 2) else { return }
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: renderer.sampleRate, channels: 2) else { return }
         let node = AVAudioSourceNode(format: format) { _, _, frames, abl -> OSStatus in
             let buffers = UnsafeMutableAudioBufferListPointer(abl)
             guard buffers.count >= 2,
