@@ -1,0 +1,76 @@
+-- numbers
+1	1.0	-0.0	1.5	2.0	3	3.0	-4	1	2	-2	0.5	1024.0	inf
+1e+15	1e+16	123456789012	0.1	0.33333333333333	-0.33333333333333	33.333333333333	9.007199254741e+15	9.2233720368548e+18	inf	-inf
+integer	float	nil	3	4	-4
+3	2.5	3	3.0	-1	0.0
+1e+100	inf	-inf	7	2	6	-1	16	16	4611686018427387904	15
+10	10.0	31	100.0	nil	255	35	nil
+true	false	true	true	true	3	nil
+15	7.0	1020	1.5	3	-2
+1 2 3 3 2 1 0 0.25 0.5 0.75 1 1;2;
+-- strings
+42    42 42   | 00042 +42 ff FF 10 A
+3.14 2 4 0     -1.500 2.2     | 1.234568e+04 1.230e-04 100000 1e+06 0.0001 1e-05
+0.2 1.00 2.001 100.00%
+nil true 1.0      right|left      |tru
+"a \"quoted\"\
+\9string\0end"	9.22337e+18 -0
+xxx	ab,ab,ab	HELLO	hello	6	cba
+hello	llo	ello	hello		104	101	108
+Hi	7	2	1	2	2
+5	3	h	key	value
+trim me	2024	2	3
+hell0 w0rld fr0m lua	-h-e-l-l-o-	aabbcc	<hello> <world>	2
+Ann is 30	979899	x_y z	1
+(a(b)c)	1	test	abc	3
+one|two|three|a1;b2;c3;[]
+C#	50%	a plus b	195	169
+-- tables
+5	3	b	c
+11	0,4,9,16,25,36,49,64,81,100,99
+99	0	9	9-16-25	12.5x
+apple banana cherry date fig grape kiwi lime melon peach pear plum
+fig plum pear kiwi date lime melon peach grape apple cherry banana
+90,20,100,50,80,61,31,81,31,72,22,82,52,53,83,93,93,73,34,64,44,4,15,35,45,65,56,86,76,96,56,27,87,47,77,48,68,68,88,69,29,69,89
+9 19 29 4 14 34 39 24 13 23 33 8 3 38 18 28 27 22 17 37 7 32 12 2 6 31 16 26 11 36 21 1 35 20 25 5 30 10 15 40
+1	2	3
+2	3
+3
+3	1	nil	3
+1,2,x,y,z
+nil	number	2	true	1
+2,3,4,4,5
+-- functions
+0	nil	nil	0
+1	1	nil	1
+3	1	2	3
+1	1	2	3
+1
+3	4
+1	2	3
+1	nil
+1	2	3
+6765
+6
+4
+2	1
+false	tests/js/lua/conformance.lua:95: boom
+false	plain
+7
+true
+false	nil
+function	nil	table	string	number	boolean
+  7.2|ab    |  5
+3
+8	512.0	-4.0	true	true
+4	-2	1
+-- random
+50 76 86 54 64 7 25 3
+8	3	102586	0.0167105927
+226	4
+3,7,1,2,4,8,5,6
+-- park-miller
+201917593 1483341617 983435933 1309904908 2058795447	0.95870133858053
+-- utf8
+Hé€	5	233
+true	true
