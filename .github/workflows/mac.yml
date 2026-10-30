@@ -39,6 +39,15 @@ jobs:
             perl -e 'alarm 90; exec @ARGV' "$APP" --snapshot "shots/$ed.png" --editor $ed "$RUNNER_TEMP/demo.mid" || echo "snapshot $ed exited $?"
           done
           ls -la shots
+      - name: A small picture in the log (the review sandbox cannot download artifacts)
+        if: success() || failure()
+        run: |
+          [ -f shots/roll.png ] || exit 0
+          sips -Z 820 -s format jpeg -s formatOptions 40 shots/roll.png --out roll-small.jpg >/dev/null
+          echo "SHOT-BEGIN $(stat -f%z roll-small.jpg)"
+          base64 -b 0 roll-small.jpg
+          echo
+          echo "SHOT-END"
       - uses: actions/upload-artifact@v4
         with:
           name: Middaw-shots
