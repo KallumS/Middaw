@@ -595,6 +595,12 @@
         if (!fv) return 'S.fileVar(' + A(0) + ', ' + A(1) + ')';
         return '(' + fv + ' = S.fileVar(' + A(0) + ', ' + fv + '))';
       }
+      case 'file_riff': {
+        // channels and sample rate come back through the arguments
+        var nc = this.lvalue(args[1], ctx), fr = this.lvalue(args[2], ctx);
+        var t0 = this.temp();
+        return '(' + t0 + ' = S.fileRiff(' + A(0) + ')' + (nc ? ', ' + nc + ' = S.riff[0]' : '') + (fr ? ', ' + fr + ' = S.riff[1]' : '') + ', ' + t0 + ')';
+      }
       case 'slider': return 'S.sliderByIndex(' + A(0) + ')';
       case 'loop': case 'while':
         return '(() => { var rr = 0; ' + this.stmts(n, ctx, true, 'rr') + ' return rr; })()';
@@ -752,6 +758,8 @@
     src.push('function grow(i, x) { if (i < 0 || i >= ' + (BLOCK * NBLOCKS) + ') return x; var n = M.length; while (n <= i) n *= 2;' +
              ' var N = new Float64Array(Math.min(n, ' + (BLOCK * NBLOCKS) + ')); N.set(M); M = N; M[i] = x; return x; }');
     src.push('S.rd = rd; S.wr = wr; S.clearMem = function () { M = new Float64Array(' + BLOCK + '); };');
+    // Code compiled later (eval) runs in this scope, beside M, v and the helpers.
+    src.push('S.evalIn = function (code) { return eval(code); };');
     src.push(C.funcCode.join('\n'));
     Object.keys(sections).forEach(function (name) {
       src.push('S.sec_' + name + ' = [' + sections[name].map(function (b) { return 'function () {' + b + '}'; }).join(',\n') + '];');
@@ -913,6 +921,12 @@
     return new RegExp(re, ci ? 'i' : '').test(s) ? 1 : 0;
   };
 
+  JSFX.prototype.riff = [0, 0];
+  JSFX.prototype.fileRiff = function (h) {
+    var f = this.files && this.files[Math.trunc(h)];
+    this.riff = f ? [f.channels, f.rate] : [0, 0];
+    return f ? 1 : 0;
+  };
   JSFX.prototype.call = function (name) {
     var a = Array.prototype.slice.call(arguments, 1);
     var f = BUILTINS[name];
@@ -968,7 +982,7 @@
     });
     C.funcs = funcs;
     var body = C.compileSection(code, 1);
-    var fn = new Function('S', 'H', '"use strict"; var v = S.v, rd = S.rd, wr = S.wr;' + C.funcCode.join('\n') + ' return function () {' + body + '};')(this, H);
+    var fn = this.evalIn('(function () {' + C.funcCode.join('\n') + ' return function () {' + body + '}; })()');
     if (this.slots.__count > this.v.length) throw new EelError('too many new variables in eval');
     return fn();
   };

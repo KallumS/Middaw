@@ -4,53 +4,154 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Middaw</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main>
-    <header>
-      <h1>Middaw</h1>
-      <p class="tagline">MIDI first. Nothing is transcribed from audio.</p>
-    </header>
+  <header class="toolbar" role="toolbar" aria-label="Transport and song">
+    <nav class="menubar" aria-label="Menus">
+      <button type="button" class="menu-button" data-menu="file">File</button>
+      <button type="button" class="menu-button" data-menu="edit">Edit</button>
+      <button type="button" class="menu-button" data-menu="view">View</button>
+    </nav>
+    <div class="group transport">
+      <button type="button" id="to-start" class="icon" title="Go to the start (Home)" aria-label="Go to the start">|◀</button>
+      <button type="button" id="play" class="icon wide" title="Play from the caret (Space)" aria-label="Play">▶</button>
+      <button type="button" id="record" class="icon" title="Record from your MIDI keyboard (R)" aria-label="Record" aria-pressed="false">●</button>
+      <button type="button" id="loop" class="icon" title="Loop the chosen bars (L)" aria-label="Loop" aria-pressed="false">⟲</button>
+      <button type="button" id="click" class="icon" title="Metronome (C)" aria-label="Metronome" aria-pressed="false">♩</button>
+    </div>
+    <div class="group readouts">
+      <output id="position" class="readout" aria-label="Position">1.1.1</output>
+      <label class="field"><span>Tempo</span><input id="tempo" type="number" min="20" max="300" step="1" value="110" aria-label="Tempo in beats a minute"></label>
+      <button type="button" id="meter" class="readout-button" title="Time signature" aria-haspopup="menu">4/4</button>
+      <button type="button" id="key" class="key-button" title="Key and scale" aria-haspopup="menu">
+        <canvas id="scaleview" width="84" height="40" aria-hidden="true"></canvas>
+        <span id="key-name">C Major</span>
+      </button>
+      <output id="chord-now" class="readout chord" aria-label="Chord now" title="The chord sounding now"></output>
+    </div>
+    <div class="spacer"></div>
+    <div class="group">
+      <button type="button" id="follow" class="toggle" aria-pressed="true" title="Scroll along with the music as it plays (F)">Follow</button>
+      <button type="button" id="mixer-toggle" class="toggle" aria-pressed="false" title="Mixer (M)">Mixer</button>
+      <button type="button" id="generate-open" class="toggle" aria-pressed="false" title="Generate music (G)">Generate</button>
+      <button type="button" id="pass" class="pass-button" title="Battle Pass" aria-label="Battle Pass">
+        <canvas id="pass-ring" width="28" height="28" aria-hidden="true"></canvas><span id="pass-label">Tier 1</span>
+      </button>
+    </div>
+  </header>
 
-    <form id="prompt-form" autocomplete="off">
-      <label for="prompt" id="prompt-label">What do you want to create?</label>
-      <div class="input-row">
-        <input id="prompt" name="prompt" type="text" maxlength="2000"
-               placeholder="a sad lo-fi piano loop in F minor at 82 bpm" autofocus>
-        <button type="submit" id="generate">Create</button>
+  <div id="status" class="status" role="status" aria-live="polite" hidden>
+    <span id="status-text"></span>
+    <button type="button" id="status-undo" hidden>Undo</button>
+    <button type="button" id="status-dismiss">Dismiss</button>
+  </div>
+
+  <main class="workspace" id="workspace">
+    <aside class="browser" id="browser" aria-label="Browser">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="sounds" aria-selected="true">Sounds</button>
+        <button type="button" role="tab" data-tab="ideas" aria-selected="false">Ideas</button>
+        <button type="button" role="tab" data-tab="learn" aria-selected="false">Guide</button>
       </div>
-      <p class="examples" id="examples"></p>
-    </form>
+      <div class="browser-body" id="browser-body"></div>
+    </aside>
 
-    <section id="result" hidden aria-live="polite">
-      <div class="interpretation">
-        <p id="summary"></p>
-        <p id="unmatched" class="unmatched" hidden></p>
+    <section class="center">
+      <div class="arrange" id="arrange">
+        <div class="arrange-head">
+          <div class="corner">
+            <button type="button" id="add-track" title="Add a track (⌘T)">Add Track</button>
+          </div>
+          <canvas id="ruler" height="44" aria-label="Bars, chords and scale"></canvas>
+        </div>
+        <div class="arrange-body" id="arrange-body">
+          <div class="track-heads" id="track-heads"></div>
+          <div class="timeline-wrap" id="timeline-wrap">
+            <canvas id="timeline" tabindex="0" aria-label="Tracks and clips"></canvas>
+          </div>
+        </div>
+        <div class="empty" id="empty" hidden>
+          <h1>What do you want to create?</h1>
+          <form id="welcome-form" class="welcome" autocomplete="off">
+            <input id="welcome-prompt" type="text" maxlength="2000" placeholder="a sad lo-fi piano loop in F minor at 82 bpm" aria-label="Describe the music">
+            <button type="submit" class="primary">Create</button>
+          </form>
+          <div class="welcome-or">
+            <button type="button" id="welcome-new">Start from an Ensemble…</button>
+            <button type="button" id="welcome-open">Open…</button>
+          </div>
+        </div>
       </div>
-
-      <div id="voices" class="voices"></div>
-
-      <div id="chords" class="chords"></div>
-
-      <div class="roll-wrap">
-        <canvas id="roll" width="1200" height="280"></canvas>
+      <div class="divider" id="divider" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Resize the editor"></div>
+      <div class="editor" id="editor">
+        <div class="editor-bar">
+          <div class="tabs" role="tablist">
+            <button type="button" role="tab" data-etab="roll" aria-selected="true">Piano Roll</button>
+            <button type="button" role="tab" data-etab="score" aria-selected="false">Score</button>
+          </div>
+          <span id="editor-title" class="editor-title"></span>
+          <div class="spacer"></div>
+          <div class="group" id="roll-tools">
+            <button type="button" id="tool-draw" class="toggle" aria-pressed="false" title="Draw notes (D)">Draw</button>
+            <label class="field"><span>Grid</span>
+              <select id="grid" aria-label="Grid">
+                <option value="4">1 Bar</option><option value="2">1/2</option><option value="1">1/4</option>
+                <option value="0.5">1/8</option><option value="0.25" selected>1/16</option><option value="0.125">1/32</option>
+              </select>
+            </label>
+            <button type="button" id="triplet" class="toggle" aria-pressed="false" title="Triplets (T)">Triplets</button>
+            <button type="button" id="quantize" title="Pull the chosen notes onto the grid (Q)">Quantize</button>
+            <label class="field"><span>Lane</span>
+              <select id="lane" aria-label="Lane under the notes">
+                <option value="vel">Velocity</option><option value="1">CC1 Dynamics</option><option value="11">CC11 Expression</option>
+                <option value="7">CC7 Volume</option><option value="64">CC64 Sustain</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="blocks-bar" id="blocks-bar"></div>
+        <div class="editor-body" id="editor-body">
+          <canvas id="roll" tabindex="0" aria-label="Piano roll"></canvas>
+          <div class="score" id="score" hidden tabindex="0" aria-label="Score"><canvas id="score-canvas"></canvas></div>
+          <div class="mixer" id="mixer" hidden aria-label="Mixer"></div>
+        </div>
       </div>
-
-      <div class="transport">
-        <button type="button" id="play" class="primary">Play</button>
-        <button type="button" id="again">Another take</button>
-        <a id="download" download class="button">Download .mid</a>
-        <span class="seed">seed <code id="seed"></code></span>
-      </div>
-      <p id="voice-note" class="voice-note"></p>
     </section>
 
-    <p id="status" class="status" role="status"></p>
-    <p id="corpus-note" class="corpus-note"></p>
+    <aside class="inspector" id="inspector" aria-label="Inspector">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-itab="track" aria-selected="true">Track</button>
+        <button type="button" role="tab" data-itab="generate" aria-selected="false">Generate</button>
+      </div>
+      <div class="inspector-body" id="inspector-body"></div>
+    </aside>
   </main>
 
-  <script src="/player.js"></script>
-  <script src="/app.js"></script>
+  <div id="menu-layer" class="menu-layer" hidden></div>
+  <div id="sheet-layer" class="sheet-layer" hidden></div>
+  <input type="file" id="file-open" accept=".middaw,.json,.mid,.midi" hidden>
+  <input type="file" id="file-sample" accept="audio/*" hidden>
+
+  <script src="lua/lua_parse.js"></script>
+  <script src="lua/lua_runtime.js"></script>
+  <script src="lua/lua_compile.js"></script>
+  <script src="jsfx/jsfx.js"></script>
+  <script src="app/synths.js"></script>
+  <script src="app/model.js"></script>
+  <script src="app/engines.js"></script>
+  <script src="app/devices.js"></script>
+  <script src="app/audio.js"></script>
+  <script src="app/store.js"></script>
+  <script src="app/ui/core.js"></script>
+  <script src="app/ui/arrange.js"></script>
+  <script src="app/ui/roll.js"></script>
+  <script src="app/ui/score.js"></script>
+  <script src="app/ui/inspector.js"></script>
+  <script src="app/ui/generate.js"></script>
+  <script src="app/ui/browser.js"></script>
+  <script src="app/ui/mixer.js"></script>
+  <script src="app/ui/pass.js"></script>
+  <script src="app/ui/main.js"></script>
 </body>
 </html>
