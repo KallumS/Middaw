@@ -96,6 +96,9 @@ middaw/                      the composer (Python), bundled for Compose
 
 ## Not tried
 
-This was written on Linux and built only by CI. Nobody has yet opened the
-window, heard it through speakers or played it from a MIDI keyboard; the
-first person to do so will find what the tests could not.
+This was written on Linux and built only by CI. CI does open the real app on
+an Apple silicon Mac, load a composed song into it and save pictures of the
+window (piano roll and score), and the first of those showed the song, its
+chords lane, the Blocks bar and the inspector as intended. Nobody has yet
+clicked through it, heard it through speakers or played it from a MIDI
+keyboard; the first person to do so will find what the tests could not.

@@ -34,7 +34,9 @@ the end and `docs/DAW.md`). It was a browser app until 30 October 2026;
 - **No Mac here? CI is the Mac.** `.github/workflows/mac.yml` tests, builds
   and bundles the app on Apple silicon on every push and uploads
   `Middaw-app`. Read its log (only errors are printed) before calling a Swift
-  change done; code that has not compiled there has not been written.
+  change done; code that has not compiled there has not been written. The
+  log ends with a small JPEG of the window in base64 between `SHOT-BEGIN`
+  and `SHOT-END`, for reviewers who cannot download artifacts.
 
 - **Python 3.9, the Mac's own.** Middaw is made for Apple silicon Macs, and
   the `python3` that comes with Apple's Command Line Tools is 3.9. So no
@@ -391,10 +393,12 @@ dataset and a liability. See `docs/DATASET.md`.
   is a clean pattern where a drummer's is a cloud: they hit nearly every
   sixteenth *sometimes*, and we hit exactly what the pattern says. Ghost
   density and fills close part of that gap; per-bar variation would close more.
-- **The DAW has not been heard.** Every path was driven in headless Chromium
-  (transport, every generator, every device, MIDI and WAV export) and the
-  output checked as numbers, but nobody has listened to it on speakers or
-  played it from a MIDI keyboard. `docs/DAW.md` lists its other limits.
+- **The app has not been heard or touched.** CI builds it, runs every
+  instrument offline and checks the sound as numbers, and opens a composed
+  song in the real app and saves a picture of the window
+  (`Middaw --snapshot out.png [--editor roll|score] song.mid`). Nobody has yet
+  clicked it, listened to it on speakers or played it from a MIDI keyboard.
+  `docs/DAW.md` lists its other limits.
 
 ## The app
 
