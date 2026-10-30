@@ -8,7 +8,10 @@ import MiddawCore
 /// Not thread-safe by itself: every call goes through one serial queue, so
 /// call it from anywhere, but expect a generate to take a moment.
 public final class Engines {
-    public struct Failure: Error, CustomStringConvertible { public let description: String }
+    public struct Failure: Error, CustomStringConvertible {
+        public let description: String
+        public init(description: String) { self.description = description }
+    }
 
     public struct Generator: Decodable, Hashable, Identifiable {
         public let id: String
