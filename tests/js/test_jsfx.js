@@ -33,6 +33,14 @@ test('EEL2 control: sequences, ?:, loop, while, assignment as a value', () => {
   assert.deepStrictEqual(r, [3, 10, 45, 7, 10, 9, 5, 4, 0]);
 });
 
+test('EEL2 control: a loop inside an assignment, a sum or an argument', () => {
+  // REAPER takes these; the compiler once recursed on them forever
+  const r = run('y = 0; x = (loop(3, y += 1); y * 2); z = 1 + (loop(2, y += 1); y); m = max(0, (i = 0; while (i < 4) (i += 1); i));' +
+                'buf = 100; buf[(loop(2, y += 1); 1)] = 7; b = buf[1]; k = 0; k += (loop(3, k += 1); 10);',
+                ['x', 'y', 'z', 'm', 'b', 'k']);
+  assert.deepStrictEqual(r, [6, 7, 6, 4, 7, 10]);
+});
+
 test('EEL2 functions: parameters by value, locals that keep their value', () => {
   const r = run('function sq(x) ( x * x ); function count() local(n) ( n += 1 );' +
                 'function clamp(v, lo, hi) ( max(lo, min(hi, v)) );' +

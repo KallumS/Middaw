@@ -9,7 +9,15 @@
  *
  * The window commands (size, mouse, key, menu, shot, log) are accepted and do
  * nothing: Middaw does not run @gfx. `frame` runs one audio block, as the
- * ysfx host does after drawing. */
+ * ysfx host does after drawing.
+ *
+ * Four more, for holding the compiled devices to this runtime
+ * (tools/jsfx_c_host.c answers them identically): `seed n` makes rand() a
+ * fixed sequence, `input square <period> <amp>` / `input none` feeds audio in,
+ * `audio` prints the last block's output and `vars` every variable. With
+ * JSFX_SEED set, rand() is seeded before the device starts, and with
+ * JSFX_CLOCK=samples time_precise() counts the samples, so @init and
+ * everything after it are repeatable. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -25,16 +33,29 @@ function make() {
   fx.init(SR);
   return fx;
 }
+var pending = [], sent = [], clock = 0;
+if (process.env.JSFX_SEED) seed(Number(process.env.JSFX_SEED));
+if (process.env.JSFX_CLOCK === 'samples') {
+  Object.defineProperty(globalThis, 'performance', { value: { now: () => 1e6 + clock / SR * 1000 }, configurable: true, writable: true });
+  Date.now = () => 1.7e12 + clock / SR * 1000;
+}
 let fx = make();
-let pending = [], sent = [], clock = 0;
 let play = 0, beat = 0, bpm = 120, num = 4, den = 4, frames = 0;
-const zero = [new Float32Array(BS), new Float32Array(BS)];
+const ins = [new Float32Array(BS), new Float32Array(BS)];
 const outs = [new Float32Array(BS), new Float32Array(BS)];
+let period = 0, amp = 0;
+// rand() as tools/jsfx_c_host.c's: the same 32-bit LCG
+var rng;
+function seed(n) { rng = n >>> 0; Math.random = () => { rng = (Math.imul(rng, 1664525) + 1013904223) >>> 0; return rng / 4294967296; }; }
 function block() {
   fx.setTime({ tempo: bpm, playState: play, beat: beat, seconds: beat * 60 / bpm, num: num, den: den });
   const midi = pending.map((d) => ({ offset: 0, data: d }));
   pending = [];
-  const out = fx.process(BS, zero, outs, midi);
+  for (let i = 0; i < BS; i++) {
+    const x = period ? (Math.floor((clock + i) / period) % 2 ? -amp : amp) : 0;
+    ins[0][i] = x; ins[1][i] = -x;
+  }
+  const out = fx.process(BS, ins, outs, midi);
   for (const m of out) sent.push([clock + m.offset, m.data[0], m.data[1] || 0, m.data[2] || 0]);
   clock += BS;
   if (play === 1 || play === 5) beat += BS / SR * bpm / 60;
@@ -67,6 +88,14 @@ rl.on('line', (line) => {
       const vals = [];
       for (let i = 0; i < n(2); i++) vals.push(Number(fx.rd(n(1) + i).toPrecision(10)));
       out('MEM' + vals.map((x) => ' ' + x).join('')); break;
+    }
+    case 'seed': seed(n(1)); break;
+    case 'input': if (a[1] === 'square') { period = n(2); amp = n(3); } else { period = 0; amp = 0; } break;
+    case 'audio': out('AUDIO' + [0, 1].map((c) => Array.from(outs[c], (x) => ' ' + Number(x.toPrecision(10))).join('')).join('')); break;
+    case 'vars': {
+      const names = Object.keys(fx.slots).filter((k) => k !== '__count').sort();
+      out('VARS' + names.map((nm) => ' ' + nm + '=' + Number(fx.v[fx.slots[nm]].toPrecision(10))).join(''));
+      break;
     }
     case 'menutext': out('MENU '); break;
     case 'shot': out('SHOT 0 0'); break;

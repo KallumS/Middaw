@@ -446,12 +446,11 @@
 
   Compiler.prototype.expr = function (n, ctx) {
     var self = this;
-    if (hasControl(n) && !(n.k === 'call' && n.name !== 'loop' && n.name !== 'while' && !n.args.some(hasControl))) {
-      // a loop inside an expression: compute it in a closure
-      var saved = this.temps;
-      var inner = this.stmts(n, ctx, true, 'rr');
-      var tempsUsed = this.temps;
-      return '(() => { var rr = 0; ' + inner + ' return rr; })()';
+    // A loop inside an expression: the statements holding it run in a
+    // closure. Only a loop, a sequence or a conditional is one; anything else
+    // compiles its parts, each of which takes its own closure if it needs one.
+    if (hasControl(n) && (n.k === 'seq' || n.k === 'if' || (n.k === 'call' && (n.name === 'loop' || n.name === 'while')))) {
+      return '(() => { var rr = 0; ' + this.stmts(n, ctx, true, 'rr') + ' return rr; })()';
     }
     switch (n.k) {
       case 'raw': return n.code;
