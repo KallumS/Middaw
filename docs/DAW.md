@@ -7,8 +7,21 @@ engrave and export - and every generator and device works on what is already
 there.
 
 ```sh
-python3 server/app.py        # then open http://127.0.0.1:8765
+tools/mac/make_app.sh        # once: Middaw.app in ~/Applications
+python3 server/app.py        # or by hand, then open http://127.0.0.1:8765
 ```
+
+It is made for a Mac with Apple silicon and nothing else yet. The app is a
+script bundle, so there is nothing to compile or sign: it finds a Python
+(Homebrew's, or the Mac's own 3.9), starts the server, and opens Middaw in a
+window of its own - in Chrome or Edge when there is one, because Safari has
+no Web MIDI. The page tells the server it is open every twenty seconds;
+three minutes after the last window closes, the server stops. Its log is
+`~/Library/Logs/Middaw.log`.
+
+On a Mac, two shortcuts differ from what you might expect, because the
+browser keeps them: **New Track is ⌥⌘N** (as in Logic), and New Song has no
+shortcut.
 
 ## Where the family lives
 

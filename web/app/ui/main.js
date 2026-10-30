@@ -691,7 +691,7 @@
   var CMD = MAC ? '⌘' : 'Ctrl+';
   function fileMenu(anchor) {
     U.menu(anchor, [
-      { label: 'New…', keys: CMD + 'N', action: A.newSong },
+      { label: 'New…', action: A.newSong },
       { label: 'Open…', keys: CMD + 'O', action: A.open },
       { label: 'Save', keys: CMD + 'S', action: A.save },
       { separator: true },
@@ -755,7 +755,7 @@
     var rows = [['Space', 'Play or stop, from the caret'], ['Shift+Space', 'Play from bar 1'], ['Home / End', 'The start, the end of the music'],
       ['R', 'Record (stopped: step input)'], ['L', 'Loop'], ['C', 'Metronome'], ['F', 'Follow the music'], ['G', 'Generate'], ['M', 'Mixer'], ['B', 'Browser'],
       ['D', 'Draw tool'], ['1–6', 'Grid: a bar down to 1/32'], ['T', 'Triplets'], ['Q', 'Quantize'], ['↑ ↓', 'Notes up or down a semitone (Shift: an octave)'],
-      ['← →', 'Notes a grid step earlier or later'], [CMD + 'Z', 'Undo'], [CMD + 'D', 'Duplicate'], [CMD + 'E', 'Split at the caret'],
+      ['← →', 'Notes a grid step earlier or later'], [CMD + 'Z', 'Undo'], [(MAC ? '⌥⌘' : 'Ctrl+Alt+') + 'N', 'New track'], [CMD + 'D', 'Duplicate'], [CMD + 'E', 'Split at the caret'],
       ['⌫', 'Delete'], ['Tab', 'Move between controls'], ['Esc', 'Let go of the chosen bars, a menu, a sheet'], [CMD + '= / ' + CMD + '-', 'Text size']];
     U.sheet('Keyboard Shortcuts', function (b, close) {
       var dl = U.el('dl', { class: 'facts' });
@@ -834,18 +834,19 @@
     MD.pass.input();
     if (mod) {
       var k = e.key.toLowerCase();
+      // Cmd+N and Cmd+T belong to the browser and cannot be taken; a new track
+      // is Option+Cmd+N, as in Logic. (Option changes e.key, so read the code.)
+      if (e.altKey && e.code === 'KeyN') { e.preventDefault(); A.addInstrument('pno'); return; }
       if (k === 'z' && !e.shiftKey) { e.preventDefault(); A.undo(); }
       else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); A.redo(); }
       else if (k === 's') { e.preventDefault(); A.save(); }
       else if (k === 'o') { e.preventDefault(); A.open(); }
-      else if (k === 'n') { e.preventDefault(); A.newSong(); }
       else if (typing()) return;
       else if (k === 'c') { e.preventDefault(); A.copy(); }
       else if (k === 'v') { e.preventDefault(); A.paste(); }
       else if (k === 'd') { e.preventDefault(); A.duplicate(); }
       else if (k === 'e') { e.preventDefault(); A.split(); }
       else if (k === 'a') { e.preventDefault(); A.selectAll(); }
-      else if (k === 't') { e.preventDefault(); A.addInstrument('pno'); }
       else if (k === '=' || k === '+') { e.preventDefault(); setTextSize(MD.store.pref('textSize', 1) + 0.25); }
       else if (k === '-') { e.preventDefault(); setTextSize(MD.store.pref('textSize', 1) - 0.25); }
       else if (k === '0') { e.preventDefault(); setTextSize(1); }
@@ -1013,6 +1014,8 @@
       U.status('');
       MD.pass.start();
       setupMidi();
+      // Tell the server a window is open; the Mac app stops it when none is.
+      setInterval(function () { fetch('/api/alive').catch(function () {}); }, 20000);
       requestAnimationFrame(frame);
     }).catch(function (e) {
       console.error(e);

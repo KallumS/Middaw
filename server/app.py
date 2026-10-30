@@ -17,6 +17,8 @@ import json
 import mimetypes
 import re
 import sys
+import threading
+import time
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -101,6 +103,11 @@ def payload_from_midi(midi) -> dict:
 class Handler(BaseHTTPRequestHandler):
     server_version = "Middaw"
     priors: CorpusPriors | None = None
+    last_seen = time.monotonic()           # the last request from an open window
+
+    def setup(self):
+        super().setup()
+        Handler.last_seen = time.monotonic()
 
     # ------------------------------------------------------------- routing --
     def do_GET(self):  # noqa: N802
@@ -116,6 +123,10 @@ class Handler(BaseHTTPRequestHandler):
                 "corpus": (self.priors.describe() if self.priors else
                            {"entries": 0, "note": "no corpus loaded"}),
             })
+        if path == "/api/alive":           # an open window's heartbeat
+            self.send_response(204)
+            self.end_headers()
+            return None
         if path.startswith("/api/store/"):
             return self._store_get(path[len("/api/store/"):])
         target = (WEB_ROOT / unquote(path).lstrip("/")).resolve()
@@ -279,13 +290,34 @@ def main(argv=None):
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--corpus", default=str(ROOT / "data" / "corpus"),
                         help="directory holding manifest.json")
+    parser.add_argument("--quit-when-idle", type=float, default=0, metavar="SECONDS",
+                        help="stop once no window has been heard from for this long "
+                             "(the Mac app uses this, so closing the window quits Middaw)")
     args = parser.parse_args(argv)
 
     Handler.priors = load_corpus_priors(Path(args.corpus))
     described = Handler.priors.describe() if Handler.priors else {"entries": 0}
     print(f"Middaw on http://{args.host}:{args.port}")
     print(f"  corpus: {described['entries']} labelled entries")
-    ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()
+    httpd = ThreadingHTTPServer((args.host, args.port), Handler)
+    if args.quit_when_idle > 0:
+        watch_idle(httpd, args.quit_when_idle)
+    httpd.serve_forever()
+
+
+def watch_idle(httpd, seconds: float, every: float = 5.0) -> threading.Thread:
+    """Shut the server down once nothing has asked it anything for `seconds`."""
+    Handler.last_seen = time.monotonic()
+
+    def watch():
+        while time.monotonic() - Handler.last_seen < seconds:
+            time.sleep(every)
+        print("no window open: stopping")
+        httpd.shutdown()
+
+    thread = threading.Thread(target=watch, daemon=True)
+    thread.start()
+    return thread
 
 
 if __name__ == "__main__":

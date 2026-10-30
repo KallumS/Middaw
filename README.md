@@ -23,14 +23,30 @@ Fmin7  Bbmin7  Eb7  Abmaj7   repeats every 4 bars
 
 ## Run it
 
-No dependencies. Python 3.11+, and a browser.
+Made for a Mac with Apple silicon. No dependencies: the Mac's own Python
+(3.9, which comes with Apple's Command Line Tools) or Homebrew's, and a
+browser.
+
+**As an app.** Once, in this folder:
 
 ```sh
-python3 server/app.py           # http://127.0.0.1:8765
+tools/mac/make_app.sh
 ```
 
-Chrome, Edge or Safari; a MIDI keyboard works through Web MIDI where the
-browser has it.
+That puts **Middaw** in `~/Applications`; drag it to the Dock. It opens
+Middaw in a window of its own (in Chrome or Edge if you have one, which is
+what lets a MIDI keyboard play it; Safari otherwise), and closing that window
+quits it a few minutes later. If Python is missing it offers to install
+Apple's Command Line Tools. Make the app again if you move this folder.
+
+**Or by hand:**
+
+```sh
+python3 server/app.py           # then open http://127.0.0.1:8765
+```
+
+Chrome or Edge is best: Safari has no Web MIDI, so a MIDI keyboard cannot
+reach it, and its faders need Safari 17.4 or later.
 
 From the command line, the composer on its own:
 

@@ -27,6 +27,15 @@ and `docs/DAW.md`).
   python3 -m unittest discover -s tests -t .
   ```
 
+- **Python 3.9, the Mac's own.** Middaw is made for Apple silicon Macs, and
+  the `python3` that comes with Apple's Command Line Tools is 3.9. So no
+  `match`, no `TestCase.enterContext`, no 3.10+ library calls; `from
+  __future__ import annotations` makes `X | None` safe in annotations only.
+  The whole suite passes under 3.9 (`uv python install 3.9` to check).
+- **The Mac app** is `tools/mac/make_app.sh`: a script bundle, so it runs
+  natively on Apple silicon with nothing to sign or compile. It starts the
+  server with `--quit-when-idle`, and the page's heartbeat (`/api/alive`)
+  is what keeps it up; closing the window stops it.
 - **When fixing a bug, confirm the new test fails on the old code** before
   accepting it. A test that passes against the bug is worthless.
 - Musical claims get verified, not assumed. `tests/test_render.py` asserts

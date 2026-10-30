@@ -3,6 +3,7 @@
 import json
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -92,6 +93,31 @@ class TestServer(unittest.TestCase):
     def test_does_not_serve_outside_web(self):
         self.assertEqual(self.call("GET", "/../server/app.py")[0], 404)
         self.assertEqual(self.call("GET", "/%2e%2e/server/app.py")[0], 404)
+
+
+    def test_heartbeat_answers(self):
+        self.assertEqual(self.call("GET", "/api/alive")[0], 204)
+
+
+class TestIdleQuit(unittest.TestCase):
+    """The Mac app's server stops once no window has asked anything for a while."""
+
+    def test_stops_when_idle_and_not_while_asked(self):
+        quiet = type("Quiet", (server.Handler,), {"log_message": lambda *a: None})
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), quiet)
+        base = f"http://127.0.0.1:{httpd.server_address[1]}"
+        serving = threading.Thread(target=httpd.serve_forever, daemon=True)
+        serving.start()
+        watcher = server.watch_idle(httpd, seconds=0.6, every=0.05)
+        for _ in range(4):                       # 1.2 s of heartbeats keeps it up
+            urllib.request.urlopen(base + "/api/alive").close()
+            time.sleep(0.3)
+        self.assertTrue(watcher.is_alive())
+        watcher.join(timeout=3)                  # then silence stops it
+        self.assertFalse(watcher.is_alive())
+        serving.join(timeout=3)
+        self.assertFalse(serving.is_alive())
+        httpd.server_close()
 
 
 if __name__ == "__main__":
