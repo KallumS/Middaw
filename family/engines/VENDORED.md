@@ -18,9 +18,10 @@ their own repository, then run `tools/sync_engines.sh` and update this table.
 | `orchestration/` | KallumS/Orchestration-Helper | 3bff05f | orchestration_data.lua, orchestration_composers.lua |
 
 The score view engraves with `notation/` (a part as Starting Blocks Notation
-would print a block), the Battle Pass runs `battle-pass/` and saves through
-Middaw's server, and the inspector's "About" and the browser's Guide read
-`orchestration/`.
+would print a block), the Battle Pass runs `battle-pass/` and saves in
+Application Support, and the inspector's About and the browser's Guide read
+`orchestration/`. In the app all of it runs in JavaScriptCore, through
+`runtime/host.js`.
 
 `tests/js/lua/engines.expected` is what the real Lua 5.4 prints when
 `tests/js/lua/engines_golden.lua` drives every adapter through every setting;
