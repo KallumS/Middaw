@@ -43,9 +43,9 @@ jobs:
         if: success() || failure()
         run: |
           [ -f shots/roll.png ] || exit 0
-          sips -Z 820 -s format jpeg -s formatOptions 40 shots/roll.png --out roll-small.jpg >/dev/null
+          sips -Z 720 -s format jpeg -s formatOptions 35 shots/roll.png --out roll-small.jpg >/dev/null || exit 0
           echo "SHOT-BEGIN $(stat -f%z roll-small.jpg)"
-          base64 -b 0 roll-small.jpg
+          base64 -b 0 -i roll-small.jpg || true
           echo
           echo "SHOT-END"
       - uses: actions/upload-artifact@v4
