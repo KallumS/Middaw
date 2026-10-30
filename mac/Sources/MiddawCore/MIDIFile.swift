@@ -149,6 +149,7 @@ public enum MIDIFile {
         var pos = 8 + headerLength
         var tempo = 120.0
         var meter = (4, 4)
+        var key: Key? = nil
         var tracks: [Track] = []
 
         for _ in 0..<ntrks {
@@ -188,6 +189,8 @@ public enum MIDIFile {
                         if us > 0 { tempo = 60_000_000.0 / Double(us) }
                     } else if type == 0x58 && len >= 2 && payload.count >= 2 {
                         meter = (Int(payload[0]), 1 << Int(payload[1]))
+                    } else if type == 0x59 && len == 2 && payload.count == 2 && key == nil {
+                        key = MIDIFile.key(fromSignature: Int(Int8(bitPattern: payload[0])), minor: payload[1] == 1)
                     } else if type == 0x03 && track.name.isEmpty {
                         track.name = String(decoding: payload, as: UTF8.self)
                     }
@@ -226,7 +229,19 @@ public enum MIDIFile {
             track.notes.sort { $0.start != $1.start ? $0.start < $1.start : $0.pitch < $1.pitch }
             tracks.append(track)
         }
-        return Song(tempo: tempo, meter: meter, key: nil, ticksPerBeat: tpb, tracks: tracks)
+        return Song(tempo: tempo, meter: meter, key: key, ticksPerBeat: tpb, tracks: tracks)
+    }
+
+    /// The major or minor key a key signature names. A signature is not a
+    /// key - two sharps is D major, B minor and E dorian - so this is only
+    /// where a song starts; the mode is the file's word for it.
+    public static func key(fromSignature sf: Int, minor: Bool) -> Key? {
+        guard (-7...7).contains(sf) else { return nil }
+        let majors = ["Cb", "Gb", "Db", "Ab", "Eb", "Bb", "F", "C", "G", "D", "A", "E", "B", "F#", "C#"]
+        let minors = ["Ab", "Eb", "Bb", "F", "C", "G", "D", "A", "E", "B", "F#", "C#", "G#", "D#", "A#"]
+        let name = (minor ? minors : majors)[sf + 7]
+        guard let root = Theory.roots.firstIndex(where: { $0.name == name }) else { return nil }
+        return Key(root: root + 1, scale: minor ? 2 : 1)
     }
 }
 

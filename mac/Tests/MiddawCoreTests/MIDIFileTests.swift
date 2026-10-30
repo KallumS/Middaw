@@ -50,6 +50,19 @@ final class MIDIFileTests: XCTestCase {
         }
     }
 
+    /// The key signature comes back as the key the song was in (for the
+    /// major and natural minor keys a signature can name).
+    func testTheKeySignatureIsReadBack() throws {
+        for (root, scale) in [(11, 1), (16, 1), (4, 2), (9, 2), (18, 1), (5, 2)] {
+            let k = Key(root: root, scale: scale)
+            let song = MIDIFile.Song(tempo: 100, meter: (4, 4), key: k, tracks: [MIDIFile.Track(name: "x", notes: [.init(start: 0, duration: 1, pitch: 60, velocity: 90)])])
+            XCTAssertEqual(try MIDIFile.read(MIDIFile.write(song)).key, k, k.label)
+        }
+        // a mode reads back as its signature's major or minor: D dorian has no sharps and a minor third
+        let dorian = MIDIFile.Song(tempo: 100, meter: (4, 4), key: Key(root: 4, scale: 5), tracks: [])
+        XCTAssertEqual(try MIDIFile.read(MIDIFile.write(dorian)).key, Key(root: 14, scale: 2))   // A minor
+    }
+
     func testRefusesWhatIsNotMIDI() {
         XCTAssertThrowsError(try MIDIFile.read(Data("this is not a midi file at all".utf8)))
         XCTAssertThrowsError(try MIDIFile.read(Data([0x4D, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 1, 0, 1, 0x01, 0xE0,

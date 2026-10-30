@@ -61,7 +61,8 @@ final class SongDocument: ReferenceFileDocument, ObservableObject {
     /// kit on channel 10.
     static func importMIDI(_ data: Data, title: String) throws -> Project {
         let file = try MIDIFile.read(data)
-        var p = Project(title: (title as NSString).deletingPathExtension, tempo: file.tempo.rounded(), meter: [file.meter.0, file.meter.1])
+        var p = Project(title: (title as NSString).deletingPathExtension, tempo: file.tempo.rounded(), meter: [file.meter.0, file.meter.1],
+                        key: file.key ?? Key())
         let bpb = p.beatsPerBar
         for t in file.tracks where !t.notes.isEmpty || !t.controls.isEmpty {
             let drums = t.channel == 9
