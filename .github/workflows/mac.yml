@@ -15,16 +15,26 @@ jobs:
       - uses: actions/checkout@v4
       - name: Toolchain
         run: swift --version && uname -m && sw_vers
-      - name: Build
-        working-directory: mac
-        run: |
-          swift build > build.log 2>&1 || { grep -E -A4 "error:" build.log | head -200; exit 1; }
-          grep -E "warning:" build.log | sort -u | head -40 || true
       - name: Test
         working-directory: mac
         run: |
           swift test > test.log 2>&1 || { grep -E -A4 "error:|failed|Fatal|crash" test.log | head -250; exit 1; }
           grep -E "Executed [0-9]+ tests" test.log | tail -3
+      - name: Build the app
+        if: success() || failure()
+        working-directory: mac
+        run: |
+          swift build > build.log 2>&1 || { grep -E -A4 "error:" build.log | head -200; exit 1; }
+          grep -E "warning:" build.log | sort -u | head -40 || true
+      - name: Middaw.app
+        run: |
+          mac/scripts/bundle.sh > bundle.log 2>&1 || { tail -60 bundle.log; exit 1; }
+          cd mac/build && ditto -c -k --keepParent Middaw.app Middaw.zip && ls -la
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Middaw-app
+          path: mac/build/Middaw.zip
+          retention-days: 30
   composer:
     runs-on: ubuntu-latest
     steps:

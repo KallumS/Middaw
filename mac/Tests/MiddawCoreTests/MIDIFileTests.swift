@@ -7,11 +7,13 @@ final class MIDIFileTests: XCTestCase {
         return list.map { s in
             let meter = s["meter"] as! [Int]
             let tracks = (s["tracks"] as! [[String: Any]]).map { t -> MIDIFile.Track in
-                let notes = (t["notes"] as! [[Double]]).map {
-                    MIDIFile.Note(start: $0[0], duration: $0[1], pitch: Int($0[2]), velocity: $0[3])
+                // exact hex floats, as the fixture writes them
+                func d(_ s: String) -> Double { Double(s)! }
+                let notes = (t["notes"] as! [[String]]).map {
+                    MIDIFile.Note(start: d($0[0]), duration: d($0[1]), pitch: Int(d($0[2])), velocity: d($0[3]))
                 }
-                let controls = (t["controls"] as! [[Double]]).map {
-                    MIDIFile.Control(start: $0[0], controller: Int($0[1]), value: Int($0[2]))
+                let controls = (t["controls"] as! [[String]]).map {
+                    MIDIFile.Control(start: d($0[0]), controller: Int(d($0[1])), value: Int(d($0[2])))
                 }
                 return MIDIFile.Track(name: t["name"] as! String, program: t["program"] as! Int,
                                       channel: t["channel"] as! Int, notes: notes, controls: controls)

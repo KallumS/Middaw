@@ -74,7 +74,12 @@ def songs():
                 name=t["name"], channel=t["channel"], program=t["program"],
                 notes=[Note(start=s, duration=d, pitch=p, velocity=v) for s, d, p, v in t["notes"]],
                 controls=[Control(start=s, controller=c, value=v) for s, c, v in t["controls"]]))
-        out.append(dict(spec, midi=base64.b64encode(song_to_bytes(song)).decode()))
+        # Numbers as exact hex floats: a JSON reader may land a decimal one
+        # ulp away, and these are exactly the values where rounding decides.
+        exact = dict(spec, tracks=[dict(t, notes=[[float(x).hex() for x in n] for n in t["notes"]],
+                                         controls=[[float(x).hex() for x in c] for c in t["controls"]])
+                                   for t in spec["tracks"]])
+        out.append(dict(exact, midi=base64.b64encode(song_to_bytes(song)).decode()))
     return out
 
 

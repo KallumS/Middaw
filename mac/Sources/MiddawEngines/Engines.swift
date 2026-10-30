@@ -118,7 +118,7 @@ public final class Engines {
         }
         ctx.setObject(log, forKeyedSubscript: "__middawLog" as NSString)
         ctx.setObject(read, forKeyedSubscript: "__middawRead" as NSString)
-        for file in ["runtime/lua/lua_parse.js", "runtime/lua/lua_runtime.js", "runtime/lua/lua_compile.js", "runtime/host.js"] {
+        for file in ["runtime/polyfill.js", "runtime/lua/lua_parse.js", "runtime/lua/lua_runtime.js", "runtime/lua/lua_compile.js", "runtime/host.js"] {
             let url = root.appendingPathComponent(file)
             guard let src = try? String(contentsOf: url, encoding: .utf8) else {
                 throw Failure(description: "missing \(file) under \(root.path)")

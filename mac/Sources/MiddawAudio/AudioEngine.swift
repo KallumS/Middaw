@@ -7,25 +7,45 @@ import MiddawCore
 /// `Renderer`. Starting it is the only thing here that can fail.
 public final class AudioEngine {
     public let renderer: Renderer
+    /// Results heard before they are used, mixed in beside the song.
+    public let preview: Renderer
     let engine = AVAudioEngine()
     var source: AVAudioSourceNode?
+    var scratchL = [Float](repeating: 0, count: Renderer.maxFrames)
+    var scratchR = [Float](repeating: 0, count: Renderer.maxFrames)
     public private(set) var running = false
 
     public init() {
         let rate = engine.outputNode.outputFormat(forBus: 0).sampleRate
         renderer = Renderer(sampleRate: rate > 0 ? rate : 48000)
+        preview = Renderer(sampleRate: rate > 0 ? rate : 48000)
+    }
+
+    func render(_ frames: Int, _ l: UnsafeMutablePointer<Float>, _ r: UnsafeMutablePointer<Float>) {
+        renderer.render(frames, l, r)
+        var done = 0
+        while done < frames {
+            let n = min(Renderer.maxFrames, frames - done)
+            scratchL.withUnsafeMutableBufferPointer { a in
+                scratchR.withUnsafeMutableBufferPointer { b in
+                    preview.render(n, a.baseAddress!, b.baseAddress!)
+                    for i in 0..<n { l[done + i] += a[i]; r[done + i] += b[i] }
+                }
+            }
+            done += n
+        }
     }
 
     public func start() throws {
         guard !running else { return }
-        let r = renderer
+        let me = self
         guard let format = AVAudioFormat(standardFormatWithSampleRate: r.sampleRate, channels: 2) else { return }
         let node = AVAudioSourceNode(format: format) { _, _, frames, abl -> OSStatus in
             let buffers = UnsafeMutableAudioBufferListPointer(abl)
             guard buffers.count >= 2,
                   let l = buffers[0].mData?.assumingMemoryBound(to: Float.self),
                   let rr = buffers[1].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
-            r.render(Int(frames), l, rr)
+            me.render(Int(frames), l, rr)
             return noErr
         }
         engine.attach(node)
