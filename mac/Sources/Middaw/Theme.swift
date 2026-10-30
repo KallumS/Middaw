@@ -1,4 +1,5 @@
 import SwiftUI
+import MiddawCore
 
 /// The house scheme (docs/COLOUR.md): a dark cool-grey ground, light grey
 /// controls with dark ink, and one yellow for whatever is on. Every word is
@@ -7,27 +8,27 @@ enum Theme {
     static func hex(_ v: UInt32) -> Color {
         Color(.sRGB, red: Double((v >> 16) & 0xFF) / 255, green: Double((v >> 8) & 0xFF) / 255, blue: Double(v & 0xFF) / 255)
     }
-    static let accent = hex(0xFFF200)
-    static let accentHover = hex(0xFFF42E)
-    static let control = hex(0xA9AFBA)
-    static let controlHover = hex(0xC0C6CF)
-    static let controlHeld = hex(0x8F96A2)
-    static let ground = hex(0x23272E)
-    static let raised = hex(0x2A2F37)
-    static let sunken = hex(0x1A1D23)
-    static let roll = hex(0x111419)
-    static let beat = hex(0x1E2228)
-    static let rule = hex(0x3A404A)
-    static let edge = hex(0x6D7581)
-    static let ink = hex(0x14171C)
-    static let text = hex(0xDDE1E7)
-    static let textDim = hex(0xB6BCC6)
-    static let label = hex(0xBFC5CE)
-    static let warn = hex(0xD2483F)
-    static let warnText = hex(0xFFA6A0)
-    static let playhead = hex(0xF2F4F7)
-    static let note = hex(0xA9AFBA)
-    static let noteDim = hex(0x3A404A)
+    static let accent = hex(HousePalette.accent)
+    static let accentHover = hex(HousePalette.accentHover)
+    static let control = hex(HousePalette.control)
+    static let controlHover = hex(HousePalette.controlHover)
+    static let controlHeld = hex(HousePalette.controlHeld)
+    static let ground = hex(HousePalette.ground)
+    static let raised = hex(HousePalette.raised)
+    static let sunken = hex(HousePalette.sunken)
+    static let roll = hex(HousePalette.roll)
+    static let beat = hex(HousePalette.beat)
+    static let rule = hex(HousePalette.rule)
+    static let edge = hex(HousePalette.edge)
+    static let ink = hex(HousePalette.ink)
+    static let text = hex(HousePalette.text)
+    static let textDim = hex(HousePalette.textDim)
+    static let label = hex(HousePalette.label)
+    static let warn = hex(HousePalette.warn)
+    static let warnText = hex(HousePalette.warnText)
+    static let playhead = hex(HousePalette.playhead)
+    static let note = hex(HousePalette.control)
+    static let noteDim = hex(HousePalette.rule)
 
     /// 28 points tall, Apple's Mac default; 12 between bezelled controls.
     static let controlHeight: CGFloat = 28

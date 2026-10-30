@@ -3,8 +3,9 @@
 The house scheme, the same as Good Idea, Starting Blocks, Midi Suggester,
 Midi Variator, Midi Catalogue and ScaleView: a dark cool-grey ground, a light
 grey for the controls raised off it, dark ink on every control, and one
-yellow for whatever is on. The tokens are in `:root` in `web/style.css`;
-`tests/test_style.py` measures them.
+yellow for whatever is on. The values live in one place, `HousePalette` in
+`mac/Sources/MiddawCore/Palette.swift`; the app's `Theme` reads them and
+`PaletteTests` measures them on every build.
 
 ## The four that carry it
 

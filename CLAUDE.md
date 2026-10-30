@@ -1,14 +1,15 @@
 # Middaw
 
-A generative DAW: text prompt in, five MIDI parts out, then edited, varied,
-engraved and mixed in the browser. MIDI-first: notes are composed as notes.
+A generative DAW for Apple silicon Macs: text prompt in, five MIDI parts
+out, then edited, varied, engraved and mixed in a native app. MIDI-first: notes are composed as notes.
 Nothing is generated as audio and transcribed back — that inaccuracy is the
 thing this project exists to avoid, so no part of the pipeline may
 reintroduce it.
 
 Two halves: the **composer** (`middaw/`, Python, everything below about
-specs, cadences and dice) and the **DAW** (`web/`, see "The DAW" at the end
-and `docs/DAW.md`).
+specs, cadences and dice) and the **app** (`mac/`, Swift, see "The app" at
+the end and `docs/DAW.md`). It was a browser app until 30 October 2026;
+`docs/BROWSER-DAW.md` is the record of that and how to bring it back.
 
 ## Working here
 
@@ -17,25 +18,33 @@ and `docs/DAW.md`).
   than wrapping a library, because byte-level MIDI accuracy is the premise of
   the product and should be inspectable and tested. Do not add `mido`,
   `pretty_midi`, a web framework or a bundler without a real reason. The same
-  reasoning is why the browser has its own Lua 5.4 (`web/lua/`) and EEL2
-  (`web/jsfx/`) rather than a wasm build of either.
-- **Run the tests before and after any change.** About 25 seconds, ten of
-  them Midi Evolver's own engine checks; the JavaScript suites
-  (`tests/js/`) run inside them when `node` is on the path:
+  reasoning is why Middaw has its own Lua 5.4 (`runtime/lua/`) and EEL2
+  (`runtime/jsfx/`), run natively in JavaScriptCore, and the app is a plain
+  Swift package with no third-party packages.
+- **Run the tests before and after any change.** The Python and JavaScript
+  suites take about 25 seconds (ten of them Midi Evolver's own engine
+  checks; `tests/js/` runs inside them when `node` is on the path). The
+  Swift suites need a Mac:
 
   ```sh
   python3 -m unittest discover -s tests -t .
+  cd mac && swift test
   ```
+
+- **No Mac here? CI is the Mac.** `.github/workflows/mac.yml` tests, builds
+  and bundles the app on Apple silicon on every push and uploads
+  `Middaw-app`. Read its log (only errors are printed) before calling a Swift
+  change done; code that has not compiled there has not been written.
 
 - **Python 3.9, the Mac's own.** Middaw is made for Apple silicon Macs, and
   the `python3` that comes with Apple's Command Line Tools is 3.9. So no
   `match`, no `TestCase.enterContext`, no 3.10+ library calls; `from
   __future__ import annotations` makes `X | None` safe in annotations only.
   The whole suite passes under 3.9 (`uv python install 3.9` to check).
-- **The Mac app** is `tools/mac/make_app.sh`: a script bundle, so it runs
-  natively on Apple silicon with nothing to sign or compile. It starts the
-  server with `--quit-when-idle`, and the page's heartbeat (`/api/alive`)
-  is what keeps it up; closing the window stops it.
+- **Swift 5 language mode, Swift 6 compiler.** Code touching the main actor
+  from an event monitor or a callback goes through `MainActor.assumeIsolated`
+  or `Task { @MainActor in }`; nothing on the audio thread allocates, locks
+  (it only ever *tries* a lock) or touches JavaScriptCore.
 - **When fixing a bug, confirm the new test fails on the old code** before
   accepting it. A test that passes against the bug is worthless.
 - Musical claims get verified, not assumed. `tests/test_render.py` asserts
@@ -387,35 +396,42 @@ dataset and a liability. See `docs/DATASET.md`.
   output checked as numbers, but nobody has listened to it on speakers or
   played it from a MIDI keyboard. `docs/DAW.md` lists its other limits.
 
-## The DAW
+## The app
 
-`web/`, described in `docs/DAW.md`. The rules that bite if forgotten:
+`mac/`, described in `docs/DAW.md`. The rules that bite if forgotten:
 
-- **The family's code runs unchanged.** `web/engines/` (Lua) and
-  `web/devices/` (JSFX) are copies, recorded in their `VENDORED.md` with the
-  commit. Never edit them here: fix the project, sync, update the table, and
-  regenerate `tests/js/lua/engines.expected` with `tools/lua_goldens.sh`. If
-  an engine misbehaves in Middaw, suspect `web/lua/` or `web/jsfx/` first —
-  they are held to the real Lua byte for byte and to Midi Evolver's own engine
-  checks, so a difference is a bug in the runtime, not a licence to patch.
-- **A note in the DAW is `{start, len, pitch, vel}`**, in beats from its
-  clip's start. The Python side and MIDI files say `duration` and `velocity`;
-  `MD.model.asNote` converts at every boundary. Forgetting it once made every
-  composed note invisible.
-- **Every change is `app.commit(label, fn)`**: one undo step, named in the
-  Edit menu. Nothing mutates the project outside a commit — a fader moves the
-  sound live through `MD.audio.setMix` and commits when it is let go.
+- **The family's code runs unchanged.** `family/engines/` (Lua) and
+  `family/devices/` (JSFX) are copies, recorded in their `VENDORED.md` with
+  the commit. Never edit them here: fix the project, sync, update the table,
+  and regenerate `tests/js/lua/engines.expected` with `tools/lua_goldens.sh`.
+  If an engine misbehaves, suspect `runtime/` first — it is held to the real
+  Lua byte for byte and to Midi Evolver's own engine checks, so a difference
+  is a bug in the runtime, not a licence to patch.
+- **The engines are spoken to through `runtime/host.js` only**: JSON in, JSON
+  out, errors returned as text. Node tests it (`tests/js/test_host.js`),
+  XCTest tests it again through JavaScriptCore. JavaScriptCore has no
+  `TextDecoder`; `runtime/polyfill.js` is loaded first for that reason.
+- **The core is held to the Python.** `tools/make_swift_fixtures.py` writes
+  every key's spelling and signature, and MIDI files byte for byte; the
+  Swift tests must match. Numbers in fixtures are hex floats: a JSON reader
+  may land a decimal one ulp away, at exactly the values where rounding
+  decides.
+- **A note in the app is `{start, len, pitch, vel}`**, in beats from its
+  clip's start. The composer and MIDI files say `duration` and `velocity`;
+  `Note`'s decoder reads both.
+- **Every change is one named undo step** (`Session.commit`, on the window's
+  UndoManager), so Edit > Undo says what it undoes. Dragging commits once, on
+  release.
 - **Generated music is placed by Miderator's rules**: into the chosen bars,
   else at the caret on the chosen track; a suggestion on a new track beside
   it; fitted to the instrument's range and polyphony; heard on piano or kit
   before it is used.
 - **Drums have no key.** A kit track is never transposed by a key change,
   never fitted to a key and never inverted; its notes name instruments.
-- **The house scheme and Apple's HIG are tested** (`tests/test_style.py`):
-  every word 7:1 on every surface, ink 7:1 on every button, cool greys,
-  28-point controls 12 apart, on = accent *and* a bar, red never for words,
-  the status line at the top. `docs/COLOUR.md` and `docs/HIG.md` are the
-  record.
+- **The house scheme and Apple's HIG**: `HousePalette` in MiddawCore is the
+  one place the colours live, and `PaletteTests` measures them — every word
+  7:1 on every surface, ink 7:1 on every button, cool greys; on is the accent
+  *and* a bar; red never for words; the status line at the top.
+  `docs/COLOUR.md` and `docs/HIG.md` are the record.
 - **No explainer text.** A label is a word or two; how a control works goes
-  in its tooltip, if anywhere. Secondary text says something about *this*
-  instrument or clip, never how to use the screen.
+  in its tooltip (`.help`), if anywhere.

@@ -109,25 +109,24 @@ Only entries whose licence clears commercial use are pooled by default
 (`commercial_only=True`), so an accidentally-added non-commercial file cannot
 leak into output.
 
-## The DAW
+## The app
 
-The composer above is one part of a browser DAW (`web/`, described in
-[DAW.md](DAW.md)). The server answers four things: `/api/compose` (a prompt
-in, the spec, the chords and the five parts out), `/api/midi/write` and
-`/api/midi/read` (Middaw's own codec, now with controllers), and
-`/api/store/<key>` for what belongs to the user rather than to a song.
+The composer above is one part of a native Mac app (`mac/`, described in
+[DAW.md](DAW.md)). The app runs the composer as a subprocess for Compose,
+with the Mac's own Python, and does everything else itself:
 
 ```
-            browser                                      server
- ┌──────────────────────────────────────┐        ┌──────────────────┐
- │ model.js  song, undo                 │ prompt │ parse_prompt     │
- │ ui/*      arrange, roll, score, ...  │ ─────► │ render ──► parts │
- │ engines.js ─► web/lua ─► family Lua  │        │ midi.py r/w      │
- │ audio.js ─► worklet per track:       │ ◄───── │ data/user/ store │
- │   MIDI fx ─► instrument ─► audio fx  │ notes  └──────────────────┘
- │   (family JSFX via web/jsfx)         │
- └──────────────────────────────────────┘
+ SwiftUI document window ── Session (selection, caret, actions)
+        │                        │
+   SongDocument (Project, UndoManager)
+        │
+ ┌──────┴────────────┬─────────────────────────┬──────────────────┐
+ MiddawCore           MiddawEngines              MiddawAudio        Composer
+ song, edits, keys,   JavaScriptCore:            Core Audio:        python3 -m middaw
+ MIDI files           runtime/lua + host.js      instruments,       --json
+                      -> family/engines (Lua)    sequencer, reverb,
+                      runtime/jsfx -> AutoCC     bounce; Core MIDI
 ```
 
-What is heard is the note list, played by each track's processor from the
-audio clock - nothing is inferred back out of a rendered file.
+What is heard is the note list, played sample-accurately from the audio
+clock - nothing is inferred back out of a rendered file.
