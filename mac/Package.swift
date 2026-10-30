@@ -12,10 +12,13 @@ let package = Package(
     targets: [
         .target(name: "MiddawCore"),
         .target(name: "MiddawEngines", dependencies: ["MiddawCore"]),
-        .target(name: "MiddawAudio", dependencies: ["MiddawCore"]),
+        // The family's JSFX compiled to C by tools/jsfx2c.js, and the runtime
+        // that code runs on. Always optimised: it runs on the audio thread.
+        .target(name: "CJSFX", cSettings: [.unsafeFlags(["-O2"])]),
+        .target(name: "MiddawAudio", dependencies: ["MiddawCore", "CJSFX"]),
         .executableTarget(name: "Middaw", dependencies: ["MiddawCore", "MiddawEngines", "MiddawAudio"]),
         .testTarget(name: "MiddawCoreTests", dependencies: ["MiddawCore"], exclude: ["Fixtures"]),
         .testTarget(name: "MiddawEnginesTests", dependencies: ["MiddawEngines", "MiddawCore"]),
-        .testTarget(name: "MiddawAudioTests", dependencies: ["MiddawAudio", "MiddawCore"]),
+        .testTarget(name: "MiddawAudioTests", dependencies: ["MiddawAudio", "MiddawCore", "CJSFX"]),
     ]
 )

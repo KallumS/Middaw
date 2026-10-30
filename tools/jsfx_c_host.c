@@ -4,7 +4,7 @@
  *
  *   tools/build_c_host.sh && build/jsfx_c_host "family/devices/Midi Evolver.jsfx" < commands
  */
-#include "jsfx_rt.h"
+#include "jsfx_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

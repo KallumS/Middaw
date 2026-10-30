@@ -36,7 +36,7 @@ def c_host():
     if _host is None:
         out = Path(tempfile.mkdtemp()) / "jsfx_c_host"
         c = ROOT / "mac" / "Sources" / "CJSFX"
-        subprocess.run([CC, "-std=gnu11", "-O1", "-I", str(c / "include"), "-o", str(out),
+        subprocess.run([CC, "-std=gnu11", "-O1", "-I", str(c), "-o", str(out),
                         str(ROOT / "tools" / "jsfx_c_host.c"), str(c / "jsfx_rt.c")]
                        + sorted(str(p) for p in (c / "devices").glob("*.c")) + ["-lm"],
                        check=True, capture_output=True, text=True)

@@ -4,7 +4,7 @@
 #if !defined(__APPLE__) && !defined(_POSIX_C_SOURCE)
 #define _POSIX_C_SOURCE 200809L
 #endif
-#include "jsfx_rt.h"
+#include "jsfx_internal.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -71,12 +71,12 @@ static jsfx_str *str_slot(jsfx_inst *S, int64_t id, int create) {
                 S->strCount = 0;
                 for (int i = 0; i < oldCap; i++) if (old[i].used) {
                     jsfx_str *n = str_slot(S, old[i].id, 1);
-                    n->s = old[i].s; n->len = old[i].len;
+                    n->s = old[i].s; n->len = old[i].len; n->cap = old[i].cap;
                 }
                 free(old);
                 return str_slot(S, id, 1);
             }
-            e->id = id; e->s = NULL; e->len = 0; e->used = 1;
+            e->id = id; e->s = NULL; e->len = 0; e->cap = 0; e->used = 1;
             S->strCount++;
             return e;
         }
@@ -102,18 +102,29 @@ static double str_set(jsfx_inst *S, double idd, const char *s, int len) {
     int64_t id = (int64_t)trunc(idd);
     jsfx_str *e = str_slot(S, id, 1);
     if (!e) return idd;
-    char *n = (char *)malloc((size_t)len + 1);
-    memcpy(n, s, (size_t)len);
-    n[len] = 0;
-    free(e->s);
-    e->s = n; e->len = len;
+    if (e->cap < len + 1) {
+        /* grows, and keeps what it grew to: a string rewritten every block
+         * stops allocating once it has been as long as it gets */
+        int cap = len + 1 < 64 ? 64 : (len + 1) * 2;
+        char *n = (char *)malloc((size_t)cap);
+        if (!n) return idd;
+        free(e->s);
+        e->s = n; e->cap = cap;
+    }
+    memmove(e->s, s, (size_t)len);
+    e->s[len] = 0;
+    e->len = len;
     return idd;
 }
 
 double jsfx_strcpy(jsfx_inst *S, double dst, double src) {
     int len; const char *s = jsfx_str_get(S, src, &len);
+    if (trunc(dst) == trunc(src)) return dst;
+    /* src may be in the table that str_set can grow: copy it out first */
+    char buf[1024];
+    if (len < (int)sizeof buf) { memcpy(buf, s, (size_t)len); return str_set(S, dst, buf, len); }
     char *copy = (char *)malloc((size_t)len + 1);
-    memcpy(copy, s, (size_t)len); copy[len] = 0;
+    memcpy(copy, s, (size_t)len);
     str_set(S, dst, copy, len);
     free(copy);
     return dst;
@@ -364,10 +375,11 @@ double jsfx_b_slider_show(jsfx_inst *S, int nargs, const double *a) { (void)S; (
 double jsfx_b_strlen(jsfx_inst *S, int nargs, const double *a) { int l; jsfx_str_get(S, A(0), &l); return l; }
 double jsfx_b_strcat(jsfx_inst *S, int nargs, const double *a) {
     int l1, l2; const char *x = jsfx_str_get(S, A(0), &l1), *y = jsfx_str_get(S, A(1), &l2);
-    char *n = (char *)malloc((size_t)l1 + (size_t)l2 + 1);
+    char buf[2048];
+    char *n = l1 + l2 < (int)sizeof buf ? buf : (char *)malloc((size_t)l1 + (size_t)l2 + 1);
     memcpy(n, x, (size_t)l1); memcpy(n + l1, y, (size_t)l2);
     str_set(S, A(0), n, l1 + l2);
-    free(n);
+    if (n != buf) free(n);
     return A(0);
 }
 static int cmp(const char *x, int lx, const char *y, int ly, int ci) {
@@ -387,6 +399,8 @@ double jsfx_b_stricmp(jsfx_inst *S, int nargs, const double *a) {
     return cmp(x, l1, y, l2, 1);
 }
 static double set_copy(jsfx_inst *S, double dst, const char *s, int len) {
+    char buf[1024];
+    if (len < (int)sizeof buf) { memcpy(buf, s, (size_t)len); return str_set(S, dst, buf, len); }
     char *n = (char *)malloc((size_t)len + 1);
     memcpy(n, s, (size_t)len);
     str_set(S, dst, n, len);
@@ -418,11 +432,12 @@ double jsfx_b_str_setchar(jsfx_inst *S, int nargs, const double *a) {
     int i = (int)trunc(A(1)); if (i < 0) i += l;
     if (i >= 0 && i <= l) {
         int nl = i == l ? l + 1 : l;
-        char *n = (char *)malloc((size_t)nl + 1);
+        char buf[1024];
+        char *n = nl < (int)sizeof buf ? buf : (char *)malloc((size_t)nl + 1);
         memcpy(n, s, (size_t)l);
         n[i] = (char)(int)trunc(A(2));
         str_set(S, A(0), n, nl);
-        free(n);
+        if (n != buf) free(n);
     }
     return A(2);
 }
@@ -492,6 +507,8 @@ jsfx_inst *jsfx_new(const jsfx_desc *d, double srate) {
     S->gmem = gmem_for(d->gmemName ? d->gmemName : "");
     S->srate = srate > 0 ? srate : 48000;
     S->rng = 22222;
+    S->capFiles = 8;
+    S->files = (jsfx_file *)calloc((size_t)S->capFiles, sizeof(jsfx_file));
     for (int i = 0; i < d->nsliders; i++) S->v[d->sliderSlot[d->sliders[i].index]] = d->sliders[i].def;
     return S;
 }
@@ -519,8 +536,10 @@ void jsfx_init(jsfx_inst *S, double srate) {
     int n = d->nsliders < 128 ? d->nsliders : 128;
     for (int i = 0; i < n; i++) keep[i] = S->v[d->sliderSlot[d->sliders[i].index]];
     memset(S->v, 0, sizeof(double) * ((size_t)d->nvars + 16));
-    memset(S->M, 0, sizeof(double) * JSFX_MEMWORDS);
-    if (S->strs) { for (int i = 0; i < S->strCap; i++) { free(S->strs[i].s); S->strs[i].s = NULL; S->strs[i].used = 0; } S->strCount = 0; }
+    /* EEL2's memory starts at zero: a fresh calloc is zero pages the system
+     * only backs once written, where a memset would touch all 64 MB */
+    if (S->initialised) { free(S->M); S->M = (double *)calloc(JSFX_MEMWORDS, sizeof(double)); }
+    if (S->strs) { for (int i = 0; i < S->strCap; i++) { free(S->strs[i].s); S->strs[i].s = NULL; S->strs[i].cap = 0; S->strs[i].used = 0; } S->strCount = 0; }
     for (int i = 0; i < n; i++) S->v[d->sliderSlot[d->sliders[i].index]] = keep[i];
     S->v[d->s_srate] = S->srate;
     S->v[d->s_num_ch] = d->inPins > d->outPins ? d->inPins : d->outPins;
@@ -636,3 +655,8 @@ void jsfx_free_items(jsfx_serial_item *items, int count) {
 }
 
 int jsfx_take_slider_change(jsfx_inst *S) { int c = S->sliderChanged; S->sliderChanged = 0; return c; }
+
+double jsfx_mem(jsfx_inst *S, double addr) { return jsfx_rd(S, addr); }
+double *jsfx_gmem(jsfx_inst *S) { return S->gmem; }
+void jsfx_set_string(jsfx_inst *S, double id, const char *text) { str_set(S, id, text, (int)strlen(text)); }
+const char *jsfx_get_string(jsfx_inst *S, double id) { return jsfx_str_get(S, id, NULL); }
