@@ -2,6 +2,9 @@ name: Mac
 on:
   push:
   workflow_dispatch:
+concurrency:                # a newer push replaces a run still waiting
+  group: mac-${{ github.ref }}
+  cancel-in-progress: true
 defaults:
   run:
     shell: bash            # -eo pipefail, so a failing build fails the step
@@ -19,8 +22,14 @@ jobs:
         working-directory: mac
         run: swift test 2>&1 | grep -vE "^\[|' (started|passed) " | tail -300
   composer:
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Python tests on the Mac's own Python
-        run: /usr/bin/python3 --version && /usr/bin/python3 -m unittest discover -s tests -t . 2>&1 | tail -30
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"     # the Mac's own python3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Python and JavaScript tests
+        run: python3 --version && python3 -m unittest discover -s tests -t . 2>&1 | tail -30
