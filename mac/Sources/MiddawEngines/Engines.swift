@@ -80,7 +80,7 @@ public final class Engines {
             barBeats = p.beatsPerBar; bpm = p.tempo
             inst = instrument; catalogueId = instrument
             self.bars = bars
-            selection = Selection(notes: selection, beats: selectionBeats, drums: drums)
+            self.selection = Selection(notes: selection, beats: selectionBeats, drums: drums)
         }
     }
 

@@ -12,8 +12,10 @@ let package = Package(
     targets: [
         .target(name: "MiddawCore"),
         .target(name: "MiddawEngines", dependencies: ["MiddawCore"]),
-        .executableTarget(name: "Middaw", dependencies: ["MiddawCore", "MiddawEngines"]),
+        .target(name: "MiddawAudio", dependencies: ["MiddawCore"]),
+        .executableTarget(name: "Middaw", dependencies: ["MiddawCore", "MiddawEngines", "MiddawAudio"]),
         .testTarget(name: "MiddawCoreTests", dependencies: ["MiddawCore"], exclude: ["Fixtures"]),
         .testTarget(name: "MiddawEnginesTests", dependencies: ["MiddawEngines", "MiddawCore"]),
+        .testTarget(name: "MiddawAudioTests", dependencies: ["MiddawAudio", "MiddawCore"]),
     ]
 )

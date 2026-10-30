@@ -17,10 +17,14 @@ jobs:
         run: swift --version && uname -m && sw_vers
       - name: Build
         working-directory: mac
-        run: swift build 2>&1 | grep -v "^\[" | tail -300
+        run: |
+          swift build > build.log 2>&1 || { grep -E -A4 "error:" build.log | head -200; exit 1; }
+          grep -E "warning:" build.log | sort -u | head -40 || true
       - name: Test
         working-directory: mac
-        run: swift test 2>&1 | grep -vE "^\[|' (started|passed) " | tail -300
+        run: |
+          swift test > test.log 2>&1 || { grep -E -A4 "error:|failed|Fatal|crash" test.log | head -250; exit 1; }
+          grep -E "Executed [0-9]+ tests" test.log | tail -3
   composer:
     runs-on: ubuntu-latest
     steps:
