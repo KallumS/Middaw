@@ -30,6 +30,20 @@ jobs:
         run: |
           mac/scripts/bundle.sh > bundle.log 2>&1 || { tail -60 bundle.log; exit 1; }
           cd mac/build && ditto -c -k --keepParent Middaw.app Middaw.zip && ls -la
+      - name: Open a composed song and look at it
+        run: |
+          python3 -m middaw --seed 4 -o "$RUNNER_TEMP/demo.mid" -- "a hopeful folk song in G major" > /dev/null
+          APP=mac/build/Middaw.app/Contents/MacOS/Middaw
+          mkdir -p shots
+          for ed in roll score; do
+            perl -e 'alarm 90; exec @ARGV' "$APP" --snapshot "shots/$ed.png" --editor $ed "$RUNNER_TEMP/demo.mid" || echo "snapshot $ed exited $?"
+          done
+          ls -la shots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Middaw-shots
+          path: shots
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: Middaw-app

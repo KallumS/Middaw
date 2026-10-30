@@ -24,6 +24,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         Task { @MainActor in Studio.shared.start() }
+        Snapshot.startIfAsked()
+    }
+}
+
+/// `Middaw --snapshot out.png [song]`: open the song (or a new one), wait for
+/// the engines, save a picture of the window, quit. CI uses it to see the app
+/// it cannot look at; it draws the window itself, so it needs no screen
+/// recording permission.
+@MainActor
+enum Snapshot {
+    static func startIfAsked() {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count else { return }
+        let out = URL(fileURLWithPath: args[i + 1])
+        let song = args.dropFirst(i + 2).last { $0.hasSuffix(".mid") || $0.hasSuffix(".midi") || $0.hasSuffix(".middaw") }
+            .map { URL(fileURLWithPath: $0) }
+        let editor = args.firstIndex(of: "--editor").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
+        if let song = song {
+            NSDocumentController.shared.openDocument(withContentsOf: song, display: true) { _, _, error in
+                if let e = error { FileHandle.standardError.write(Data("could not open: \(e)\n".utf8)); exit(4) }
+            }
+        } else {
+            NSDocumentController.shared.newDocument(nil)
+        }
+        Task { @MainActor in
+            // Wait for the engines (they load on another thread), then a moment to draw.
+            for _ in 0..<60 where Studio.shared.engines == nil { try? await Task.sleep(nanoseconds: 250_000_000) }
+            if let e = editor, let tab = EditorTab(rawValue: e) { Studio.shared.active?.editor = tab }
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            take(to: out)
+        }
+    }
+
+    static func take(to url: URL) {
+        guard let w = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil && $0.frame.width > 300 }) else {
+            FileHandle.standardError.write(Data("no window\n".utf8)); exit(2)
+        }
+        w.setFrame(NSRect(x: 0, y: 0, width: 1440, height: 900), display: true)
+        let view = w.contentView?.superview ?? w.contentView!
+        view.layoutSubtreeIfNeeded()
+        view.display()
+        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { exit(3) }
+        view.cacheDisplay(in: view.bounds, to: rep)
+        guard let png = rep.representation(using: .png, properties: [:]) else { exit(3) }
+        do { try png.write(to: url) } catch { exit(5) }
+        print("snapshot: \(url.path) \(Int(view.bounds.width))x\(Int(view.bounds.height))")
+        exit(0)
     }
 }
 
@@ -66,6 +113,8 @@ struct SongWindow: View {
             session.undo = undoManager
             studio.start()
             studio.becameActive(session)
+            // A song opens with its first track chosen, so its notes are in the editor.
+            if session.selection.trackID == nil, let first = document.project.tracks.first { session.select(track: first.id) }
         }
         .onChange(of: undoManager) { _, u in session.undo = u }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { n in
