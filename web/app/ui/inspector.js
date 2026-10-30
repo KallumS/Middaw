@@ -125,7 +125,7 @@
         break;
       }
       case 'kit': box.appendChild(U.el('p', { class: 'note-line', text: 'General MIDI drums on channel 10.' })); break;
-      case 'sampler': box.appendChild(sampleDrop(dev, 0, 'Drop a sound here, or click to choose one'));
+      case 'sampler': box.appendChild(sampleDrop(dev, 0, 'Add a Sound\u2026'));
         if (dev.sample) box.appendChild(rowline('Its pitch', select(rootOptions(), dev.sample.root, function (v) {
           app.commit('Set Root Note', function (q) { M.track(q, t.id).sound.sample.root = Number(v); });
           var s = app.track().sound; MD.samples.send(t.id, s.id, s.sample, null);
@@ -143,8 +143,8 @@
         return box;
       }
       case 'shuffler':
-        box.appendChild(sampleDrop(dev, 0, 'Sample A: drop or click'));
-        box.appendChild(sampleDrop(dev, 1, 'Sample B: drop or click'));
+        box.appendChild(sampleDrop(dev, 0, 'Add Sample A\u2026'));
+        box.appendChild(sampleDrop(dev, 1, 'Add Sample B\u2026'));
         box.appendChild(controls(where, dev, d.main));
         box.appendChild(disclosure('more-' + dev.id, 'More', '', function () { return controls(where, dev, d.more); }));
         return box;
@@ -227,7 +227,7 @@
   function sampleDrop(dev, slot, label) {
     var t = app.track();
     var have = dev.device === 'sampler' ? dev.sample : (dev.samples && dev.samples[slot]);
-    var z = U.el('div', { class: 'drop', role: 'button', tabindex: '0', text: have ? (have.name || 'A sound') + ' - drop another to replace it' : label });
+    var z = U.el('div', { class: 'drop', role: 'button', tabindex: '0', text: have ? (have.name || 'A sound') : label, title: 'Drop a sound here, or click to choose one' });
     function take(file) {
       MD.samples.fromFile(file).then(function (s) {
         app.commit('Load a Sound', function (q) {

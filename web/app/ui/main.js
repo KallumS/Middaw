@@ -255,8 +255,10 @@
   };
   // Midi Catalogue's Shape It, on any clip: the harmony kept, the contour turned.
   A.transform = function (kind) {
-    var c = app.clip();
+    var c = app.clip(), t = app.track();
     if (!c) return;
+    // On a kit a note number names a drum: mirroring or keying it swaps instruments.
+    if (t && t.drums && (kind === 'invert' || kind === 'key')) { U.status('Drums have no key, so they are not turned or fitted to one.'); return; }
     var labels = { invert: 'Turn Upside Down', retrograde: 'Play Backwards', half: 'Half Speed', double: 'Double Speed', key: 'Fit to the Key' };
     app.commit(labels[kind], function (q) {
       var cl = M.clipById(q, c.id).clip;
@@ -268,12 +270,13 @@
     });
   };
   A.transformMenu = function (anchor, pos) {
+    var drums = !!(app.track() && app.track().drums);
     U.menu(anchor, [
-      { label: 'Turn Upside Down', action: function () { A.transform('invert'); } },
+      { label: 'Turn Upside Down', disabled: drums, action: function () { A.transform('invert'); } },
       { label: 'Play Backwards', action: function () { A.transform('retrograde'); } },
       { label: 'Half Speed', action: function () { A.transform('half'); } },
       { label: 'Double Speed', action: function () { A.transform('double'); } },
-      { label: 'Fit to the Key', action: function () { A.transform('key'); } }
+      { label: 'Fit to the Key', disabled: drums, action: function () { A.transform('key'); } }
     ], pos);
   };
   A.clipMenu = function (x, y) {
@@ -387,15 +390,25 @@
   A.insertBlock = function (block, name) {
     var t = app.track(), p = app.project();
     if (!t) { U.status('Choose a track first.'); return; }
-    var notes = (Array.isArray(block.notes) ? block.notes : Object.values(block.notes || {})).map(function (n) { return { start: n.start, len: n.len, pitch: n.pitch, vel: n.vel || 100 }; });
+    var notes = (Array.isArray(block.notes) ? block.notes : Object.values(block.notes || {})).map(M.asNote);
     var beats = block.beats || notes.reduce(function (m, n) { return Math.max(m, n.start + n.len); }, 0);
-    var at = app.caret, c = M.clipAt(t, at), id = null;
+    var at = app.caret, bpb = M.beatsPerBar(p), id = null;
+    // Into the clip under the caret, or the one that ends at it, which grows
+    // to take the block: blocks laid one after another are one phrase.
+    var into = M.clipAt(t, at) || t.clips.filter(function (c) { return Math.abs(c.start + c.length - at) < 1e-6; })[0];
     app.commit('Insert ' + (name || block.name || 'Block'), function (q) {
       var tt = M.track(q, t.id);
-      var into = c && M.clipById(q, c.id).clip;
-      if (into && at + beats <= into.start + into.length + 1e-9) {
-        notes.forEach(function (n) { into.notes.push({ start: at - into.start + n.start, len: n.len, pitch: n.pitch, vel: n.vel }); });
-        id = into.id;
+      if (into) {
+        var cl = M.clipById(q, into.id).clip, end = cl.start + cl.length;
+        var need = Math.ceil((at + beats - cl.start) / bpb - 1e-9) * bpb;
+        if (cl.start + need > end + 1e-9) {
+          M.clearSpan(tt, end, cl.start + need);
+          cl = M.clipById(q, into.id).clip;
+          cl.length = need;
+        }
+        notes.forEach(function (n) { cl.notes.push({ start: at - cl.start + n.start, len: n.len, pitch: n.pitch, vel: n.vel }); });
+        cl.notes.sort(function (a, b) { return a.start - b.start || a.pitch - b.pitch; });
+        id = cl.id;
       } else {
         id = M.placeNotes(q, tt.id, at, Math.max(beats, 0.25), notes, { name: block.name || name, source: { generator: 'Starting Blocks', title: block.name } }).id;
       }

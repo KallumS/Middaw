@@ -26,10 +26,10 @@
   --edge: #6D7581;
   --ink: #14171C;
   --text: #DDE1E7;
-  --text-dim: #B0B6C0;
+  --text-dim: #B6BCC6;      /* 7:1 on the raised panels too (the house #B0B6C0 is 6.6 there) */
   --label: #BFC5CE;
   --warn: #D2483F;
-  --warn-text: #FF9E96;
+  --warn-text: #FFA6A0;     /* likewise; the house #FF9E96 is 6.8 on raised */
   --playhead: #F2F4F7;
   --focus: #F2F4F7;
   --note: #A9AFBA;
@@ -327,13 +327,13 @@ canvas:focus-visible { outline-offset: -2px; }
 .menu-layer, .sheet-layer { position: fixed; inset: 0; z-index: 50; }
 .sheet-layer { background: rgba(10, 12, 15, 0.55); display: flex; align-items: flex-start; justify-content: center; padding-top: 6vh; }
 .menu {
-  position: absolute; min-width: 14rem; max-height: 80vh; overflow: auto;
+  position: absolute; min-width: 14rem; width: max-content; max-width: 26rem; max-height: 80vh; overflow: auto;
   background: var(--raised); border: 1px solid var(--rule); border-radius: 8px;
   padding: 0.3rem; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
 }
 .menu button {
   width: 100%; justify-content: space-between; background: transparent; color: var(--text);
-  border-color: transparent; min-height: 1.9rem; padding: 0 0.6rem;
+  border-color: transparent; min-height: 1.9rem; padding: 0 0.6rem; gap: 2rem;
 }
 .menu button:hover, .menu button:focus-visible { background: var(--rule); color: var(--text); outline: none; }
 .menu button .keys { color: var(--label); }

@@ -109,9 +109,25 @@ Only entries whose licence clears commercial use are pooled by default
 (`commercial_only=True`), so an accidentally-added non-commercial file cannot
 leak into output.
 
-## Playback
+## The DAW
 
-The API returns both the `.mid` bytes and the note list. The browser schedules
-**the note list**, so what you hear is exactly what was written — nothing is
-inferred back out of a rendered file. Voice selection is vendored soundfont →
-CDN soundfont → built-in additive tone, decided once and reported to the user.
+The composer above is one part of a browser DAW (`web/`, described in
+[DAW.md](DAW.md)). The server answers four things: `/api/compose` (a prompt
+in, the spec, the chords and the five parts out), `/api/midi/write` and
+`/api/midi/read` (Middaw's own codec, now with controllers), and
+`/api/store/<key>` for what belongs to the user rather than to a song.
+
+```
+            browser                                      server
+ ┌──────────────────────────────────────┐        ┌──────────────────┐
+ │ model.js  song, undo                 │ prompt │ parse_prompt     │
+ │ ui/*      arrange, roll, score, ...  │ ─────► │ render ──► parts │
+ │ engines.js ─► web/lua ─► family Lua  │        │ midi.py r/w      │
+ │ audio.js ─► worklet per track:       │ ◄───── │ data/user/ store │
+ │   MIDI fx ─► instrument ─► audio fx  │ notes  └──────────────────┘
+ │   (family JSFX via web/jsfx)         │
+ └──────────────────────────────────────┘
+```
+
+What is heard is the note list, played by each track's processor from the
+audio clock - nothing is inferred back out of a rendered file.

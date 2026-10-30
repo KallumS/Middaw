@@ -1,8 +1,17 @@
 # Middaw
 
-Text prompt in, MIDI out. **MIDI-first**: notes are composed as notes and
-written straight to a Standard MIDI File. Nothing is generated as audio and
-transcribed back, so nothing is approximated.
+A generative DAW. Describe the music and it is written - melody,
+countermelody, harmony, bass and drums on five tracks - or start from an
+ensemble and write it yourself. **MIDI-first**: notes are composed as notes,
+never generated as audio and transcribed back, so nothing is approximated.
+
+Then work on it the way you would in any DAW - piano roll, score, mixer,
+devices, undo - with the rest of the family built in: Good Idea, Midi
+Suggester and Midi Variator in the Generate panel, Starting Blocks over the
+piano roll, Midi Catalogue and Orchestration Helper in the browser, ScaleView
+in the toolbar, AutoCC, Midi Evolver, MIDI Production Center, Instrument
+Creator, Transient Shuffler and Reverberator as devices, and the Battle Pass.
+**[docs/DAW.md](docs/DAW.md)** says where each one lives.
 
 ```
 What do you want to create?
@@ -20,20 +29,17 @@ No dependencies. Python 3.11+, and a browser.
 python3 server/app.py           # http://127.0.0.1:8765
 ```
 
-Optional, for a real piano instead of the built-in fallback tone:
+Chrome, Edge or Safari; a MIDI keyboard works through Web MIDI where the
+browser has it.
 
-```sh
-python3 tools/fetch_soundfont.py
-```
-
-From the command line:
+From the command line, the composer on its own:
 
 ```sh
 python3 -m middaw "a celtic jig" -o jig.mid
 python3 -m middaw "epic cinematic build in 3/4, 32 bars" --seed 42 --json
 ```
 
-Tests:
+Tests (Python, and the JavaScript ones too when Node is installed):
 
 ```sh
 python3 -m unittest discover -s tests -t .
@@ -97,8 +103,10 @@ genre adds it to both at once.
 | `middaw/` | the generator: prompt → spec → notes → MIDI |
 | `middaw/scaleview.py` | scales, key-aware spelling and the chord reader, ported from [ScaleView Pro](https://github.com/KallumS/scaleview-for-reaper) |
 | `middaw/corpus/` | the labelled dataset: schema, analysis, statistics, CLI |
-| `server/app.py` | the local web app (standard library only) |
-| `web/` | one screen, no build step |
+| `server/app.py` | the local server: Compose, MIDI in and out, storage (standard library only) |
+| `web/` | the DAW, no build step: [docs/DAW.md](docs/DAW.md) |
+| `web/lua/`, `web/jsfx/` | Lua 5.4 and EEL2, written for the browser, so the family's engines and devices run unchanged |
+| `web/engines/`, `web/devices/` | the family's Lua engines and JSFX devices, vendored unchanged |
 | `data/vocab/tags.json` | the shared vocabulary |
 | `docs/` | the design decisions |
 
@@ -119,6 +127,10 @@ genre adds it to both at once.
   why the label schema is also the prompt vocabulary
 - **[docs/DATASET.md](docs/DATASET.md)** — sourcing MIDI you are actually
   allowed to use, and the two-clearance problem that catches everybody
+- **[docs/DAW.md](docs/DAW.md)** — the DAW: where each family project lives,
+  what it shares with other DAWs, its limits
+- **[docs/HIG.md](docs/HIG.md)** and **[docs/COLOUR.md](docs/COLOUR.md)** —
+  Apple's guidelines and the house scheme, checked
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — how the pieces fit
 - **[docs/ROADMAP.md](docs/ROADMAP.md)** — rules → corpus statistics → model
 
@@ -149,4 +161,4 @@ for generation by default. This is enforced rather than documented because
 
 ## Licence
 
-GNU General Public License v3 - see [LICENSE](LICENSE). `middaw/scaleview.py` is ported from ScaleView for REAPER, also GPL v3.
+GNU General Public License v3 - see [LICENSE](LICENSE). `middaw/scaleview.py` is ported from ScaleView for REAPER, and everything under `web/engines/` and `web/devices/` is the family's own GPL v3 code, unchanged. The notation glyphs carry their own licence (`web/engines/notation/sb_glyphs-OFL.txt`).

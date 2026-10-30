@@ -1,8 +1,14 @@
 # Middaw
 
-Text prompt in, MIDI out. MIDI-first: notes are composed as notes. Nothing is
-generated as audio and transcribed back — that inaccuracy is the thing this
-project exists to avoid, so no part of the pipeline may reintroduce it.
+A generative DAW: text prompt in, five MIDI parts out, then edited, varied,
+engraved and mixed in the browser. MIDI-first: notes are composed as notes.
+Nothing is generated as audio and transcribed back — that inaccuracy is the
+thing this project exists to avoid, so no part of the pipeline may
+reintroduce it.
+
+Two halves: the **composer** (`middaw/`, Python, everything below about
+specs, cadences and dice) and the **DAW** (`web/`, see "The DAW" at the end
+and `docs/DAW.md`).
 
 ## Working here
 
@@ -10,8 +16,12 @@ project exists to avoid, so no part of the pipeline may reintroduce it.
   Middaw reads and writes Standard MIDI Files itself (`middaw/midi.py`) rather
   than wrapping a library, because byte-level MIDI accuracy is the premise of
   the product and should be inspectable and tested. Do not add `mido`,
-  `pretty_midi`, a web framework or a bundler without a real reason.
-- **Run the tests before and after any change.** They take about a second:
+  `pretty_midi`, a web framework or a bundler without a real reason. The same
+  reasoning is why the browser has its own Lua 5.4 (`web/lua/`) and EEL2
+  (`web/jsfx/`) rather than a wasm build of either.
+- **Run the tests before and after any change.** About 25 seconds, ten of
+  them Midi Evolver's own engine checks; the JavaScript suites
+  (`tests/js/`) run inside them when `node` is on the path:
 
   ```sh
   python3 -m unittest discover -s tests -t .
@@ -363,6 +373,40 @@ dataset and a liability. See `docs/DATASET.md`.
   is a clean pattern where a drummer's is a cloud: they hit nearly every
   sixteenth *sometimes*, and we hit exactly what the pattern says. Ghost
   density and fills close part of that gap; per-bar variation would close more.
-- The soundfont path (vendored file → CDN → built-in tone) has been exercised
-  end to end against a locally built stand-in soundfont, but never against the
-  real FluidR3 file, because the sandbox blocks both CDNs. Try it for real.
+- **The DAW has not been heard.** Every path was driven in headless Chromium
+  (transport, every generator, every device, MIDI and WAV export) and the
+  output checked as numbers, but nobody has listened to it on speakers or
+  played it from a MIDI keyboard. `docs/DAW.md` lists its other limits.
+
+## The DAW
+
+`web/`, described in `docs/DAW.md`. The rules that bite if forgotten:
+
+- **The family's code runs unchanged.** `web/engines/` (Lua) and
+  `web/devices/` (JSFX) are copies, recorded in their `VENDORED.md` with the
+  commit. Never edit them here: fix the project, sync, update the table, and
+  regenerate `tests/js/lua/engines.expected` with `tools/lua_goldens.sh`. If
+  an engine misbehaves in Middaw, suspect `web/lua/` or `web/jsfx/` first —
+  they are held to the real Lua byte for byte and to Midi Evolver's own engine
+  checks, so a difference is a bug in the runtime, not a licence to patch.
+- **A note in the DAW is `{start, len, pitch, vel}`**, in beats from its
+  clip's start. The Python side and MIDI files say `duration` and `velocity`;
+  `MD.model.asNote` converts at every boundary. Forgetting it once made every
+  composed note invisible.
+- **Every change is `app.commit(label, fn)`**: one undo step, named in the
+  Edit menu. Nothing mutates the project outside a commit — a fader moves the
+  sound live through `MD.audio.setMix` and commits when it is let go.
+- **Generated music is placed by Miderator's rules**: into the chosen bars,
+  else at the caret on the chosen track; a suggestion on a new track beside
+  it; fitted to the instrument's range and polyphony; heard on piano or kit
+  before it is used.
+- **Drums have no key.** A kit track is never transposed by a key change,
+  never fitted to a key and never inverted; its notes name instruments.
+- **The house scheme and Apple's HIG are tested** (`tests/test_style.py`):
+  every word 7:1 on every surface, ink 7:1 on every button, cool greys,
+  28-point controls 12 apart, on = accent *and* a bar, red never for words,
+  the status line at the top. `docs/COLOUR.md` and `docs/HIG.md` are the
+  record.
+- **No explainer text.** A label is a word or two; how a control works goes
+  in its tooltip, if anywhere. Secondary text says something about *this*
+  instrument or clip, never how to use the screen.
