@@ -147,9 +147,9 @@ public final class Engines {
     /// Compose: Middaw's composer, a sentence in and the song's five parts
     /// out - the same answer `python3 -m middaw --json` gives for the seed.
     public func compose<T: Decodable>(_ prompt: String, seed: Int, as: T.Type = T.self) throws -> T {
-        struct Args: Encodable { let prompt: String; let seed: Int }
-        return try call("compose", Args(prompt: prompt, seed: seed))
+        try call("compose", ComposeArgs(prompt: prompt, seed: seed))
     }
+    struct ComposeArgs: Encodable { let prompt: String; let seed: Int }
 
     /// Where the app's engines are: inside Middaw.app, or the repository
     /// this was built from.
