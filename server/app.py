@@ -28,6 +28,13 @@ WEB_ROOT = ROOT / "web"
 MAX_BODY = 64 * 1024
 _SAFE_NAME = re.compile(r"[^A-Za-z0-9]+")
 
+# What the page shows when a request goes wrong: what happened, as a sentence,
+# then what to do (Apple's writing guidelines, as in the user's other apps).
+UNREADABLE = "The request couldn\u2019t be read. Reload the page and try again."
+TOO_LONG = "That description is too long. Keep it under 2,000 characters."
+FAILED = ("Middaw couldn\u2019t compose that. Try wording it differently, "
+          "or report it as a bug.")
+
 
 def slugify(text: str, fallback: str = "middaw") -> str:
     slug = _SAFE_NAME.sub("-", text.strip().lower()).strip("-")
@@ -63,17 +70,17 @@ class Handler(BaseHTTPRequestHandler):
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
-            return self._send_error(400, "bad content length")
+            return self._send_error(400, UNREADABLE)
         if length > MAX_BODY:
-            return self._send_error(413, "prompt too large")
+            return self._send_error(413, TOO_LONG)
         try:
             payload = json.loads(self.rfile.read(length) or b"{}")
         except json.JSONDecodeError:
-            return self._send_error(400, "body must be JSON")
+            return self._send_error(400, UNREADABLE)
 
         prompt = str(payload.get("prompt") or "").strip()
         if len(prompt) > 2000:
-            return self._send_error(400, "prompt too long")
+            return self._send_error(400, TOO_LONG)
 
         seed = payload.get("seed")
         overrides = {key: payload.get(key) for key in ("bars", "tempo", "density")
@@ -84,7 +91,7 @@ class Handler(BaseHTTPRequestHandler):
             result = render(spec, priors=self.priors)
         except Exception:                      # a bad prompt must not kill the server
             traceback.print_exc()
-            return self._send_error(500, "generation failed")
+            return self._send_error(500, FAILED)
 
         body = result.to_dict()
         body["midiBase64"] = base64.b64encode(result.midi).decode("ascii")

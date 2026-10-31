@@ -121,7 +121,7 @@ class MusicSpec:
             f"{self.bars} bars",
             (f"{self.form_name.replace('_', ' ')}: {self.form}"
              if self.form else ""),
-            " ".join(self.progression[:8]) + ("..." if len(self.progression) > 8 else ""),
+            " ".join(self.progression[:8]) + ("\u2026" if len(self.progression) > 8 else ""),
         ]
         tags = self.genres + self.moods
         if tags:
