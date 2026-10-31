@@ -101,7 +101,12 @@ middaw/                      the composer (Python), bundled for Compose
 - **The composer in Swift.** Compose still runs the Python composer, which
   needs the Command Line Tools. Porting it is the way to drop that.
 - **Score rests.** Starting Blocks Notation writes each note up to the next
-  onset, so a rest inside a phrase prints as a longer note.
+  onset (`events` in `sb_notate.lua`), on purpose: a block is gated, and a
+  chord that sounds nine tenths of a bar should read as a whole note. It also
+  turns a real rest inside a phrase into a longer note. The fix belongs in
+  Starting Blocks Notation: write a note to the next onset only when it
+  sounds most of the way there (a gate leaves a tenth), else its own length,
+  and let the rests fill the rest as they already do. Then sync it here.
 
 ## Not tried
 
