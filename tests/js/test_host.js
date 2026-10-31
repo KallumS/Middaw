@@ -72,6 +72,16 @@ test('a part is engraved as pen calls the native side can replay', () => {
   for (const o of r.ops) for (const v of o.slice(1)) if (typeof v === 'number') assert.ok(Number.isFinite(v));
 });
 
+test('a silence inside a phrase is engraved as a rest, articulation is not', () => {
+  // Starting Blocks Notation's opts.rests (its decision 0019): a clip is as
+  // played, not a gated block, so its rests are part of the music.
+  const draw = (lens) => JSON.stringify(call('engrave', { key: C_MAJOR, meter: [4, 4], barBeats: 4, beats: 4, width: 60, space: 8,
+    notes: lens.map((len, i) => ({ start: i, len, pitch: 67, vel: 100 })) }).ops);
+  const legato = draw([1, 1, 1, 1]);
+  assert.notStrictEqual(draw([1, 0.5, 1, 1]), legato, 'the eighth rest was drawn as a longer note');
+  assert.strictEqual(draw([0.9, 0.9, 0.85, 0.95]), legato, 'articulation was drawn as rests');
+});
+
 test('the Battle Pass starts, counts what you do and saves as its own text', () => {
   call('passStart', { epoch: 1790000000, clock: 0 });
   call('passCall', { fn: 'event', args: ['$state', '$session', 'track', 1] });

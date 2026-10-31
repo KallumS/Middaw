@@ -13,7 +13,7 @@ their own repository, then run `tools/sync_engines.sh` and update this table.
 | `midi-variator/` | KallumS/Midi-Variator | f72b39d | mv_theory.lua, mv_vary.lua |
 | `starting-blocks/` | KallumS/Starting-Blocks-Notation | fa54c16 | sb_engine.lua (identical to Starting Blocks') |
 | `adapters/` | KallumS/Noterator | 42c2c2f | common.lua and one adapter per engine, shared with Miderator |
-| `notation/` | KallumS/Starting-Blocks-Notation | fa54c16 | sb_notate.lua, sb_draw.lua, sb_glyphs.lua, sb_glyphs-OFL.txt (the glyphs' licence) |
+| `notation/` | KallumS/Starting-Blocks-Notation | 178a548 (branch `claude/rests-as-played`, not yet merged) | sb_notate.lua, sb_draw.lua, sb_glyphs.lua, sb_glyphs-OFL.txt (the glyphs' licence) |
 | `battle-pass/` | KallumS/DAW-Battle-Pass | c0035b5 | bp_game.lua, bp_loot.lua, bp_theory.lua |
 | `orchestration/` | KallumS/Orchestration-Helper | 8fd13a3 | orchestration_data.lua, orchestration_composers.lua |
 

@@ -85,7 +85,7 @@ runtime/composer/            the composer, ported from middaw/ (Python) for Comp
 | **Midi Suggester** | Generate > Suggest, or Suggest… on a clip: the part that goes with it, on a new track beside it (Miderator 0040) |
 | **Midi Variator** | Generate > Vary, or Vary… on a clip: variations, each saying what it changed |
 | **Starting Blocks** | The Blocks bar over the piano roll: click to hear, double-click to put it at the caret, which moves on |
-| **Starting Blocks Notation** | The Score tab, a part or the full score, dark or a light page |
+| **Starting Blocks Notation** | The Score tab, a part or the full score, dark or a light page; a clip's silences are rests (its `opts.rests`) |
 | **Midi Catalogue** | Browser > Ideas; its instruments are every track's Instrument; its Shape It is Transform |
 | **Noterator** | The ensembles (String Quartet, Big Band, Beat Maker…) and the adapters every engine is driven through |
 | **Miderator** | The placement rules: into the chosen bars, else at the caret; fitted to the instrument; heard on piano or kit first |
@@ -105,13 +105,6 @@ runtime/composer/            the composer, ported from middaw/ (Python) for Comp
   what a plug-in wrapper needs; the wrapper is not written.
 - **Devices are not bypassed or automated**, and @gfx is not run: a device's
   own window is replaced by its sliders.
-- **Score rests.** Starting Blocks Notation writes each note up to the next
-  onset (`events` in `sb_notate.lua`), on purpose: a block is gated, and a
-  chord that sounds nine tenths of a bar should read as a whole note. It also
-  turns a real rest inside a phrase into a longer note. The fix belongs in
-  Starting Blocks Notation: write a note to the next onset only when it
-  sounds most of the way there (a gate leaves a tenth), else its own length,
-  and let the rests fill the rest as they already do. Then sync it here.
 
 ## Not tried
 

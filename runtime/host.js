@@ -237,7 +237,9 @@
       var ctx = L.first(L.call(L.index(nt.N, 'context'))(nt.E, st));
       var block = L.toLua({ notes: a.notes, beats: a.beats, name: a.name || '' });
       var opts = L.toLua({ barBeats: a.barBeats, tsNum: a.meter[0], tsDen: a.meter[1], width: a.width,
-                           drums: !!a.drums, grid: a.drums ? 0.25 : undefined });
+                           drums: !!a.drums, grid: a.drums ? 0.25 : undefined,
+                           // a clip is as played, so its silences are rests (Starting Blocks Notation 0019)
+                           rests: !a.drums });
       opts.set('ctx', ctx);
       var doc = L.first(L.call(L.index(nt.N, 'layout'))(block, opts));
       var height = +L.first(L.call(L.index(nt.D, 'height'))(doc, a.space));
