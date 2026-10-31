@@ -33,7 +33,24 @@ final class SongDocument: ReferenceFileDocument, ObservableObject {
         }
     }
 
-    func snapshot(contentType: UTType) throws -> Project { project }
+    /// What is saved: the song, with each device's state as it is now - Midi
+    /// Evolver's take, the MPC's phrase - when this is the song playing.
+    func snapshot(contentType: UTType) throws -> Project {
+        var p = project
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                if Studio.shared.active?.document === self { p = p.with(states: Studio.shared.audio.renderer.deviceStates()) }
+            }
+        }
+        return p
+    }
+
+    /// The devices' states kept in the song without an undo step: when another
+    /// window takes the sound card, this song's devices stop running.
+    func keepDeviceStates(_ states: [String: JSONValue]) {
+        guard !states.isEmpty else { return }
+        project = project.with(states: states)
+    }
 
     func fileWrapper(snapshot: Project, configuration: WriteConfiguration) throws -> FileWrapper {
         let enc = JSONEncoder()
@@ -80,6 +97,15 @@ final class SongDocument: ReferenceFileDocument, ObservableObject {
         }
         p.bars = max(p.bars, Int((p.endOfMusic / bpb).rounded(.up)) + 4)
         p.returns = [Return(audioFx: [])]
+        return p
+    }
+}
+
+extension Project {
+    /// The song with these devices' saved states.
+    func with(states: [String: JSONValue]) -> Project {
+        var p = self
+        for (id, st) in states { _ = p.withDevice(id) { $0.state = st } }
         return p
     }
 }

@@ -32,7 +32,8 @@ Compose uses Python, which comes with Apple's Command Line Tools
 mac/Package.swift            a Swift package: no Xcode project, no dependencies
 mac/Sources/MiddawCore/      the song, undo, editing, keys, MIDI files
 mac/Sources/MiddawEngines/   the family's Lua, in JavaScriptCore
-mac/Sources/MiddawAudio/     Core Audio: instruments, sequencer, reverb, bounce; Core MIDI
+mac/Sources/MiddawAudio/     Core Audio: instruments, sequencer, device chains, reverb, bounce; Core MIDI
+mac/Sources/CJSFX/           the family's JSFX compiled to C (tools/jsfx2c.js) and its runtime
 mac/Sources/Middaw/          the app: SwiftUI windows, documents, menus
 mac/Tests/                   XCTest, run by CI on Apple silicon
 runtime/                     Lua 5.4 and EEL2, the runtimes the family's code runs in
@@ -47,8 +48,16 @@ middaw/                      the composer (Python), bundled for Compose
   Variator, Starting Blocks (and its notation), Midi Catalogue, DAW Battle
   Pass and Orchestration Helper are Lua; they run in Middaw's Lua 5.4
   (`runtime/lua/`, held byte for byte to the real Lua by the tests) inside
-  JavaScriptCore, which every Mac has. AutoCC runs from its own JSFX through
-  `runtime/jsfx/`.
+  JavaScriptCore, which every Mac has. AutoCC's Draw Dynamics runs from its
+  own JSFX through `runtime/jsfx/`.
+- **The family's JSFX are native devices.** `tools/jsfx2c.js` translates each
+  one to C with the JS runtime's own parser and rules, and the C runs on the
+  audio thread in the track's chain: MIDI effects, then the instrument, then
+  audio effects, as Bitwig and Ableton order them. The Devices tab shows the
+  chain left to right; each device's controls are its own sliders. The C is
+  held to the JS runtime by `tests/test_jsfx_c.py`: the same variables, MIDI
+  and samples for every device over random sessions, and Midi Evolver's own
+  77 engine checks.
 - **The sound is native.** One Core Audio source node renders every track
   sample-accurately from the audio clock; nothing on that thread allocates or
   waits. Middaw Synth's eighteen presets, the drum kit and the Instant
@@ -77,16 +86,18 @@ middaw/                      the composer (Python), bundled for Compose
 | **Instant Virtual Instrument** | Played by > Instant Instrument: drop a sound on a track and play it across the keyboard |
 | **AutoCC** | Draw Dynamics with AutoCC on any clip: its curves drawn into the clip's controller lanes |
 | **DAW Battle Pass** | The ring in the toolbar: active minutes fill the tier; saved in Application Support |
-| **Reverberator, Midi Evolver, MIDI Production Center, Instrument Creator, Transient Shuffler** | Not in the native app yet: see below |
+| **Instrument Creator** | Played by > Instrument Creator: its nineteen instruments, Surprise Me, its parts |
+| **Transient Shuffler** | Played by > Transient Shuffler: drop sounds A and B; MIDI plays the result |
+| **Midi Evolver** | Devices > Add > Midi Evolver: hold a chord and it grows; Insert the Take, Record, Panic |
+| **MIDI Production Center** | Devices > Add: Load the Clip chops it onto the sixteen pads; Transfer to Pads; its effects |
+| **Reverberator** | Devices > Add, as an insert; or the mixer's Reverb return, fully wet |
 
 ## Not built yet
 
-- **The family's JSFX as live devices.** In the browser version Instrument
-  Creator, Transient Shuffler, Midi Evolver, MIDI Production Center and
-  Reverberator ran in the audio thread. A JavaScriptCore context is not safe
-  to call from Core Audio's thread, so natively they need a render-ahead
-  thread per chain; until then the reverb return is Middaw's own (Freeverb's
-  design) and the others are absent. AutoCC works offline, as above.
+- **VST3 or Audio Unit versions of the devices.** They are C now, which is
+  what a plug-in wrapper needs; the wrapper is not written.
+- **Devices are not bypassed or automated**, and @gfx is not run: a device's
+  own window is replaced by its sliders.
 - **The composer in Swift.** Compose still runs the Python composer, which
   needs the Command Line Tools. Porting it is the way to drop that.
 - **Battle Pass quests, loot and the shop** have no window yet; the ring,

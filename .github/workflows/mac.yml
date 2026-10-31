@@ -62,11 +62,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.9"     # the Mac's own python3
+      # Python 3.9 is the Mac's own python3. Runner images drop old Pythons
+      # (Ubuntu 26.04 has no 3.9), so uv supplies it.
+      - uses: astral-sh/setup-uv@v6
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
       - name: Python and JavaScript tests
-        run: python3 --version && python3 -m unittest discover -s tests -t . 2>&1 | tail -30
+        run: uv python install 3.9 && uv run --no-project --python 3.9 python --version && uv run --no-project --python 3.9 python -m unittest discover -s tests -t . 2>&1 | tail -30

@@ -177,9 +177,10 @@ struct SongToolbar: ToolbarContent {
                 Text("Piano Roll").tag(EditorTab.roll)
                 Text("Score").tag(EditorTab.score)
                 Text("Mixer").tag(EditorTab.mixer)
+                Text("Devices").tag(EditorTab.devices)
             }
             .pickerStyle(.segmented)
-            .help("Piano roll, score or mixer (M for the mixer)")
+            .help("Piano roll, score, mixer or the track's devices (M for the mixer)")
             Button { s.inspector = s.inspector == .generate ? .track : .generate } label: { Label("Generate", systemImage: "sparkles") }
                 .help("Generate (G)")
             PassButton()
@@ -350,6 +351,7 @@ struct MiddawCommands: Commands {
             Button("Mixer") { s?.editor = .mixer }.keyboardShortcut("m", modifiers: [.command, .option])
             Button("Score") { s?.editor = .score }.keyboardShortcut("s", modifiers: [.command, .option])
             Button("Piano Roll") { s?.editor = .roll }.keyboardShortcut("p", modifiers: [.command, .option])
+            Button("Devices") { s?.editor = .devices }
         }
     }
 }

@@ -5,7 +5,7 @@ import MiddawCore
 import MiddawEngines
 import MiddawAudio
 
-enum EditorTab: String { case roll, score, mixer }
+enum EditorTab: String { case roll, score, mixer, devices }
 enum InspectorTab: String { case track, generate }
 
 struct Selection: Equatable {
@@ -446,7 +446,8 @@ final class Session: ObservableObject {
         panel.allowedContentTypes = [.wav]
         panel.nameFieldStringValue = project.title + ".wav"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        let p = project
+        // the devices as they are now: a take, a loaded phrase
+        let p = Studio.shared.active === self ? project.with(states: Studio.shared.audio.renderer.deviceStates()) : project
         say("Rendering the song…")
         Task.detached(priority: .userInitiated) {
             let out = Bounce.render(p, sampleRate: 48000)

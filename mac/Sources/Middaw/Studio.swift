@@ -66,6 +66,7 @@ final class Studio: ObservableObject {
     func becameActive(_ s: Session) {
         guard active !== s else { return }
         if isPlaying { audio.renderer.stop() }
+        active?.document.keepDeviceStates(audio.renderer.deviceStates())
         active = s
         sync(s.document.project)
     }

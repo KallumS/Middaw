@@ -159,7 +159,11 @@ struct SoundPanel: View {
                     Text("Middaw Synth").tag("synth")
                     Text("Drum Kit").tag("kit")
                     Text("Instant Instrument").tag("sampler")
+                    ForEach(DeviceCatalog.of(.instrument), id: \.id) { d in Text(d.name).tag(d.id) }
                 }.labelsHidden()
+            }
+            if DeviceCatalog.info(track.sound.device) != nil {
+                Button("Show Its Controls") { s.select(track: track.id); s.editor = .devices }.house()
             }
             if track.sound.device == "synth" {
                 Row(label: "Preset") {
@@ -195,7 +199,7 @@ struct SoundPanel: View {
 
     func setDevice(_ d: String) {
         s.updateTrack(track.id, "Change Sound") { t in
-            t.sound = Device(device: d, preset: d == "synth" ? (presetFor[t.instrument] ?? "keys") : nil)
+            t.sound = DeviceCatalog.info(d) != nil ? Session.makeDevice(d) : Device(device: d, preset: d == "synth" ? (presetFor[t.instrument] ?? "keys") : nil)
             t.drums = d == "kit" ? true : (t.instrument == "kit")
         }
     }
@@ -233,12 +237,49 @@ struct MixerView: View {
     @EnvironmentObject var studio: Studio
     var body: some View {
         ScrollView(.horizontal) {
-            HStack(spacing: 2) {
+            HStack(alignment: .top, spacing: 2) {
                 ForEach(s.project.tracks) { t in Strip(track: t) }
+                ReturnStrip()
             }
             .padding(8)
         }
         .background(Theme.ground)
+    }
+}
+
+/// The reverb return every track's Reverb sends to: Middaw's own reverb,
+/// or Reverberator, fully wet.
+struct ReturnStrip: View {
+    @EnvironmentObject var s: Session
+    @State private var showing = false
+    var verb: Device? { s.project.returns.first?.audioFx.first { $0.device == "reverberator" } }
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("Reverb").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.text)
+            Picker("Reverb", selection: Binding(get: { verb == nil ? "middaw" : "reverberator" }, set: { set($0) })) {
+                Text("Middaw Reverb").tag("middaw")
+                Text("Reverberator").tag("reverberator")
+            }
+            .labelsHidden()
+            if let v = verb {
+                Button("Controls") { showing = true }.house()
+                    .popover(isPresented: $showing) { DeviceCard(device: v, trackID: nil).environmentObject(s).padding(4) }
+            }
+        }
+        .padding(8)
+        .frame(width: 150)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Theme.sunken))
+    }
+    func set(_ v: String) {
+        s.commit(v == "middaw" ? "Use Middaw Reverb" : "Use Reverberator") { p in
+            if p.returns.isEmpty { p.returns = [Return(audioFx: [])] }
+            if v == "middaw" { p.returns[0].audioFx = [] }
+            else {
+                var d = Session.makeDevice("reverberator")
+                d.sliders[2] = 100        // a return is all reverb
+                p.returns[0].audioFx = [d]
+            }
+        }
     }
 }
 

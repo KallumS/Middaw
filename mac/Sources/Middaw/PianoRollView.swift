@@ -32,6 +32,7 @@ struct EditorView: View {
                 PianoRoll()
             case .score: ScoreView()
             case .mixer: MixerView()
+            case .devices: DevicesView()
             }
         }
         .background(Theme.ground)
