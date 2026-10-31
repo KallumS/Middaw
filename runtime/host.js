@@ -287,6 +287,19 @@
       String(a.path).split('.').forEach(function (k) { v = v === undefined ? undefined : L.index(v, isNaN(+k) ? k : +k); });
       return v instanceof L.LFloat ? v.n : js(v);
     },
+    // The game's own tables that are not state: the shop, the check-in
+    // calendar, the rarities (module 'loot').
+    passConst: function (a) {
+      var P = battlePass();
+      var v = L.index(a.module === 'loot' ? P.L : P.G, String(a.name));
+      // a list that is also indexed by name (G.SHOP[id]) is its list
+      if (v instanceof L.LuaTable && L.index(v, 1) != null) {
+        var out = [];
+        for (var i = 1; L.index(v, i) != null; i++) out.push(js(L.index(v, i)));
+        return out;
+      }
+      return js(v);
+    },
     passSave: function () { return L.fromBytes(L.first(L.call(L.index(battlePass().G, 'serialize'))(passState))); },
 
     // AutoCC (the JSFX, unchanged) run over a clip's notes: the curves it

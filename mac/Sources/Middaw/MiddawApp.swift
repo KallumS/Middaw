@@ -15,6 +15,13 @@ struct MiddawApp: App {
                 .tint(Theme.accent)
         }
         .commands { MiddawCommands() }
+        Window("Battle Pass", id: "battle-pass") {
+            PassWindow()
+                .environmentObject(studio)
+                .preferredColorScheme(.dark)
+                .tint(Theme.accent)
+        }
+        .defaultSize(width: 620, height: 680)
     }
 }
 

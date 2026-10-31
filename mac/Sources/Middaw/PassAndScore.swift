@@ -17,9 +17,14 @@ final class Pass: ObservableObject {
     @Published var coins = 0
     @Published var news = false
     @Published var lastNotice = ""
-    private var started = false
+    /// What the last action in the window gave, in words.
+    @Published var lastResult = ""
+    /// Bumped whenever the game's state is read again, so the window redraws.
+    @Published var revision = 0
+    var constants: [String: Any] = [:]
+    var started = false
     private var lastInput = Date.distantPast
-    private var dirty = false
+    var dirty = false
     private let clockStart = Date()
     static let tierSeconds = 900.0
 
@@ -105,12 +110,14 @@ final class Pass: ObservableObject {
         level = max(1, Int(get("level")))
         xp = Int(get("xp"))
         coins = Int(get("coins"))
+        revision += 1
     }
 
     /// What the game wants celebrated: marked on its button, said in the
     /// status line only when that is free.
-    func drain() {
-        guard let e = Studio.shared.engines, let list = try? e.callAny("passNotices", [String: Int]()) as? [[String: Any]], !list.isEmpty else { return }
+    @discardableResult
+    func drain() -> [[String: Any]] {
+        guard let e = Studio.shared.engines, let list = try? e.callAny("passNotices", [String: Int]()) as? [[String: Any]], !list.isEmpty else { return [] }
         var said: String?
         for n in list {
             switch n["kind"] as? String {
@@ -126,6 +133,7 @@ final class Pass: ObservableObject {
             lastNotice = s
             if let a = Studio.shared.active, a.status.isEmpty { a.say(s) }
         }
+        return list
     }
 
     func save(force: Bool = false) {
@@ -140,6 +148,7 @@ struct PassButton: View {
     @ObservedObject var pass = Pass.shared
     @EnvironmentObject var studio: Studio
     @State private var open = false
+    @Environment(\.openWindow) private var openWindow
     var body: some View {
         Button { open.toggle(); pass.news = false } label: {
             HStack(spacing: 5) {
@@ -162,6 +171,7 @@ struct PassButton: View {
                 ProgressView(value: pass.tierFraction).tint(Theme.accent)
                 Text("Level \(pass.level), \(pass.xp) XP, \(pass.coins) coins.").foregroundStyle(Theme.textDim)
                 if !pass.lastNotice.isEmpty { Text(pass.lastNotice).foregroundStyle(Theme.text) }
+                Button("Quests, Loot and Shop") { open = false; openWindow(id: "battle-pass") }.house()
             }
             .padding(14).frame(width: 300)
         }

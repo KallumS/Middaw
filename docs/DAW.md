@@ -85,7 +85,7 @@ middaw/                      the composer (Python), bundled for Compose
 | **Orchestration Helper** | The inspector's About, and Browser > Guide |
 | **Instant Virtual Instrument** | Played by > Instant Instrument: drop a sound on a track and play it across the keyboard |
 | **AutoCC** | Draw Dynamics with AutoCC on any clip: its curves drawn into the clip's controller lanes |
-| **DAW Battle Pass** | The ring in the toolbar: active minutes fill the tier; saved in Application Support |
+| **DAW Battle Pass** | The ring in the toolbar: active minutes fill the tier. Its window (Window > Battle Pass): quests to claim or reroll, the check-in calendar, crates, tokens, ideas to put at the caret, gear, the shop and daily deals, stats. Saved in Application Support |
 | **Instrument Creator** | Played by > Instrument Creator: its nineteen instruments, Surprise Me, its parts |
 | **Transient Shuffler** | Played by > Transient Shuffler: drop sounds A and B; MIDI plays the result |
 | **Midi Evolver** | Devices > Add > Midi Evolver: hold a chord and it grows; Insert the Take, Record, Panic |
@@ -100,8 +100,6 @@ middaw/                      the composer (Python), bundled for Compose
   own window is replaced by its sliders.
 - **The composer in Swift.** Compose still runs the Python composer, which
   needs the Command Line Tools. Porting it is the way to drop that.
-- **Battle Pass quests, loot and the shop** have no window yet; the ring,
-  tier, level, XP and notices do.
 - **Score rests.** Starting Blocks Notation writes each note up to the next
   onset, so a rest inside a phrase prints as a longer note.
 

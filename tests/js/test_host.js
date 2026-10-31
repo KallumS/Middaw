@@ -101,3 +101,12 @@ test('an error comes back as text, not a crash', () => {
   assert.strictEqual(r.ok, false);
   assert.match(r.error, /nope/);
 });
+
+test('the Battle Pass shop and rarities are read from the game itself', () => {
+  call('passStart', { epoch: 1790000000, clock: 0 });
+  const shop = call('passConst', { name: 'SHOP' });
+  assert.ok(shop.length >= 10 && shop.every((i) => i.id && i.name && i.price > 0));
+  const rarity = call('passConst', { module: 'loot', name: 'RARITY' });
+  assert.deepStrictEqual(rarity.map((r) => r.name), ['Poor', 'Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic']);
+  assert.strictEqual(call('passConst', { name: 'CHECKIN' }).length, 7);
+});
