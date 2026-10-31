@@ -13,6 +13,11 @@ The last commit with the browser DAW in it is **`845bcd7`** on
 git checkout 845bcd7 -- web server tools/mac tests/test_server.py tests/test_style.py tests/test_mac_app.py tests/js/test_model.js
 ```
 
+A restored page should follow "Words on the page" in `CLAUDE.md`: `main`
+reworded the original single page and its server that way (`bab0926`), after
+this branch had already replaced them with the browser DAW, so the archived
+code still has the old wording ("bad content length", "generation failed").
+
 Since then the shared pieces have moved: `web/lua/` is `runtime/lua/`,
 `web/jsfx/` is `runtime/jsfx/`, `web/engines/` is `family/engines/` and
 `web/devices/` is `family/devices/`. A restored browser app needs those paths

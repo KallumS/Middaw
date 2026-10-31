@@ -53,6 +53,20 @@ the end and `docs/DAW.md`). It was a browser app until 30 October 2026;
   melodies stay in key, notes stay on an 88-key piano and what Middaw writes
   its own labeller reads back.
 
+## Words on the page
+
+The app follows Apple's writing guidelines, as the user's other apps do
+(Noterator's decision 0053): buttons, menu items and headings title-style
+("Insert the Take", "Show Its Controls"); messages, tooltips, placeholders and
+the status line in sentence case, full stop only on a complete sentence; "…"
+(one character) for work in progress and for a control that asks for more
+("Sample A…"); curly apostrophes; an error says what happened, then what to
+do, with no "we", "please" or programmer words. The example prompts and the
+composer's summary line are what the user types and what the parser read, and
+stay as they are. CLI help keeps argparse's lowercase convention. The rule was
+written for the browser page (now archived, `docs/BROWSER-DAW.md`); session log:
+`docs/sessions/2026-10-14-apple-writing.md`.
+
 ## `MusicSpec` is the contract
 
 `middaw/spec.py`. A prompt is parsed *into* a spec; a spec is rendered *into*

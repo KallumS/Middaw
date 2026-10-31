@@ -62,7 +62,7 @@
   MusicSpec.prototype.summary = function () {
     var bits = [this.key_name, this.tempo + ' BPM', this.meter[0] + '/' + this.meter[1], this.bars + ' bars',
       this.form ? this.form_name.split('_').join(' ') + ': ' + this.form : '',
-      this.progression.slice(0, 8).join(' ') + (this.progression.length > 8 ? '...' : '')];
+      this.progression.slice(0, 8).join(' ') + (this.progression.length > 8 ? '\u2026' : '')];
     var tags = this.genres.concat(this.moods);
     if (tags.length) bits.unshift(tags.join(', '));
     return bits.filter(function (b) { return b; }).join(' | ');

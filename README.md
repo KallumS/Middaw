@@ -19,7 +19,7 @@ What do you want to create?
 > a sad lo-fi piano loop in F minor at 82 bpm
 
 lofi, sad | F Minor (Natural) | 82 BPM | 4/4 | 16 bars
-Fmin7  Bbmin7  Eb7  Abmaj7   repeats every 4 bars
+Fmin7  Bbmin7  Eb7  Abmaj7   Repeats every 4 bars
 ```
 
 ## Get it

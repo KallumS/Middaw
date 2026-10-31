@@ -187,7 +187,7 @@ struct SongToolbar: ToolbarContent {
                 Text("Devices").tag(EditorTab.devices)
             }
             .pickerStyle(.segmented)
-            .help("Piano roll, score, mixer or the track's devices (M for the mixer)")
+            .help("Piano roll, score, mixer or the track’s devices (M for the mixer)")
             Button { s.inspector = s.inspector == .generate ? .track : .generate } label: { Label("Generate", systemImage: "sparkles") }
                 .help("Generate (G)")
             PassButton()

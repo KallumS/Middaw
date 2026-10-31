@@ -262,7 +262,7 @@ struct ShopPage: View {
     var body: some View {
         let shop = dict(pass.value("shop"))
         let owned = dict(dict(pass.value("inv"))["passes"])
-        Text("Today's Deals").heading()
+        Text("Today’s Deals").heading()
         ForEach(Array(list(shop["deals"]).enumerated()), id: \.offset) { i, deal in
             let drop = dict(deal["drop"]), price = Int(number(deal["price"]))
             Card {

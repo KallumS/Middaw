@@ -259,7 +259,7 @@ struct DeviceActions: View {
             }
         case "autocc":
             Button("Draw into the Clip") { s.drawDynamics() }.house().disabled(s.clip == nil)
-                .help("Write the curves AutoCC plays into the chosen clip's controller lanes")
+                .help("Write the curves AutoCC plays into the chosen clip’s controller lanes")
         default:
             EmptyView()
         }
