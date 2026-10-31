@@ -1,9 +1,9 @@
 import Foundation
 import MiddawCore
+import MiddawEngines
 
-/// Compose: Middaw's own prompt-to-music composer (`middaw/`, Python),
-/// bundled inside the app and run with the Mac's Python. It answers with the
-/// spec it understood, the chords and the five parts.
+/// Compose: Middaw's own prompt-to-music composer. It answers with the spec
+/// it understood, the chords and the five parts.
 enum Composer {
     struct Failure: Error, CustomStringConvertible { let description: String }
 
@@ -42,56 +42,14 @@ enum Composer {
         }
     }
 
-    /// The folder holding `middaw/` and `data/`: inside the app, or the repository.
-    static var root: URL? {
-        if let res = Bundle.main.resourceURL?.appendingPathComponent("composer"),
-           FileManager.default.fileExists(atPath: res.appendingPathComponent("middaw/__main__.py").path) { return res }
-        var dir = URL(fileURLWithPath: #filePath)
-        for _ in 0..<6 {
-            dir.deleteLastPathComponent()
-            if FileManager.default.fileExists(atPath: dir.appendingPathComponent("middaw/__main__.py").path) { return dir }
+    /// The composer runs in the engines' JavaScriptCore (runtime/composer/,
+    /// the port of middaw/, held to it by tests/test_composer_js.py): no
+    /// Python, nothing to install.
+    static func compose(_ prompt: String, seed: Int, engines: Engines) throws -> Composition {
+        do {
+            return try engines.compose(prompt, seed: seed)
+        } catch let e as Engines.Failure {
+            throw Failure(description: "Compose failed: \(e.description)")
         }
-        return nil
-    }
-
-    /// A Python 3.9 or newer: Homebrew's, or the Mac's own once Apple's
-    /// Command Line Tools are installed.
-    static var python: URL? {
-        for path in ["/opt/homebrew/bin/python3", "/usr/local/bin/python3", "/usr/bin/python3"] {
-            guard FileManager.default.isExecutableFile(atPath: path) else { continue }
-            if path == "/usr/bin/python3" && !FileManager.default.fileExists(atPath: "/Library/Developer/CommandLineTools/usr/bin/python3")
-                && !FileManager.default.fileExists(atPath: "/Applications/Xcode.app") { continue }
-            return URL(fileURLWithPath: path)
-        }
-        return nil
-    }
-
-    static func compose(_ prompt: String, seed: Int) throws -> Composition {
-        guard let root = root else { throw Failure(description: "Compose is missing from this copy of Middaw.") }
-        guard let py = python else {
-            throw Failure(description: "Compose needs Python, which comes with Apple's Command Line Tools: run xcode-select --install in Terminal, then try again.")
-        }
-        let out = FileManager.default.temporaryDirectory.appendingPathComponent("middaw-\(UUID().uuidString).mid")
-        defer { try? FileManager.default.removeItem(at: out) }
-        let p = Process()
-        p.executableURL = py
-        p.arguments = ["-m", "middaw", "--seed", String(seed), "--json", "-o", out.path, "--", prompt]
-        p.currentDirectoryURL = root
-        var env = ProcessInfo.processInfo.environment
-        env["PYTHONPATH"] = root.path
-        env["PYTHONDONTWRITEBYTECODE"] = "1"
-        p.environment = env
-        let stdout = Pipe(), stderr = Pipe()
-        p.standardOutput = stdout
-        p.standardError = stderr
-        try p.run()
-        let data = stdout.fileHandleForReading.readDataToEndOfFile()
-        let err = stderr.fileHandleForReading.readDataToEndOfFile()
-        p.waitUntilExit()
-        guard p.terminationStatus == 0 else {
-            let msg = String(decoding: err, as: UTF8.self).split(separator: "\n").last.map(String.init) ?? "it stopped"
-            throw Failure(description: "Compose failed: \(msg)")
-        }
-        return try JSONDecoder().decode(Composition.self, from: data)
     }
 }

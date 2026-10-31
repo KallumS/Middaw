@@ -122,7 +122,9 @@ public final class Engines {
         ctx.setObject(log, forKeyedSubscript: "__middawLog" as NSString)
         ctx.setObject(read, forKeyedSubscript: "__middawRead" as NSString)
         for file in ["runtime/polyfill.js", "runtime/lua/lua_parse.js", "runtime/lua/lua_runtime.js", "runtime/lua/lua_compile.js",
-                     "runtime/jsfx/jsfx.js", "runtime/host.js"] {
+                     "runtime/jsfx/jsfx.js", "runtime/composer/py.js", "runtime/composer/pyrandom.js",
+                     "runtime/composer/core.js", "runtime/composer/functional.js", "runtime/composer/music.js",
+                     "runtime/composer/render.js", "runtime/host.js"] {
             let url = root.appendingPathComponent(file)
             guard let src = try? String(contentsOf: url, encoding: .utf8) else {
                 throw Failure(description: "missing \(file) under \(root.path)")
@@ -133,6 +135,20 @@ public final class Engines {
         ctx.evaluateScript("MiddawHost.init(__middawRead, __middawLog);")
         if let e = loadError { throw Failure(description: e) }
         ctx.exceptionHandler = { _, _ in }
+        // The composer's vocabulary. Without it everything else still works,
+        // and Compose says what is missing.
+        let vocab = root.appendingPathComponent("data/vocab")
+        if let tags = try? String(contentsOf: vocab.appendingPathComponent("tags.json"), encoding: .utf8),
+           let drums = try? String(contentsOf: vocab.appendingPathComponent("drums.json"), encoding: .utf8) {
+            _ = try? callAny("composerLoad", ["tags": tags, "drums": drums])
+        }
+    }
+
+    /// Compose: Middaw's composer, a sentence in and the song's five parts
+    /// out - the same answer `python3 -m middaw --json` gives for the seed.
+    public func compose<T: Decodable>(_ prompt: String, seed: Int, as: T.Type = T.self) throws -> T {
+        struct Args: Encodable { let prompt: String; let seed: Int }
+        return try call("compose", Args(prompt: prompt, seed: seed))
     }
 
     /// Where the app's engines are: inside Middaw.app, or the repository

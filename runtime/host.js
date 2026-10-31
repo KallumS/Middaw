@@ -287,6 +287,20 @@
       String(a.path).split('.').forEach(function (k) { v = v === undefined ? undefined : L.index(v, isNaN(+k) ? k : +k); });
       return v instanceof L.LFloat ? v.n : js(v);
     },
+    // Middaw's composer (runtime/composer/, the port of middaw/): a sentence
+    // in, the song's five parts out, exactly as `python3 -m middaw --json`
+    // answers. composerLoad takes data/vocab/tags.json and drums.json as text.
+    composerLoad: function (a) {
+      if (!G.MiddawComposer || !G.MiddawComposer.load) throw new Error('the composer is not loaded');
+      G.MiddawComposer.load(JSON.parse(a.tags), JSON.parse(a.drums));
+      return true;
+    },
+    compose: function (a) {
+      var C = G.MiddawComposer;
+      if (!C || !C.vocabulary) throw new Error('the composer has no vocabulary');
+      return C.compose(String(a.prompt || ''), a.seed === undefined || a.seed === null ? undefined : a.seed);
+    },
+
     // The game's own tables that are not state: the shop, the check-in
     // calendar, the rarities (module 'loot').
     passConst: function (a) {

@@ -81,3 +81,60 @@ final class EnginesTests: XCTestCase {
         XCTAssertThrowsError(try engines.session("no-such-generator"))
     }
 }
+
+/// Compose without Python: runtime/composer/ in JavaScriptCore gives the
+/// answer the Python composer gives for the same prompt and seed
+/// (tools/make_swift_fixtures.py writes Python's).
+final class ComposerTests: XCTestCase {
+    struct Args: Encodable { let prompt: String; let seed: Int }
+
+    /// Equal, with numbers to within a millionth: JavaScriptCore's sine and
+    /// logarithm may differ from Python's in the last bit.
+    func same(_ a: Any, _ b: Any, _ path: String = "") -> String? {
+        switch (a, b) {
+        case (let x as [String: Any], let y as [String: Any]):
+            for k in Set(x.keys).union(y.keys).sorted() {
+                guard let xv = x[k], let yv = y[k] else { return "\(path)/\(k) missing" }
+                if let d = same(xv, yv, path + "/" + k) { return d }
+            }
+            return nil
+        case (let x as [Any], let y as [Any]):
+            guard x.count == y.count else { return "\(path): \(x.count) items against \(y.count)" }
+            for (i, (xv, yv)) in zip(x, y).enumerated() { if let d = same(xv, yv, "\(path)[\(i)]") { return d } }
+            return nil
+        case (let x as String, let y as String):
+            return x == y ? nil : "\(path): \(x) against \(y)"
+        case (let x as NSNumber, let y as NSNumber):
+            let p = x.doubleValue, q = y.doubleValue
+            return abs(p - q) <= 1e-6 * max(1, abs(p), abs(q)) ? nil : "\(path): \(p) against \(q)"
+        case (is NSNull, is NSNull):
+            return nil
+        default:
+            return "\(path): \(a) against \(b)"
+        }
+    }
+
+    func testComposeGivesWhatThePythonComposerGives() throws {
+        let engines = try Engines(root: Engines.defaultRoot())
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../MiddawCoreTests/Fixtures/compositions.json")
+        let cases = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [[String: Any]] ?? []
+        XCTAssertFalse(cases.isEmpty)
+        for c in cases {
+            let prompt = c["prompt"] as? String ?? "", seed = (c["seed"] as? NSNumber)?.intValue ?? 0
+            let got = try engines.callAny("compose", Args(prompt: prompt, seed: seed))
+            XCTAssertNil(same(got, c["answer"] ?? NSNull()), prompt)
+        }
+    }
+
+    func testTheAppReadsTheComposersAnswer() throws {
+        let engines = try Engines(root: Engines.defaultRoot())
+        struct Part: Decodable { let role: String; let notes: [Note] }
+        struct Song: Decodable { let tracks: [Part] }
+        struct Answer: Decodable { let song: Song; let summary: String }
+        let a: Answer = try engines.compose("a hopeful folk song in G major", seed: 4)
+        XCTAssertEqual(a.song.tracks.map(\.role), ["melody", "countermelody", "harmony", "bass", "drums"])
+        XCTAssertFalse(a.song.tracks[0].notes.isEmpty)
+        XCTAssertTrue(a.summary.contains("G Major"))
+    }
+}

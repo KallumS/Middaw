@@ -83,8 +83,30 @@ def songs():
     return out
 
 
+#: What the composer answers, for the app's own copy of it (runtime/composer/
+#: in JavaScriptCore) to be held to: the prompt, the seed, and Python's answer.
+COMPOSITIONS = [("a hopeful folk song in G major", 4), ("a sad lo-fi loop in F# minor", 17),
+                ("upbeat funk groove with drums", 2026), ("a romantic waltz", 9), ("12 bar blues in A", 31),
+                ("a fugue", 5), ("chill house vamp", 808)]
+
+
+def compositions():
+    from middaw.corpus.stats import load_corpus_priors
+    from middaw.prompt import parse_prompt
+    from middaw.render import render
+    priors = load_corpus_priors(ROOT / "data" / "corpus")
+    out = []
+    for prompt, seed in COMPOSITIONS:
+        spec = parse_prompt(prompt, seed=seed)
+        data = render(spec, priors=priors).to_dict()
+        data["summary"] = spec.summary()
+        out.append({"prompt": prompt, "seed": seed, "answer": data})
+    return out
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "keys.json").write_text(json.dumps(keys(), indent=1, ensure_ascii=False) + "\n")
     (OUT / "midi.json").write_text(json.dumps(songs(), indent=1, ensure_ascii=False) + "\n")
+    (OUT / "compositions.json").write_text(json.dumps(compositions(), ensure_ascii=False) + "\n")
     print("wrote", OUT)

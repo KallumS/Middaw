@@ -79,11 +79,12 @@ final class GenerateModel: ObservableObject {
     func compose(_ s: Session) {
         let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { message = "Describe some music first."; return }
+        guard let engines = Studio.shared.engines else { message = "The engines are still loading."; return }
         busy = true
         message = nil
         let seed = self.seed
         Task.detached(priority: .userInitiated) {
-            let result = Result { try Composer.compose(text, seed: seed) }
+            let result = Result { try Composer.compose(text, seed: seed, engines: engines) }
             await MainActor.run {
                 self.busy = false
                 switch result {

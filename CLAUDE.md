@@ -415,6 +415,15 @@ dataset and a liability. See `docs/DATASET.md`.
   out, errors returned as text. Node tests it (`tests/js/test_host.js`),
   XCTest tests it again through JavaScriptCore. JavaScriptCore has no
   `TextDecoder`; `runtime/polyfill.js` is loaded first for that reason.
+- **Compose is `runtime/composer/`, the composer ported to JavaScript.**
+  A change to `middaw/` is a change to `runtime/composer/` too, line for
+  line: `tests/test_composer_js.py` composes every vocabulary word and mixed
+  prompts both ways and fails on any difference, and
+  `tools/make_swift_fixtures.py` writes Python's answers for the XCTest that
+  checks the copy in JavaScriptCore. Python's `round` is half-to-even on the
+  exact value, its `%` takes the divisor's sign and its dicts keep order:
+  `runtime/composer/py.js` has each, and `pyrandom.js` is `random.Random` bit
+  for bit. Use them; JavaScript's own versions give different music.
 - **The core is held to the Python.** `tools/make_swift_fixtures.py` writes
   every key's spelling and signature, and MIDI files byte for byte; the
   Swift tests must match. Numbers in fixtures are hex floats: a JSON reader

@@ -35,8 +35,8 @@ Or build it (Xcode 16, or just its Command Line Tools):
 mac/scripts/bundle.sh           # -> mac/build/Middaw.app
 ```
 
-Compose needs Python, which comes with Apple's Command Line Tools
-(`xcode-select --install`).
+Nothing to install: Compose runs in the app (`runtime/composer/`, the
+composer below ported to JavaScript and held to it note for note).
 
 From the command line, the composer on its own:
 

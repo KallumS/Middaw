@@ -23,8 +23,7 @@ mac/scripts/bundle.sh        # -> mac/build/Middaw.app
 cd mac && swift run          # or run it straight from source
 ```
 
-Compose uses Python, which comes with Apple's Command Line Tools
-(`xcode-select --install`); everything else is in the app.
+Nothing else to install: Compose runs inside the app too.
 
 ## How it is built
 
@@ -38,7 +37,7 @@ mac/Sources/Middaw/          the app: SwiftUI windows, documents, menus
 mac/Tests/                   XCTest, run by CI on Apple silicon
 runtime/                     Lua 5.4 and EEL2, the runtimes the family's code runs in
 family/                      the family's engines and devices, unchanged
-middaw/                      the composer (Python), bundled for Compose
+runtime/composer/            the composer, ported from middaw/ (Python) for Compose
 ```
 
 - **Documents.** Each song is a macOS document: its own window, Open Recent,
@@ -50,6 +49,14 @@ middaw/                      the composer (Python), bundled for Compose
   (`runtime/lua/`, held byte for byte to the real Lua by the tests) inside
   JavaScriptCore, which every Mac has. AutoCC's Draw Dynamics runs from its
   own JSFX through `runtime/jsfx/`.
+- **Compose needs no Python.** `runtime/composer/` is the composer
+  (`middaw/`) ported line for line to JavaScript, Python's random-number
+  generator and rounding included, and it runs in the same JavaScriptCore as
+  the engines. `tests/test_composer_js.py` holds it to the Python on every
+  word of the vocabulary and on mixed prompts, seed for seed, and an XCTest
+  holds the copy in JavaScriptCore to Python's answers. The corpus priors are
+  not ported: `data/corpus` has no entries, and that test fails the day it
+  does.
 - **The family's JSFX are native devices.** `tools/jsfx2c.js` translates each
   one to C with the JS runtime's own parser and rules, and the C runs on the
   audio thread in the track's chain: MIDI effects, then the instrument, then
@@ -98,8 +105,6 @@ middaw/                      the composer (Python), bundled for Compose
   what a plug-in wrapper needs; the wrapper is not written.
 - **Devices are not bypassed or automated**, and @gfx is not run: a device's
   own window is replaced by its sliders.
-- **The composer in Swift.** Compose still runs the Python composer, which
-  needs the Command Line Tools. Porting it is the way to drop that.
 - **Score rests.** Starting Blocks Notation writes each note up to the next
   onset (`events` in `sb_notate.lua`), on purpose: a block is gated, and a
   chord that sounds nine tenths of a bar should read as a whole note. It also

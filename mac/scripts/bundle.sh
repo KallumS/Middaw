@@ -17,15 +17,12 @@ swift build -c release --arch arm64
 BIN="$(swift build -c release --arch arm64 --show-bin-path)/Middaw"
 
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/composer"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/data"
 cp "$BIN" "$APP/Contents/MacOS/Middaw"
-# The family's Lua and JSFX, the runtimes that run them, and the composer.
+# The family's Lua and JSFX, the runtimes that run them (the composer among
+# them, runtime/composer/), and the composer's vocabulary. No Python.
 cp -R "$ROOT/runtime" "$ROOT/family" "$APP/Contents/Resources/"
-cp -R "$ROOT/middaw" "$APP/Contents/Resources/composer/"
-mkdir -p "$APP/Contents/Resources/composer/data"
-cp -R "$ROOT/data/vocab" "$APP/Contents/Resources/composer/data/"
-[ -d "$ROOT/data/corpus" ] && cp -R "$ROOT/data/corpus" "$APP/Contents/Resources/composer/data/" || true
-find "$APP/Contents/Resources" -name "__pycache__" -type d -prune -exec rm -rf {} +
+cp -R "$ROOT/data/vocab" "$APP/Contents/Resources/data/"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
