@@ -8,12 +8,12 @@ in its own repository and copy it here.
 
 | File | Repository | Commit |
 | --- | --- | --- |
-| AutoCC.jsfx | KallumS/AutoCC | 0662344 |
+| AutoCC.jsfx | KallumS/AutoCC | df76ac4 |
 | Midi Evolver.jsfx | KallumS/Midi-Evolver | f56c61b |
-| MIDI_Production_Center.jsfx, mpc_*.jsfx-inc | KallumS/MIDI-Production-Center | 676ead3 |
-| Reverberator.jsfx | KallumS/Reverberator | a2e8bee |
-| Instrument-Creator.jsfx | KallumS/Instrument-Creator | 5e5f1fb |
-| TransientShuffler.jsfx | KallumS/Transient-Shuffler | 5870594 |
+| MIDI_Production_Center.jsfx, mpc_*.jsfx-inc | KallumS/MIDI-Production-Center | 29dfb37 |
+| Reverberator.jsfx | KallumS/Reverberator | 47bcf8c |
+| Instrument-Creator.jsfx | KallumS/Instrument-Creator | fd7dcdd |
+| TransientShuffler.jsfx | KallumS/Transient-Shuffler | 30ca451 |
 
 `tests/family/midi_evolver_enginecheck.py` is Midi Evolver's own engine check
 (same commit), run unchanged through `tools/jsfx_host.js`, and through

@@ -112,7 +112,10 @@ test('Instrument Creator plays a note it is sent', () => {
   assert.ok(peak > 0.01, 'silent: peak ' + peak);
 });
 
-test('AutoCC draws the arc: CC1 rises on a note, settles, and falls after it', () => {
+test('AutoCC draws the arc as 1.3 does: from the dynamic, swelling while held, back down after', () => {
+  // AutoCC's decision 0002 (fitted to Lorne Balfe's mock-ups): a note starts
+  // at the dynamic, not at 0, swells while the key is down, and falls back
+  // to the dynamic over about a second once it lifts.
   const fx = device('AutoCC.jsfx');
   fx.init(48000);
   const n = 256, cc1 = [];
@@ -122,11 +125,14 @@ test('AutoCC draws the arc: CC1 rises on a note, settles, and falls after it', (
   }
   assert.ok(cc1.length > 20, 'too few CC1 values: ' + cc1.length);
   const during = cc1.filter((c) => c[0] < 300).map((c) => c[1]);
-  const after = cc1.filter((c) => c[0] > 300).map((c) => c[1]);
-  const peak = Math.max(...during);
-  assert.ok(peak >= 90, 'CC1 never swelled: peak ' + peak);
-  assert.ok(during[during.length - 1] < peak, 'CC1 did not settle below its peak');
-  assert.ok(after.length && after[after.length - 1] < 10, 'CC1 did not fall back after the note');
+  const after = cc1.filter((c) => c[0] > 300);
+  const start = during[0], peak = Math.max(...during);
+  assert.ok(start >= 60, 'CC1 started at ' + start + ', not at the dynamic');
+  assert.ok(peak >= start + 10, 'CC1 never swelled: ' + start + ' to ' + peak);
+  for (let i = 1; i < during.length; i++) assert.ok(during[i] >= during[i - 1], 'CC1 fell while the key was held');
+  assert.ok(after.length && after[after.length - 1][1] <= start + 2, 'CC1 did not fall back after the note');
+  const seconds = (after[after.length - 1][0] - 300) * n / 48000;
+  assert.ok(seconds > 0.5 && seconds < 1.5, 'the fall took ' + seconds.toFixed(2) + ' s, not about one');
 });
 
 test('@serialize keeps a device as it was', () => {

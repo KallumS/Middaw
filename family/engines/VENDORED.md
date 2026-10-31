@@ -11,11 +11,11 @@ their own repository, then run `tools/sync_engines.sh` and update this table.
 | `midi-catalogue/` | KallumS/Midi-Catalogue | 4eb91a8 | mc_theory.lua, mc_orchestra.lua, mc_catalogue.lua |
 | `midi-suggester/` | KallumS/Midi-Suggester | 2eb02f1 | ms_theory.lua, ms_read.lua, ms_harmony.lua, ms_melody.lua |
 | `midi-variator/` | KallumS/Midi-Variator | f72b39d | mv_theory.lua, mv_vary.lua |
-| `starting-blocks/` | KallumS/Starting-Blocks-Notation | 0d46479 | sb_engine.lua (identical to Starting Blocks') |
-| `adapters/` | KallumS/Noterator | 7fe17e4 | common.lua and one adapter per engine, shared with Miderator |
-| `notation/` | KallumS/Starting-Blocks-Notation | 0d46479 | sb_notate.lua, sb_draw.lua, sb_glyphs.lua, sb_glyphs-OFL.txt (the glyphs' licence) |
-| `battle-pass/` | KallumS/DAW-Battle-Pass | 16dac8d | bp_game.lua, bp_loot.lua, bp_theory.lua |
-| `orchestration/` | KallumS/Orchestration-Helper | 3bff05f | orchestration_data.lua, orchestration_composers.lua |
+| `starting-blocks/` | KallumS/Starting-Blocks-Notation | fa54c16 | sb_engine.lua (identical to Starting Blocks') |
+| `adapters/` | KallumS/Noterator | 42c2c2f | common.lua and one adapter per engine, shared with Miderator |
+| `notation/` | KallumS/Starting-Blocks-Notation | fa54c16 | sb_notate.lua, sb_draw.lua, sb_glyphs.lua, sb_glyphs-OFL.txt (the glyphs' licence) |
+| `battle-pass/` | KallumS/DAW-Battle-Pass | c0035b5 | bp_game.lua, bp_loot.lua, bp_theory.lua |
+| `orchestration/` | KallumS/Orchestration-Helper | 8fd13a3 | orchestration_data.lua, orchestration_composers.lua |
 
 The score view engraves with `notation/` (a part as Starting Blocks Notation
 would print a block), the Battle Pass runs `battle-pass/` and saves in
@@ -26,4 +26,7 @@ Application Support, and the inspector's About and the browser's Guide read
 `tests/js/lua/engines.expected` is what the real Lua 5.4 prints when
 `tests/js/lua/engines_golden.lua` drives every adapter through every setting;
 `tests/js/test_lua.js` holds Middaw's Lua to it byte for byte. After a sync,
-regenerate it with `tools/lua_goldens.sh` (needs a Lua 5.4).
+regenerate it with `tools/lua_goldens.sh` (needs a Lua 5.4). Where no Lua 5.4
+is installed it can be written with Middaw's own (`node tools/lua.js
+tests/js/lua/engines_golden.lua family/engines/`); CI's composer job
+regenerates it with the real Lua 5.4 and fails if the two disagree.

@@ -32,21 +32,21 @@ import mpc_ui.jsfx-inc
 // --- chop ---------------------------------------------------------------------
 slider1:0<0,3,1{Transient,Grid,Equal,Markers}>-Chop Mode
 slider2:60<0,100,1>-Transient Sensitivity
-slider3:3<0,6,1{1/32,1/16,1/8,1/4,1/2,1 bar,2 bars}>-Chop Grid
+slider3:3<0,6,1{1/32,1/16,1/8,1/4,1/2,1 Bar,2 Bars}>-Chop Grid
 slider4:16<2,64,1>-Equal Slices
 slider5:1<0,1,1{Off,On}>-Include Held Notes
 
 // --- global -------------------------------------------------------------------
-slider6:0<0,1,1{Sync to project,Original tempo}>-Time Mode
+slider6:0<0,1,1{Sync to Project,Original Tempo}>-Time Mode
 slider7:50<50,75,1>-Swing
-slider8:0<0,1,1{Absolute,Relative to pad}>-Pitch Axis
+slider8:0<0,1,1{Absolute,Relative to Pad}>-Pitch Axis
 slider9:1<0,1,1{Off,On}>-Thru Unmapped Notes
 slider10:0<0,16,1{Source,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>-Output Channel
 slider11:100<0,200,1>-Master Level
 
 // --- filter -------------------------------------------------------------------
 slider12:0<0,1,1{Off,On}>-Filter
-slider13:0<0,3,1{Low-pass,High-pass,Band-pass,Notch}>-Filter Type
+slider13:0<0,3,1{Low-Pass,High-Pass,Band-Pass,Notch}>-Filter Type
 slider14:72<0,127,1>-Filter Cutoff
 slider15:0<0,24,1>-Filter Slope
 slider16:0<0,100,1>-Filter Resonance
@@ -64,14 +64,14 @@ slider25:0<-100,100,1>-EQ High Gain
 
 // --- compressor ---------------------------------------------------------------
 slider26:0<0,1,1{Off,On}>-Compressor
-slider27:0<0,2,1{Velocity,Pitch,Timing}>-Comp Target
-slider28:80<0,127,1>-Comp Threshold
-slider29:4<1,20,0.1>-Comp Ratio
-slider30:0<-64,64,1>-Comp Makeup
+slider27:0<0,2,1{Velocity,Pitch,Timing}>-Compressor Target
+slider28:80<0,127,1>-Compressor Threshold
+slider29:4<1,20,0.1>-Compressor Ratio
+slider30:0<-64,64,1>-Compressor Makeup
 
 // --- delay --------------------------------------------------------------------
 slider31:0<0,1,1{Off,On}>-Delay
-slider32:5<0,11,1{1/32,1/16T,1/16,1/16D,1/8T,1/8,1/8D,1/4T,1/4,1/4D,1/2,1 bar}>-Delay Time
+slider32:5<0,11,1{1/32,1/16T,1/16,1/16D,1/8T,1/8,1/8D,1/4T,1/4,1/4D,1/2,1 Bar}>-Delay Time
 slider33:50<0,100,1>-Delay Feedback
 slider34:4<1,16,1>-Delay Repeats
 slider35:0<-12,12,1>-Delay Pitch Step
@@ -87,7 +87,7 @@ slider42:100<5,100,1>-Stutter Gate
 slider43:0<0,128,1>-Stutter Trigger Note
 
 // --- pitch correction ---------------------------------------------------------
-slider44:0<0,1,1{Off,On}>-Pitch Correct
+slider44:0<0,1,1{Off,On}>-Pitch Correction
 slider45:0<0,11,1{C,C#,D,D#,E,F,F#,G,G#,A,A#,B}>-Key
 slider46:0<0,11,1{Major,Natural Minor,Harmonic Minor,Melodic Minor,Dorian,Phrygian,Lydian,Mixolydian,Locrian,Major Pentatonic,Minor Pentatonic,Blues}>-Scale
 slider47:0<0,3,1{Nearest,Up,Down,Remove}>-Correct Mode

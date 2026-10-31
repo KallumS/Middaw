@@ -68,5 +68,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      # The Lua goldens are what the real Lua 5.4 prints. They may be written
+      # with Middaw's own Lua where no Lua 5.4 is installed; this is where the
+      # real one checks them.
+      - name: Lua goldens from the real Lua 5.4
+        run: |
+          sudo apt-get update -q > /dev/null && sudo apt-get install -y -q lua5.4 > /dev/null
+          LUA=lua5.4 tools/lua_goldens.sh
+          git diff --stat --exit-code tests/js/lua/
       - name: Python and JavaScript tests
         run: uv python install 3.9 && uv run --no-project --python 3.9 python --version && uv run --no-project --python 3.9 python -m unittest discover -s tests -t . 2>&1 | tail -30

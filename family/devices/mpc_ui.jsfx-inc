@@ -192,51 +192,51 @@ function mpc_build_ui() local(c, y, x0, cw, rh, pg)
   // chop bar
   u_at(352, 46, 160, 24, PG_ALWAYS);
   u_vis(u_ctl(K_VALUE, T_SLIDER, 2, 0, 100, 1, 60, F_PCT, "Sensitivity", ""), 1, 0, 0);
-  u_vis(u_ctl(K_ENUM, T_SLIDER, 3, 0, 6, 1, 3, F_ENUM, "Grid", "1/32|1/16|1/8|1/4|1/2|1 bar|2 bars"), 1, 1, 0);
+  u_vis(u_ctl(K_ENUM, T_SLIDER, 3, 0, 6, 1, 3, F_ENUM, "Grid", "1/32|1/16|1/8|1/4|1/2|1 Bar|2 Bars"), 1, 1, 0);
   u_vis(u_ctl(K_VALUE, T_SLIDER, 4, 2, 64, 1, 16, F_NUM, "Slices", ""), 1, 2, 0);
   u_at(352, 46, 64, 24, PG_ALWAYS);
   u_vis(u_ctl(K_BUTTON, 0, A_CLEARMARK, 0, 0, 0, 0, 0, "Clear", ""), 1, 3, 0);
   u_at(518, 46, 118, 24, PG_ALWAYS);
-  u_ctl(K_TOGGLE, T_SLIDER, 5, 0, 1, 1, 1, F_NUM, "Held notes", "");
+  u_ctl(K_TOGGLE, T_SLIDER, 5, 0, 1, 1, 1, F_NUM, "Held Notes", "");
   u_at(642, 46, 106, 24, PG_ALWAYS);
-  u_ctl(K_BUTTON, 0, A_TOMARK, 0, 0, 0, 0, 0, "Edit as markers", "");
+  u_ctl(K_BUTTON, 0, A_TOMARK, 0, 0, 0, 0, 0, "Edit as Markers", "");
   u_at(754, 46, 138, 24, PG_ALWAYS);
-  u_ctl(K_BUTTON, 0, A_XFER, 0, 0, 0, 0, 0, "TRANSFER TO PADS", "");
+  u_ctl(K_BUTTON, 0, A_XFER, 0, 0, 0, 0, 0, "Transfer to Pads", "");
 
   // PAD page
   x0 = 424; cw = 94; rh = 78; y = 330; pg = PG_PAD;
   u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_SLICE, -1, 64, 1, 0, F_SLICE, "Slice", "");
-  u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_NOTE, 0, 127, 1, 36, F_NOTE, "Trigger note", "");
+  u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_NOTE, 0, 127, 1, 36, F_NOTE, "Trigger Note", "");
   u_at(x0 + 2 * cw, y + 20, cw - 8, 30, pg); u_ctl(K_BUTTON, 0, A_LEARN, 0, 0, 0, 0, 0, "Learn", "");
-  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_PAD, PF_MODE, 0, 3, 1, 0, F_ENUM, "Play mode", "One shot|Gate|Loop (hold)|Loop (toggle)");
+  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_PAD, PF_MODE, 0, 3, 1, 0, F_ENUM, "Play Mode", "One Shot|Gate|Loop (Hold)|Loop (Toggle)");
   u_cell(4, 0, x0, y, cw, rh, pg); u_ctl(K_TOGGLE, T_PAD, PF_POLY, 0, 1, 1, 0, F_NUM, "Poly", "");
-  u_cell(5, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_CHOKE, 0, 8, 1, 0, F_CHOKE, "Choke group", "");
+  u_cell(5, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_CHOKE, 0, 8, 1, 0, F_CHOKE, "Choke Group", "");
   u_cell(0, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_TRANS, -24, 24, 1, 0, F_SEMI, "Transpose", "");
-  u_cell(1, 1, x0, y, cw, rh, pg); u_ctl(K_TOGGLE, T_PAD, PF_TAPE, 0, 1, 1, 0, F_NUM, "Tape speed", "");
+  u_cell(1, 1, x0, y, cw, rh, pg); u_ctl(K_TOGGLE, T_PAD, PF_TAPE, 0, 1, 1, 0, F_NUM, "Tape Speed", "");
   u_cell(2, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_STRETCH, 25, 400, 1, 100, F_PCT, "Stretch", "");
-  u_cell(3, 1, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_PAD, PF_FIT, 0, 7, 1, 0, F_ENUM, "Fit to", "Off|1/2 beat|1 beat|2 beats|4 beats|8 beats|16 beats|32 beats");
+  u_cell(3, 1, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_PAD, PF_FIT, 0, 7, 1, 0, F_ENUM, "Fit To", "Off|1/2 Beat|1 Beat|2 Beats|4 Beats|8 Beats|16 Beats|32 Beats");
   u_cell(4, 1, x0, y, cw, rh, pg); u_ctl(K_TOGGLE, T_PAD, PF_REV, 0, 1, 1, 0, F_NUM, "Reverse", "");
   u_cell(5, 1, x0, y, cw, rh, pg); u_ctl(K_TOGGLE, T_PAD, PF_FX, 0, 1, 1, 1, F_NUM, "Send to FX", "");
   u_cell(0, 2, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_LEVEL, 0, 200, 1, 100, F_PCT, "Level", "");
-  u_cell(1, 2, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_VSENS, 0, 100, 1, 50, F_PCT, "Vel. sens", "");
-  u_cell(2, 2, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_PAD, PF_CHAN, 0, 16, 1, 0, F_ENUM, "Out channel", "Source|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16");
+  u_cell(1, 2, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_PAD, PF_VSENS, 0, 100, 1, 50, F_PCT, "Velocity Sensitivity", "");
+  u_cell(2, 2, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_PAD, PF_CHAN, 0, 16, 1, 0, F_ENUM, "Output Channel", "Source|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16");
 
   // FX pages
   x0 = 570; cw = 104; rh = 84; y = 352;
   pg = PG_FX + 0;  // filter
-  u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 13, 0, 3, 1, 0, F_ENUM, "Type", "Low-pass|High-pass|Band-pass|Notch");
+  u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 13, 0, 3, 1, 0, F_ENUM, "Type", "Low-Pass|High-Pass|Band-Pass|Notch");
   u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 14, 0, 127, 1, 72, F_AXIS, "Cutoff", "");
   u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 15, 0, 24, 1, 0, F_SLOPE, "Slope", "");
   u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 16, 0, 100, 1, 0, F_PCT, "Resonance", "");
   u_cell(0, 1, x0, y, cw, rh, pg); u_vis(u_ctl(K_KNOB, T_SLIDER, 17, 1, 48, 1, 12, F_ST, "Width", ""), 13, 2, 1);
   pg = PG_FX + 1;  // EQ
-  u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 19, 0, 127, 1, 48, F_AXIS, "Low note", "");
-  u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 20, -100, 100, 1, 0, F_GAIN, "Low gain", "");
-  u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 21, 0, 127, 1, 64, F_AXIS, "Mid note", "");
-  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 22, -100, 100, 1, 0, F_GAIN, "Mid gain", "");
-  u_cell(0, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 23, 1, 48, 1, 12, F_ST, "Mid width", "");
-  u_cell(1, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 24, 0, 127, 1, 80, F_AXIS, "High note", "");
-  u_cell(2, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 25, -100, 100, 1, 0, F_GAIN, "High gain", "");
+  u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 19, 0, 127, 1, 48, F_AXIS, "Low Note", "");
+  u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 20, -100, 100, 1, 0, F_GAIN, "Low Gain", "");
+  u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 21, 0, 127, 1, 64, F_AXIS, "Mid Note", "");
+  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 22, -100, 100, 1, 0, F_GAIN, "Mid Gain", "");
+  u_cell(0, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 23, 1, 48, 1, 12, F_ST, "Mid Width", "");
+  u_cell(1, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 24, 0, 127, 1, 80, F_AXIS, "High Note", "");
+  u_cell(2, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 25, -100, 100, 1, 0, F_GAIN, "High Gain", "");
   pg = PG_FX + 2;  // compressor
   u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 27, 0, 2, 1, 0, F_ENUM, "Target", "Velocity|Pitch|Timing");
   u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 28, 0, 127, 1, 80, F_THR, "Threshold", "");
@@ -246,33 +246,33 @@ function mpc_build_ui() local(c, y, x0, cw, rh, pg)
   u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 32, 0, 11, 1, 5, F_ENUM, "Time", "1/32|1/16T|1/16|1/16D|1/8T|1/8|1/8D|1/4T|1/4|1/4D|1/2|1 bar");
   u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 33, 0, 100, 1, 50, F_PCT, "Feedback", "");
   u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 34, 1, 16, 1, 4, F_NUM, "Repeats", "");
-  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 35, -12, 12, 1, 0, F_SEMI, "Pitch step", "");
+  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 35, -12, 12, 1, 0, F_SEMI, "Pitch Step", "");
   u_cell(0, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 36, 0, 100, 1, 50, F_PCT, "Mix", "");
   pg = PG_FX + 4;  // stutter
   u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 38, 0, 7, 1, 3, F_ENUM, "Size", "1/64|1/32|1/16T|1/16|1/8T|1/8|1/4|1/2");
   u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 39, 0, 32, 1, 0, F_REPS, "Repeats", "");
   u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 40, 0, 100, 1, 0, F_PCT, "Decay", "");
-  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 41, -12, 12, 1, 0, F_SEMI, "Pitch step", "");
+  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 41, -12, 12, 1, 0, F_SEMI, "Pitch Step", "");
   u_cell(0, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 42, 5, 100, 1, 100, F_PCT, "Gate", "");
-  u_cell(1, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 43, 0, 128, 1, 0, F_TRIG, "Trigger note", "");
-  u_at(x0 + 2 * cw, y + rh + 12, 2 * cw - 8, 44, pg); u_ctl(K_MOMENT, T_SLIDER, 37, 0, 1, 1, 0, F_NUM, "HOLD TO STUTTER", "");
+  u_cell(1, 1, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 43, 0, 128, 1, 0, F_TRIG, "Trigger Note", "");
+  u_at(x0 + 2 * cw, y + rh + 12, 2 * cw - 8, 44, pg); u_ctl(K_MOMENT, T_SLIDER, 37, 0, 1, 1, 0, F_NUM, "Hold to Stutter", "");
   pg = PG_FX + 5;  // pitch correction
   u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 45, 0, 11, 1, 0, F_ENUM, "Key", "C|C#|D|D#|E|F|F#|G|G#|A|A#|B");
-  u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 46, 0, 11, 1, 0, F_ENUM, "Scale", "Major|Natural minor|Harmonic minor|Melodic minor|Dorian|Phrygian|Lydian|Mixolydian|Locrian|Major pentatonic|Minor pentatonic|Blues");
-  u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 47, 0, 3, 1, 0, F_ENUM, "Correct to", "Nearest|Up|Down|Remove");
+  u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 46, 0, 11, 1, 0, F_ENUM, "Scale", "Major|Natural Minor|Harmonic Minor|Melodic Minor|Dorian|Phrygian|Lydian|Mixolydian|Locrian|Major Pentatonic|Minor Pentatonic|Blues");
+  u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 47, 0, 3, 1, 0, F_ENUM, "Correct To", "Nearest|Up|Down|Remove");
 
   // SETUP page
   x0 = 424; cw = 94; rh = 84; y = 330; pg = PG_SETUP;
-  u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 6, 0, 1, 1, 0, F_ENUM, "Time mode", "Sync to project|Original tempo");
+  u_cell(0, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 6, 0, 1, 1, 0, F_ENUM, "Time Mode", "Sync|Original");
   u_cell(1, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 7, 50, 75, 1, 50, F_PCT, "Swing", "");
-  u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 8, 0, 1, 1, 0, F_ENUM, "Pitch axis", "Absolute|Relative to pad");
-  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_TOGGLE, T_SLIDER, 9, 0, 1, 1, 1, F_NUM, "Thru other notes", "");
-  u_cell(4, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 10, 0, 16, 1, 0, F_ENUM, "Out channel", "Source|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16");
-  u_cell(5, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 11, 0, 200, 1, 100, F_PCT, "Master level", "");
-  u_at(424, 420, 130, 28, pg); u_ctl(K_BUTTON, 0, A_RESETPAD, 0, 0, 0, 0, 0, "Reset this pad", "");
-  u_at(562, 420, 130, 28, pg); u_ctl(K_BUTTON, 0, A_RESETALL, 0, 0, 0, 0, 0, "Reset all pads", "");
-  u_at(700, 420, 130, 28, pg); u_ctl(K_BUTTON, 0, A_MAPCHROM, 0, 0, 0, 0, 0, "Pad notes from 36", "");
-  u_at(838, 420, 142, 28, pg); u_ctl(K_BUTTON, 0, A_DEMO, 0, 0, 0, 0, 0, "Load demo phrase", "");
+  u_cell(2, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 8, 0, 1, 1, 0, F_ENUM, "Pitch Axis", "Absolute|Relative");
+  u_cell(3, 0, x0, y, cw, rh, pg); u_ctl(K_TOGGLE, T_SLIDER, 9, 0, 1, 1, 1, F_NUM, "Thru Other Notes", "");
+  u_cell(4, 0, x0, y, cw, rh, pg); u_ctl(K_ENUM, T_SLIDER, 10, 0, 16, 1, 0, F_ENUM, "Output Channel", "Source|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16");
+  u_cell(5, 0, x0, y, cw, rh, pg); u_ctl(K_KNOB, T_SLIDER, 11, 0, 200, 1, 100, F_PCT, "Master Level", "");
+  u_at(424, 420, 130, 28, pg); u_ctl(K_BUTTON, 0, A_RESETPAD, 0, 0, 0, 0, 0, "Reset This Pad", "");
+  u_at(562, 420, 130, 28, pg); u_ctl(K_BUTTON, 0, A_RESETALL, 0, 0, 0, 0, 0, "Reset All Pads", "");
+  u_at(700, 420, 130, 28, pg); u_ctl(K_BUTTON, 0, A_MAPCHROM, 0, 0, 0, 0, 0, "Pad Notes from 36", "");
+  u_at(838, 420, 142, 28, pg); u_ctl(K_BUTTON, 0, A_DEMO, 0, 0, 0, 0, 0, "Load Demo Phrase", "");
 );
 
 // ---------------------------------------------------------------------------
@@ -314,23 +314,23 @@ function u_fmt(dst, c, v) local(f)
   f = c[C_FMT];
   f == F_NOTE ? u_note_name(dst, v) :
   f == F_PCT ? sprintf(dst, "%d%%", v) :
-  f == F_SEMI ? ( v > 0 ? sprintf(dst, "+%d st", v) : sprintf(dst, "%d st", v); ) :
+  f == F_SEMI ? ( v > 0 ? sprintf(dst, "+%d semitones", v) : sprintf(dst, "%d semitones", v); ) :
   f == F_ENUM ? u_field(dst, c[C_OPTS], v | 0) :
   f == F_SLICE ? ( v < 0 ? strcpy(dst, "Whole phrase") : v >= MAX_SLICES ? strcpy(dst, "None") : sprintf(dst, "Slice %d", v + 1); ) :
   f == F_CHOKE ? ( v <= 0 ? strcpy(dst, "Off") : sprintf(dst, "Group %d", v); ) :
   f == F_TRIG ? ( v <= 0 ? strcpy(dst, "Off") : u_note_name(dst, v - 1); ) :
-  f == F_RATIO ? sprintf(dst, "%.1f : 1", v) :
+  f == F_RATIO ? sprintf(dst, "%.1f:1", v) :
   f == F_AXIS ? ( slider8 ? sprintf(dst, "%d%%", floor(v / 127 * 100 + 0.5)) : u_note_name(dst, v); ) :
   f == F_GAIN ? ( v > 0 ? sprintf(dst, "+%d%%", v) : sprintf(dst, "%d%%", v); ) :
   f == F_THR ? (
-    slider27 == 0 ? sprintf(dst, "vel %d", v) :
-    slider27 == 1 ? sprintf(dst, "%d st", floor(v * 24 / 127 + 0.5)) :
+    slider27 == 0 ? sprintf(dst, "velocity %d", v) :
+    slider27 == 1 ? sprintf(dst, "%d semitones", floor(v * 24 / 127 + 0.5)) :
     sprintf(dst, "%d%%", floor(v / 127 * 100 + 0.5));
   ) :
   f == F_REPS ? ( v <= 0 ? strcpy(dst, "While held") : sprintf(dst, "%d", v); ) :
-  f == F_SLOPE ? ( v <= 0 ? strcpy(dst, "Hard") : sprintf(dst, "%d st", v); ) :
+  f == F_SLOPE ? ( v <= 0 ? strcpy(dst, "Hard") : sprintf(dst, "%d semitones", v); ) :
   f == F_VEL ? ( v > 0 ? sprintf(dst, "+%d", v) : sprintf(dst, "%d", v); ) :
-  f == F_ST ? sprintf(dst, "%d st", v) :
+  f == F_ST ? sprintf(dst, "%d semitones", v) :
   sprintf(dst, "%d", v);
   dst;
 );
@@ -407,7 +407,7 @@ function u_draw_ctl(c) local(x, y, w, h, v, f, cx, cy, r, a, a0, compact, hot, o
       hot ? u_col(0.7, 0.7, 0.75) : u_col(0.32, 0.32, 0.35);
       u_box(x + w / 2 - 22, y + 22, 44, 28);
       gfx_setfont(2); on ? u_col(1, 1, 1) : u_col(0.55, 0.55, 0.6);
-      u_text(x, y + 22, w, 28, on ? "ON" : "OFF", 1 | 4);
+      u_text(x, y + 22, w, 28, on ? "On" : "Off", 1 | 4);
     );
   ) : c[C_KIND] == K_BUTTON || c[C_KIND] == K_MOMENT ? (
     on = (c[C_KIND] == K_MOMENT && v >= 0.5) || (c[C_IDX] == A_LEARN && c[C_KIND] == K_BUTTON && ui_learn == ui_pad + 1) ||
@@ -416,7 +416,7 @@ function u_draw_ctl(c) local(x, y, w, h, v, f, cx, cy, r, a, a0, compact, hot, o
     u_rect(x, y, w, h);
     u_col(0.36, 0.36, 0.40); u_box(x, y, w, h);
     gfx_setfont(c[C_KIND] == K_MOMENT ? 2 : 1); u_col(0.95, 0.95, 0.97);
-    u_text(x, y, w, h, on && c[C_IDX] == A_LEARN && c[C_KIND] == K_BUTTON ? "Press a key..." : c[C_LABEL], 1 | 4);
+    u_text(x, y, w, h, on && c[C_IDX] == A_LEARN && c[C_KIND] == K_BUTTON ? "Press a Key…" : c[C_LABEL], 1 | 4);
   );
 );
 
@@ -461,7 +461,7 @@ function u_draw_header() local(blink)
   u_col(0.07, 0.07, 0.08); u_rect(0, 0, UI_W, 40);
   u_col(0.85, 0.22, 0.20); u_rect(12, 12, 6, 16);
   gfx_setfont(3); u_col(0.95, 0.95, 0.97);
-  u_text(24, 0, 260, 40, "MIDI PRODUCTION CENTER", 4);
+  u_text(24, 0, 260, 40, "MIDI Production Center", 4);
   gfx_setfont(1);
   time_precise() - u_msg_t < 5 && strlen(#u_msg) ? (
     u_col(1.0, 0.75, 0.35);
@@ -471,25 +471,25 @@ function u_draw_header() local(blink)
     sprintf(#u_hdr, "%s", #src_name);
     u_text(262, 4, 258, 18, #u_hdr, 4);
     u_col(0.55, 0.56, 0.60);
-    sprintf(#u_hdr, "%d notes - %.2f beats - %d BPM - %d/%d", src_n, src_len, src_tempo, src_tsn, src_tsd);
+    sprintf(#u_hdr, "%d notes · %.2f beats · %d BPM · %d/%d", src_n, src_len, src_tempo, src_tsn, src_tsd);
     u_text(262, 20, 258, 16, #u_hdr, 4);
   );
-  u_led(524, "AUDIO", u_engine_ok(), 0.25, 0.85, 0.35);
-  u_led(560, "IN", time_precise() - u_in_t < 0.15, 1.0, 0.75, 0.25);
-  u_led(596, "OUT", time_precise() - u_out_t < 0.15, 1.0, 0.75, 0.25);
+  u_led(524, "Audio", u_engine_ok(), 0.25, 0.85, 0.35);
+  u_led(560, "In", time_precise() - u_in_t < 0.15, 1.0, 0.75, 0.25);
+  u_led(596, "Out", time_precise() - u_out_t < 0.15, 1.0, 0.75, 0.25);
   gfx_setfont(2);
   blink = cap_rec && (time_precise() * 2 - floor(time_precise() * 2) < 0.5);
-  u_btn(630, 8, 104, 24, cap_rec ? "RECORDING" : cap_armed ? "SAMPLE: ARMED" : "SAMPLE", cap_armed && !blink);
-  u_btn(740, 8, 112, 24, "LOAD ITEM", 0);
-  u_btn(858, 8, 64, 24, "PANIC", 0);
+  u_btn(630, 8, 104, 24, cap_rec ? "Recording" : cap_armed ? "Sample (Armed)" : "Sample", cap_armed && !blink);
+  u_btn(740, 8, 112, 24, "Load Item", 0);
+  u_btn(858, 8, 64, 24, "Panic", 0);
   u_col(0.55, 0.56, 0.60); gfx_setfont(4);
-  u_text(926, 8, 66, 24, u_loader_alive() ? "loader: on" : "loader: off", 1 | 4);
+  u_text(926, 8, 66, 24, u_loader_alive() ? "Loader on" : "Loader off", 1 | 4);
 );
 
 function u_draw_chopbar() local(i, x, n)
 (
   gfx_setfont(2); u_col(0.62, 0.63, 0.67);
-  u_text(12, 46, 44, 24, "CHOP", 4);
+  u_text(12, 46, 44, 24, "Chop", 4);
   i = 0;
   loop(4,
     x = 56 + i * 72;
@@ -597,19 +597,19 @@ function u_draw_roll() local(lo, hi, i, a, x, y, w, rowh, S, E, bar, b, p, vv, p
     );
   ) : (
     gfx_setfont(5); u_col(0.6, 0.6, 0.65);
-    u_text(RX, RY, RW, RH, "No phrase loaded - press SAMPLE or LOAD ITEM", 1 | 4);
+    u_text(RX, RY, RW, RH, "No phrase loaded — click Sample or Load Item", 1 | 4);
   );
 
   slider1 == 3 && !cap_armed ? (
     gfx_setfont(4); u_cola(0, 0, 0, 0.6); u_rect(RX + RW - 290, RY + RH - 16, 290, 16);
     u_col(1.0, 0.8, 0.45);
-    u_text(RX + RW - 286, RY + RH - 16, 282, 16, "Double-click: add marker   Drag: move   Right-click: delete", 4);
+    u_text(RX + RW - 286, RY + RH - 16, 282, 16, "Double-click to add a marker · Drag to move · Right-click to delete", 4);
   );
   cap_armed ? (
     u_cola(0.5, 0.05, 0.05, 0.55); u_rect(RX, RY + RH - 26, RW, 26);
     gfx_setfont(2); u_col(1, 1, 1);
-    cap_rec ? sprintf(#u_hdr, "RECORDING  -  %d notes so far. Stop REAPER to finish.", cap_n) :
-      strcpy(#u_hdr, "SAMPLE ARMED  -  press play in REAPER; MIDI arriving on this track is recorded. Click SAMPLE again to cancel.");
+    cap_rec ? sprintf(#u_hdr, "Recording — %d notes so far. Stop REAPER to finish.", cap_n) :
+      strcpy(#u_hdr, "Sample armed — press Play in REAPER and MIDI arriving on this track is recorded. Click Sample again to cancel.");
     u_text(RX, RY + RH - 26, RW, 26, #u_hdr, 1 | 4);
   );
   u_col(0.30, 0.30, 0.33); u_box(RX, RY, RW, RH);
@@ -630,7 +630,7 @@ function u_draw_pads() local(k, p, si, has, lit, hit, n, x)
     u_rect(x, 266, 92, 24);
     u_col(0.34, 0.34, 0.38); u_box(x, 266, 92, 24);
     gfx_setfont(2); u_col(0.95, 0.95, 0.97);
-    u_text(x, 266, 92, 24, k == 0 ? "BANK A" : k == 1 ? "BANK B" : k == 2 ? "BANK C" : "BANK D", 1 | 4);
+    u_text(x, 266, 92, 24, k == 0 ? "Bank A" : k == 1 ? "Bank B" : k == 2 ? "Bank C" : "Bank D", 1 | 4);
     k += 1;
   );
   k = 0;
@@ -651,7 +651,7 @@ function u_draw_pads() local(k, p, si, has, lit, hit, n, x)
     gfx_setfont(2); u_pad_name(#u_hdr, p);
     u_text(u_padx + 6, u_pady + 8, PW - 8, 14, #u_hdr, 0);
     gfx_setfont(5);
-    !has ? strcpy(#u_hdr, "-") : si < 0 ? strcpy(#u_hdr, "ALL") : sprintf(#u_hdr, "S%d", si + 1);
+    !has ? strcpy(#u_hdr, "—") : si < 0 ? strcpy(#u_hdr, "All") : sprintf(#u_hdr, "S%d", si + 1);
     u_text(u_padx, u_pady + 22, PW, 34, #u_hdr, 1 | 4);
     gfx_setfont(4);
     u_note_name(#u_hdr, PAD[p * P_ST + PF_NOTE]);
@@ -673,7 +673,7 @@ function u_draw_tabs() local(i, x)
     u_rect(x, TY, 106, 24);
     ui_tab == i ? ( u_col(0.85, 0.22, 0.20); u_rect(x, TY + 22, 106, 2); );
     gfx_setfont(2); u_col(0.95, 0.95, 0.97);
-    u_text(x, TY, 106, 24, i == 0 ? "PAD" : i == 1 ? "FX" : "SETUP", 1 | 4);
+    u_text(x, TY, 106, 24, i == 0 ? "Pad" : i == 1 ? "FX" : "Setup", 1 | 4);
     i += 1;
   );
   u_col(0.14, 0.14, 0.16); u_rect(TX, TY + 26, TW, UI_H - TY - 34);
@@ -713,22 +713,22 @@ function u_draw_padpage() local(a, si)
   gfx_setfont(1); u_col(0.62, 0.63, 0.67);
   a = PAD + ui_pad * P_ST; si = a[PF_SLICE];
   mpc_pad_has(ui_pad) ? (
-    sprintf(#u_hdr, "%s  -  beats %.2f to %.2f  -  %d notes",
+    sprintf(#u_hdr, "%s · beats %.2f–%.2f · %d notes",
       si < 0 ? "Whole phrase" : sprintf(#u_t2, "Slice %d", si + 1),
       a[PF_S], a[PF_E], mpc_count_in(a[PF_S], a[PF_E]));
-  ) : strcpy(#u_hdr, "Empty - press TRANSFER TO PADS, or drag a slice onto a pad");
+  ) : strcpy(#u_hdr, "Empty — click Transfer to Pads, or drag a slice onto a pad");
   u_text(500, 298, 480, 28, #u_hdr, 4);
   u_draw_minilist(424, 570, 556, 76);
 );
 
 function u_fx_on_slider(k) ( k == 0 ? 12 : k == 1 ? 18 : k == 2 ? 26 : k == 3 ? 31 : k == 4 ? 37 : 44; );
-function u_fx_name(k) ( k == 0 ? "FILTER" : k == 1 ? "EQ" : k == 2 ? "COMPRESSOR" : k == 3 ? "DELAY" : k == 4 ? "STUTTER" : "PITCH CORRECT"; );
+function u_fx_name(k) ( k == 0 ? "Filter" : k == 1 ? "EQ" : k == 2 ? "Compressor" : k == 3 ? "Delay" : k == 4 ? "Stutter" : "Pitch Correction"; );
 function u_fx_help(k)
 (
   k == 0 ? "Removes notes past the cutoff pitch. Slope fades them out instead." :
-  k == 1 ? "Raises or lowers velocity of notes in the low, mid and high ranges." :
+  k == 1 ? "Raises or lowers the velocity of notes in the low, mid and high ranges." :
   k == 2 ? "Pulls velocities, pitches or timing closer together." :
-  k == 3 ? "Repeats each note, fading by the feedback. Pitch step shifts repeats." :
+  k == 3 ? "Repeats each note, fading by the feedback. Pitch Step shifts the repeats." :
   k == 4 ? "Repeats a short window of what the pads play while engaged." :
   "Snaps notes to a key and scale.";
 );
@@ -748,37 +748,38 @@ function u_draw_fxpage() local(k, y, on, s)
     gfx_setfont(2); u_col(0.95, 0.95, 0.97);
     u_text(FL_X + 32, y + 4, FL_W - 36, 20, u_fx_name(k), 4);
     gfx_setfont(4); u_col(0.55, 0.56, 0.60);
-    u_text(FL_X + 32, y + 22, FL_W - 36, 16, on ? "on" : "off", 4);
+    u_text(FL_X + 32, y + 22, FL_W - 36, 16, on ? "On" : "Off", 4);
     k += 1;
   );
   gfx_setfont(4); u_col(0.45, 0.46, 0.50);
-  u_text(FL_X + 8, 590, FL_W - 12, 50, "Chain runs top to bottom (stutter acts on the pads)", 0);
+  u_text(FL_X + 8, 590, FL_W - 12, 14, "Runs top to bottom.", 0);
+  u_text(FL_X + 8, 604, FL_W - 12, 14, "Stutter acts on the pads.", 0);
 
   gfx_setfont(3); u_col(0.95, 0.95, 0.97);
   u_text(570, 298, 300, 26, u_fx_name(ui_fx), 4);
   gfx_setfont(1); u_col(0.62, 0.63, 0.67);
   u_text(570, 322, 410, 20, u_fx_help(ui_fx), 4);
   s = u_fx_on_slider(ui_fx);
-  u_btn(900, 300, 80, 22, slider(s) >= 0.5 ? "ON" : "OFF", slider(s) >= 0.5);
+  u_btn(900, 300, 80, 22, slider(s) >= 0.5 ? "On" : "Off", slider(s) >= 0.5);
 );
 
 function u_draw_setuppage()
 (
   gfx_setfont(3); u_col(0.95, 0.95, 0.97);
-  u_text(424, 298, 300, 28, "SETUP", 4);
+  u_text(424, 298, 300, 28, "Setup", 4);
   gfx_setfont(2); u_col(0.95, 0.95, 0.97);
-  u_text(424, 462, 556, 16, "Getting a phrase in", 0);
+  u_text(424, 462, 556, 16, "Getting a Phrase In", 0);
   gfx_setfont(1); u_col(0.70, 0.71, 0.75);
-  u_text(424, 480, 556, 16, "SAMPLE: arm it, press play in REAPER - MIDI arriving on this track is recorded.", 0);
-  u_text(424, 496, 556, 16, "LOAD ITEM: select a MIDI item, click LOAD ITEM (needs the MPC Loader script running).", 0);
-  u_text(424, 512, 556, 16, "Or select the item and run 'MPC - Load selected MIDI item' from the Actions list.", 0);
+  u_text(424, 480, 556, 16, "Sample: click it, then press Play in REAPER — MIDI arriving on this track is recorded.", 0);
+  u_text(424, 496, 556, 16, "Load Item: select a MIDI item and click Load Item (the MPC Loader script must be running).", 0);
+  u_text(424, 512, 556, 16, "Or select the item and run “MPC - Load selected MIDI item” from the Actions list.", 0);
   gfx_setfont(2); u_col(0.95, 0.95, 0.97);
   u_text(424, 536, 556, 16, "Playing", 0);
   gfx_setfont(1); u_col(0.70, 0.71, 0.75);
   u_text(424, 554, 556, 16, "Pads answer MIDI notes: bank A starts at 36 (C2), B at 52 (E3), C at 68 (G#4), D at 84 (C6).", 0);
-  u_text(424, 570, 556, 16, "TRANSFER TO PADS fills this bank with the chops; or drag one slice onto a pad.", 0);
-  u_text(424, 586, 556, 16, "Click a slice to hear it. Ctrl/Cmd-drag knobs for fine moves, double-click to reset.", 0);
-  sprintf(#u_hdr, "Instance ID %d  (used by the loader script)", slider48);
+  u_text(424, 570, 556, 16, "Transfer to Pads fills this bank with the chops, or drag one slice onto a pad.", 0);
+  u_text(424, 586, 556, 16, "Click a slice to hear it. Command-drag a knob for fine steps; double-click to reset it.", 0);
+  sprintf(#u_hdr, "Instance ID %d (used by the loader script)", slider48);
   gfx_setfont(4); u_col(0.45, 0.46, 0.50);
   u_text(424, 620, 556, 16, #u_hdr, 0);
 );
@@ -800,7 +801,7 @@ function u_action(id) local(i, n)
     loop(slice_n, n < MAX_MARK ? ( MARK_UI[n] = SLICE[i * SL_ST + SF_S]; n += 1; ); i += 1; );
     mark_ui_n = n; mark_rev += 1;
     slider1 = 3; mpc_touch(1, 0);
-    u_changed(); u_msg("Chops copied to markers - drag them to fine-tune");
+    u_changed(); u_msg("Chops copied to markers — drag to adjust");
   ) : id == A_CLEARMARK ? (
     mark_ui_n = 0; mark_rev += 1; u_changed();
   ) : id == A_RESETPAD ? (
@@ -809,7 +810,7 @@ function u_action(id) local(i, n)
     mpc_pads_default(); u_changed(); u_msg("All 64 pads reset");
   ) : id == A_MAPCHROM ? (
     i = 0; loop(MAX_PADS, PAD[i * P_ST + PF_NOTE] = min(36 + i, 127); i += 1; );
-    u_changed(); u_msg("Pad notes reset: note 36 upwards");
+    u_changed(); u_msg("Pad notes reset to start at note 36");
   ) : id == A_DEMO ? (
     ui_req_demo = 1; u_changed();
   ) : id == A_XFER ? (
@@ -915,9 +916,9 @@ function u_press() local(c, i, now, p, si, b, dbl)
     u_loader_alive() ? (
       gmem[20] = slider48; u_req_seq = gmem[21] + 1; gmem[21] = u_req_seq;
       u_wait_ack = 1; u_ack_prev = gmem[10];
-      u_msg("Loading the selected MIDI item...");
+      u_msg("Loading the selected MIDI item…");
     ) : (
-      u_msg("Start the 'MPC - Loader' script first (see SETUP)");
+      u_msg("Start the MPC Loader script (see Setup)");
     );
   ) : u_in(858, 8, 64, 24) ? (
     ui_req_panic = 1;
@@ -932,8 +933,8 @@ function u_press() local(c, i, now, p, si, b, dbl)
     u_select_pad(p);
     u_pad_xy(p % 16);
     u_audition(p, floor(127 - (u_my - u_pady) / PH * 87));
-    !mpc_pad_has(p) ? u_msg("This pad is empty - press TRANSFER TO PADS") :
-    !u_engine_ok() ? u_msg("REAPER's audio isn't running - see 'No sound?' in the README");
+    !mpc_pad_has(p) ? u_msg("This pad is empty — click Transfer to Pads") :
+    !u_engine_ok() ? u_msg("Audio is off — see “No sound?” in the README");
   ) : ui_tab == 1 && u_in(FL_X, 298, FL_W, 6 * 48) ? (
     i = mpc_clamp(floor((u_my - 298) / 48), 0, 5);
     u_mx < FL_X + 30 ? (
@@ -955,7 +956,7 @@ function u_press() local(c, i, now, p, si, b, dbl)
       si >= 0 ? (
         u_drag_slice = si + 1;
         p = u_pad_for_slice(si);
-        p >= 0 ? ( u_select_pad(p); u_audition(p, 110); ) : u_msg("Drag this slice onto a pad, or press TRANSFER TO PADS");
+        p >= 0 ? ( u_select_pad(p); u_audition(p, 110); ) : u_msg("Drag this slice onto a pad to play it");
       );
     );
   );
@@ -988,7 +989,7 @@ function u_release() local(c, p, si)
     si = u_drag_slice - 1;
     p >= 0 ? (
       mpc_pad_set_slice(p, si); u_select_pad(p); u_changed();
-      u_pad_name(#u_t2, p); sprintf(#u_hdr, "Slice %d -> pad %s", si + 1, #u_t2); u_msg(#u_hdr);
+      u_pad_name(#u_t2, p); sprintf(#u_hdr, "Slice %d → pad %s", si + 1, #u_t2); u_msg(#u_hdr);
     );
   );
   u_aud_pad > 0 ? ( ui_aud_off = u_aud_pad; u_aud_pad = 0; );
@@ -1000,7 +1001,7 @@ function u_rclick() local(p, i, r)
   gfx_x = mouse_x; gfx_y = mouse_y;
   (p = u_pad_at()) >= 0 ? (
     u_select_pad(p);
-    r = gfx_showmenu("Copy pad settings|Paste pad settings|Reset pad||Play whole phrase|Mute (no slice)");
+    r = gfx_showmenu("Copy Pad Settings|Paste Pad Settings|Reset Pad||Play Whole Phrase|Mute (No Slice)");
     r == 1 ? memcpy(PADCLIP, PAD + p * P_ST, P_ST);
     r == 2 ? ( i = PAD[p * P_ST + PF_NOTE]; memcpy(PAD + p * P_ST, PADCLIP, P_ST); PAD[p * P_ST + PF_NOTE] = i; u_changed(); );
     r == 3 ? ( mpc_pad_default(p); u_changed(); );
@@ -1061,9 +1062,9 @@ function mpc_ui_frame() local(sc, lb, rb, i, c)
   );
   u_wait_ack && gmem[23] == u_req_seq && gmem[22] > 0 ? (
     u_wait_ack = 0;
-    gmem[22] == 1 ? u_msg("Select a MIDI item in REAPER first") :
+    gmem[22] == 1 ? u_msg("Select a MIDI item, then click Load Item") :
     gmem[22] == 2 ? u_msg("The selected item has no notes") :
-    u_msg("The loader couldn't find this plug-in");
+    u_msg("The loader couldn’t find this plug-in");
   );
 
   // input
