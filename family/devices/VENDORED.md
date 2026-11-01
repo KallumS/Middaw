@@ -13,6 +13,8 @@ in its own repository and copy it here.
 | MIDI_Production_Center.jsfx, mpc_*.jsfx-inc | KallumS/MIDI-Production-Center | 29dfb37 |
 | Reverberator.jsfx | KallumS/Reverberator | 47bcf8c |
 | Instrument-Creator.jsfx | KallumS/Instrument-Creator | fd7dcdd |
+| Midular.jsfx, midular_*.jsfx-inc | KallumS/Midular | 559e187 |
+| ReeseBasser.jsfx | KallumS/Reese-Basser | d72d2b4 |
 | TransientShuffler.jsfx | KallumS/Transient-Shuffler | 30ca451 |
 
 `tests/family/midi_evolver_enginecheck.py` is Midi Evolver's own engine check
@@ -24,3 +26,9 @@ run in six, one of the "nothing hanging" checks used to fail with a note-off
 "with nothing sounding". A note struck in a block's last sample and ended in
 the same block had its note-off clamped onto its note-on's offset and sorted
 first. The engine check now sweeps sixty locked variations for it.
+
+**Reese Basser was silent here, not in REAPER.** Its two envelopes are EEL2
+pseudo-objects (`aenv_o.env_tick()`), and Middaw's runtime shared their
+`instance()` variables, so the amp envelope never opened. Both compilers now
+keep them per namespace, and strings are bytes, as REAPER keeps them: its
+lists are counted with `str_getchar`, and an em dash is three.

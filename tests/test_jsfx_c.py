@@ -25,7 +25,8 @@ NODE = shutil.which("node")
 CC = shutil.which(os.environ.get("CC", "cc")) or shutil.which("clang") or shutil.which("gcc")
 DEV = ROOT / "family" / "devices"
 DEVICES = ["AutoCC.jsfx", "Instrument-Creator.jsfx", "MIDI_Production_Center.jsfx",
-           "Midi Evolver.jsfx", "Reverberator.jsfx", "TransientShuffler.jsfx"]
+           "Midi Evolver.jsfx", "Reverberator.jsfx", "TransientShuffler.jsfx",
+           "Midular.jsfx", "ReeseBasser.jsfx"]
 
 _host = None
 

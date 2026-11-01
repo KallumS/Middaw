@@ -98,6 +98,8 @@ runtime/composer/            the composer, ported from middaw/ (Python) for Comp
 | **Midi Evolver** | Devices > Add > Midi Evolver: hold a chord and it grows; Insert the Take, Record, Panic |
 | **MIDI Production Center** | Devices > Add: Load the Clip chops it onto the sixteen pads; Transfer to Pads; its effects |
 | **Reverberator** | Devices > Add, as an insert; or the mixer's Reverb return, fully wet |
+| **Midular** | Devices > Add > Midular: Load the Clip makes the chosen clip its phrase, which a key plays back; its modes, warp, envelope and filter |
+| **Reese Basser** | Played by > Reese Basser: its eight engines, filter, modulation and effects |
 
 ## Not built yet
 

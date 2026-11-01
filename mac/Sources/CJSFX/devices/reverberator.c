@@ -221,7 +221,7 @@ static const jsfx_func funcs[] = {{"hsign", 2, W_hsign},
 const jsfx_desc jsfx_device_reverberator = {
   .id = "reverberator", .desc = "Reverberator \342\200\224 Material Reverb (Physically Modelled)",
   .nvars = 559, .varnames = varnames,
-  .nsliders = 12, .sliders = sliders, .sliderSlot = sliderSlot,
+  .nsliders = 12, .sliders = sliders, .sliderSlot = sliderSlot, .nsliderSlot = 65,
   .nsections = {1, 1, 1, 1, 0},
   .sections = {sections_init, sections_slider, sections_block, sections_sample, sections_serialize},
   .nstrings = 59, .strings = strings, .nnamed = 1,

@@ -101,6 +101,21 @@
   EelError.prototype = Object.create(Error.prototype);
   EelError.prototype.name = 'EelError';
 
+  // REAPER's strings are bytes: one character per UTF-8 byte, as the C runtime
+  // keeps them.
+  function bytes(s) {
+    var out = '';
+    for (var i = 0; i < s.length; i++) {
+      var c = s.codePointAt(i);
+      if (c > 0xffff) i++;
+      if (c < 0x80) out += String.fromCharCode(c);
+      else if (c < 0x800) out += String.fromCharCode(0xc0 | c >> 6, 0x80 | c & 63);
+      else if (c < 0x10000) out += String.fromCharCode(0xe0 | c >> 12, 0x80 | c >> 6 & 63, 0x80 | c & 63);
+      else out += String.fromCharCode(0xf0 | c >> 18, 0x80 | c >> 12 & 63, 0x80 | c >> 6 & 63, 0x80 | c & 63);
+    }
+    return out;
+  }
+
   function lex(src, firstLine) {
     var toks = [], i = 0, n = src.length, line = firstLine || 1;
     while (i < n) {
@@ -121,12 +136,13 @@
             buf += e === 'n' ? '\n' : e === 't' ? '\t' : e === 'r' ? '\r' : e; p += 2;
           } else { if (src[p] === '\n') line++; buf += src[p++]; }
         }
-        toks.push({ k: 'str', v: buf, line: line }); i = p + 1; continue;
+        toks.push({ k: 'str', v: bytes(buf), line: line }); i = p + 1; continue;
       }
       if (c === "'") {
         var close = src.indexOf("'", i + 1);
         var val = 0;
-        for (var x = i + 1; x < close; x++) val = val * 256 + src.charCodeAt(x);
+        var lit = bytes(src.slice(i + 1, close));
+        for (var x = 0; x < lit.length; x++) val = val * 256 + lit.charCodeAt(x);
         toks.push({ k: 'num', v: val, line: line }); i = close + 1; continue;
       }
       if (c === '#') {
@@ -384,15 +400,25 @@
   };
   Compiler.prototype.temp = function () { this.temps++; return 't' + this.temps; };
 
-  // Names inside a function: parameters, statics, or globals.
+  // Names inside a function: parameters, statics, instance variables, or
+  // globals. A function called as ns.f() keeps its instance() variables, and
+  // anything it names as this.x, in ns: ns.x (REAPER's pseudo-objects).
   Compiler.prototype.ref = function (name, ctx) {
     if (ctx) {
       var pi = ctx.fn.params.indexOf(name);
       if (pi >= 0) return 'p' + pi;
       if (ctx.fn.locals.indexOf(name) >= 0) return 'v[' + this.slot(ctx.fn.name + '::' + name) + ']';
+      if (ctx.fn.instance.indexOf(name) >= 0) return 'v[' + this.slot(ctx.ns ? ctx.ns + '.' + name : name) + ']';
     }
+    if (name.indexOf('this.') === 0) return 'v[' + this.slot(resolveThis(name, ctx)) + ']';
     return 'v[' + this.slot(name) + ']';
   };
+  // this.x, this.child.x: the namespace the function was called in.
+  function resolveThis(name, ctx) {
+    var ns = ctx && ctx.ns ? ctx.ns : '';
+    if (name === 'this') return ns;
+    return ns ? ns + '.' + name.slice(5) : name.slice(5);
+  }
 
   function hasControl(n) {
     if (!n || typeof n !== 'object') return false;
@@ -612,27 +638,31 @@
         return '(' + tm + ' = ' + call + ', ' + tm + ' ? (' + (assigns.length ? assigns.join(', ') + ', ' : '') + '1) : 0)';
       }
     }
-    if (this.funcs[name]) return this.userCall(this.funcs[name], args, ctx);
+    if (this.funcs[name]) return this.userCall(this.funcs[name], args, ctx, '');
     if (name.indexOf('.') > 0) {
-      var base = name.slice(name.lastIndexOf('.') + 1);
-      if (this.funcs[base]) return this.userCall(this.funcs[base], args, ctx);
+      var base = name.slice(name.lastIndexOf('.') + 1), prefix = name.slice(0, name.lastIndexOf('.'));
+      if (this.funcs[base]) return this.userCall(this.funcs[base], args, ctx, prefix === 'this' || prefix.indexOf('this.') === 0 ? resolveThis(prefix, ctx) : prefix);
     }
     if (/^gfx_|^mouse_/.test(name)) return '(' + (args.length ? all() + ', ' : '') + '0)';
     return 'S.call(' + JSON.stringify(name) + (args.length ? ', ' + all() : '') + ')';
   };
 
-  Compiler.prototype.userCall = function (fn, args, ctx) {
+  // One compiled copy per function and namespace, as EEL2 does: a.f() and
+  // b.f() are two functions, each with its own instance variables.
+  Compiler.prototype.userCall = function (fn, args, ctx, ns) {
     var self = this;
+    ns = ns || '';
     if (args.length !== fn.params.length && !(args.length === 1 && fn.params.length === 0)) {
       // EEL2 refuses the wrong number of arguments at compile time.
       throw new EelError(fn.name + '() takes ' + fn.params.length + ' arguments, given ' + args.length);
     }
-    var jsName = 'F_' + fn.name.replace(/\./g, '_');
-    if (!this.compiledFuncs[fn.name]) {
-      this.compiledFuncs[fn.name] = true;
+    var jsName = 'F_' + fn.name.replace(/\./g, '_') + (ns ? '$' + ns.replace(/\./g, '$') : '');
+    var key = fn.name + '@' + ns;
+    if (!this.compiledFuncs[key]) {
+      this.compiledFuncs[key] = true;
       var saved = this.temps;
       this.temps = 0;
-      var body = this.stmts(fn.body, { fn: fn }, true, 'r');
+      var body = this.stmts(fn.body, { fn: fn, ns: ns }, true, 'r');
       var temps = this.tempDecl();
       this.temps = saved;
       var params = fn.params.map(function (_, i) { return 'p' + i; });

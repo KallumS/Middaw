@@ -535,7 +535,7 @@ static const jsfx_func funcs[] = {{"mat_def", 14, W_mat_def},
 const jsfx_desc jsfx_device_instrument_creator = {
   .id = "instrument_creator", .desc = "Instrument Creator \342\200\224 Build Impossible Instruments from Parts",
   .nvars = 953, .varnames = varnames,
-  .nsliders = 23, .sliders = sliders, .sliderSlot = sliderSlot,
+  .nsliders = 23, .sliders = sliders, .sliderSlot = sliderSlot, .nsliderSlot = 65,
   .nsections = {1, 1, 1, 1, 1},
   .sections = {sections_init, sections_slider, sections_block, sections_sample, sections_serialize},
   .nstrings = 201, .strings = strings, .nnamed = 4,

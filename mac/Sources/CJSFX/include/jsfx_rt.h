@@ -56,7 +56,8 @@ typedef struct {
     const char *const *varnames;     /* slot -> name, for the host */
     int nsliders;
     const jsfx_slider *sliders;
-    const int *sliderSlot;           /* slider index 0..64 -> slot, -1 if none */
+    const int *sliderSlot;           /* slider index -> slot, -1 if none */
+    int nsliderSlot;                 /* how many indices: REAPER allows up to slider256 */
     int nsections[5];                /* init, slider, block, sample, serialize */
     const jsfx_section_fn *sections[5];
     int nstrings;

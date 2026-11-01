@@ -643,7 +643,7 @@ static const jsfx_func funcs[] = {{"mpc_consts", 0, W_mpc_consts},
 const jsfx_desc jsfx_device_midi_production_center = {
   .id = "midi_production_center", .desc = "MIDI Production Center - 16-pad MIDI sampler (chop, pads, MIDI FX)",
   .nvars = 812, .varnames = varnames,
-  .nsliders = 48, .sliders = sliders, .sliderSlot = sliderSlot,
+  .nsliders = 48, .sliders = sliders, .sliderSlot = sliderSlot, .nsliderSlot = 65,
   .nsections = {4, 1, 1, 0, 1},
   .sections = {sections_init, sections_slider, sections_block, sections_sample, sections_serialize},
   .nstrings = 185, .strings = strings, .nnamed = 7,

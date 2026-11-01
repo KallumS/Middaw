@@ -1,0 +1,520 @@
+// midular_ui.jsfx-inc
+// Midular - MIDI sampler for REAPER.
+// Custom @gfx interface: piano-roll source display with live playheads, slice
+// markers and grain positions, plus a table-driven control panel.
+//
+// Copyright (C) 2026  Midular contributors.  Licensed under the GPL v3.
+
+@init
+
+// ---------------------------------------------------------------------------
+// Control table
+// ---------------------------------------------------------------------------
+function md_ui_consts()
+(
+  C_TYPE = 0; C_SL = 1; C_DEF = 2; C_MIN = 3; C_MAX = 4; C_STEP = 5;
+  C_X = 6; C_Y = 7; C_W = 8; C_H = 9; C_PAGE = 10; C_LABEL = 11; C_OPTS = 12;
+
+  CT_KNOB = 1; CT_SELECT = 2; CT_TOGGLE = 3;
+
+  UI_W = 920; UI_H = 600;
+  RL_X = 14; RL_Y = 44; RL_W = 892; RL_H = 196;      // piano roll
+  TB_Y = 250; TB_H = 26;                              // tab bar
+  PN_Y = 284;                                         // control panel
+  KN_W = 118; KN_H = 116;
+  md_nctl = 0;
+  md_page = 1;
+  md_drag = -1;
+);
+
+function md_ctl_add(type, sl, def, mn, mx, st, x, y, w, h, page, label, opts) local(c)
+(
+  md_nctl < MAX_CTLS ? (
+    c = CTLS + md_nctl * C_STRIDE;
+    c[C_TYPE] = type; c[C_SL] = sl; c[C_DEF] = def;
+    c[C_MIN] = mn; c[C_MAX] = mx; c[C_STEP] = st;
+    c[C_X] = x; c[C_Y] = y; c[C_W] = w; c[C_H] = h;
+    c[C_PAGE] = page; c[C_LABEL] = label; c[C_OPTS] = opts;
+    md_nctl += 1;
+  );
+);
+
+// Adds a control into column `col` (0..6) / row `row` (0..1) of a panel page.
+function md_ctl_cell(type, sl, def, mn, mx, st, col, row, page, label, opts)
+(
+  md_ctl_add(type, sl, def, mn, mx, st,
+             16 + col * 126, PN_Y + 6 + row * 124, KN_W, KN_H, page, label, opts);
+);
+
+// ---------------------------------------------------------------------------
+// Drawing helpers
+// ---------------------------------------------------------------------------
+function md_txt(x, y, w, h, s, flags) ( gfx_x = x; gfx_y = y; gfx_drawstr(s, flags, x + w, y + h); );
+
+function md_arc(cx, cy, r, a0, a1, steps) local(i, a, da, px, py, nx, ny)
+(
+  da = (a1 - a0) / steps;
+  a  = a0;
+  px = cx + sin(a) * r; py = cy - cos(a) * r;
+  i = 0;
+  while (i < steps) (
+    a += da;
+    nx = cx + sin(a) * r; ny = cy - cos(a) * r;
+    gfx_line(px, py, nx, ny, 1);
+    px = nx; py = ny;
+    i += 1;
+  );
+);
+
+// Copies the nth "|"-delimited field of src into dst.
+function md_field(dst, src, n) local(i, l, f, c)
+(
+  strcpy(dst, "");
+  l = strlen(src);
+  i = 0; f = 0;
+  while (i < l) (
+    c = str_getchar(src, i);
+    c == $'|' ? ( f += 1; f > n ? i = l; ) :
+    ( f == n ? str_setchar(dst, strlen(dst), c) );
+    i += 1;
+  );
+  dst;
+);
+
+function md_ctl_val(ci) ( slider(CTLS[ci * C_STRIDE + C_SL]) );
+
+function md_ctl_set(ci, v) local(c, sl, st)
+(
+  c  = CTLS + ci * C_STRIDE;
+  sl = c[C_SL];
+  st = c[C_STEP];
+  st > 0 ? v = floor(v / st + 0.5) * st;
+  v = md_clamp(v, c[C_MIN], c[C_MAX]);
+  slider(sl) = v;
+  sliderchange(2 ^ (sl - 1));
+  slider_automate(2 ^ (sl - 1));
+);
+
+function md_ctl_valstr(dst, ci) local(c, v)
+(
+  c = CTLS + ci * C_STRIDE;
+  v = slider(c[C_SL]);
+  c[C_TYPE] == CT_KNOB ? sprintf(dst, c[C_OPTS], v) : md_field(dst, c[C_OPTS], v | 0);
+  dst;
+);
+
+function md_draw_knob(ci, hot) local(c, cx, cy, r, v, f, a, a0, a1)
+(
+  c  = CTLS + ci * C_STRIDE;
+  cx = c[C_X] + c[C_W] * 0.5;
+  cy = c[C_Y] + 46;
+  r  = 24;
+  v  = slider(c[C_SL]);
+  f  = md_clamp((v - c[C_MIN]) / max(c[C_MAX] - c[C_MIN], 0.000000001), 0, 1);
+  a0 = -2.3562; a1 = 2.3562;
+  a  = a0 + (a1 - a0) * f;
+
+  gfx_set(0.14, 0.15, 0.19, 1);
+  gfx_circle(cx, cy, r + 3, 1, 1);
+  gfx_set(0.26, 0.28, 0.34, 1);
+  md_arc(cx, cy, r, a0, a1, 26);
+  hot ? gfx_set(0.45, 0.85, 1.0, 1) : gfx_set(0.28, 0.66, 0.92, 1);
+  md_arc(cx, cy, r, a0, a, 24);
+  md_arc(cx, cy, r - 1, a0, a, 24);
+  gfx_set(0.88, 0.92, 0.97, 1);
+  gfx_line(cx + sin(a) * (r - 13), cy - cos(a) * (r - 13),
+           cx + sin(a) * (r - 2),  cy - cos(a) * (r - 2), 1);
+
+  gfx_set(0.62, 0.66, 0.73, 1);
+  md_txt(c[C_X], c[C_Y], c[C_W], 14, c[C_LABEL], 1 | 4);
+  gfx_set(0.90, 0.93, 0.98, 1);
+  md_ctl_valstr(#md_tmp, ci);
+  md_txt(c[C_X], c[C_Y] + 76, c[C_W], 16, #md_tmp, 1 | 4);
+);
+
+function md_draw_select(ci, hot) local(c, x, y, w)
+(
+  c = CTLS + ci * C_STRIDE;
+  x = c[C_X] + 6; y = c[C_Y] + 34; w = c[C_W] - 12;
+  gfx_set(0.62, 0.66, 0.73, 1);
+  md_txt(c[C_X], c[C_Y] + 14, c[C_W], 14, c[C_LABEL], 1 | 4);
+  hot ? gfx_set(0.22, 0.30, 0.40, 1) : gfx_set(0.16, 0.18, 0.23, 1);
+  gfx_rect(x, y, w, 24);
+  gfx_set(0.32, 0.36, 0.44, 1);
+  gfx_rect(x, y, w, 1); gfx_rect(x, y + 23, w, 1);
+  gfx_rect(x, y, 1, 24); gfx_rect(x + w - 1, y, 1, 24);
+  gfx_set(0.88, 0.92, 0.98, 1);
+  md_ctl_valstr(#md_tmp, ci);
+  md_txt(x, y + 4, w, 16, #md_tmp, 1 | 4);
+);
+
+function md_draw_toggle(ci, hot) local(c, x, y, w, on)
+(
+  c  = CTLS + ci * C_STRIDE;
+  on = slider(c[C_SL]) >= 0.5;
+  x = c[C_X] + 18; y = c[C_Y] + 36; w = c[C_W] - 36;
+  gfx_set(0.62, 0.66, 0.73, 1);
+  md_txt(c[C_X], c[C_Y] + 14, c[C_W], 14, c[C_LABEL], 1 | 4);
+  on ? gfx_set(0.16, 0.52, 0.72, 1) : (hot ? gfx_set(0.22, 0.24, 0.30, 1) : gfx_set(0.15, 0.16, 0.20, 1));
+  gfx_rect(x, y, w, 24);
+  gfx_set(0.34, 0.38, 0.46, 1);
+  gfx_rect(x, y, w, 1); gfx_rect(x, y + 23, w, 1);
+  gfx_rect(x, y, 1, 24); gfx_rect(x + w - 1, y, 1, 24);
+  gfx_set(0.92, 0.95, 1.0, 1);
+  md_ctl_valstr(#md_tmp, ci);
+  md_txt(x, y + 4, w, 16, #md_tmp, 1 | 4);
+);
+
+// ---------------------------------------------------------------------------
+// Piano roll
+// ---------------------------------------------------------------------------
+function md_roll_x(t) ( RL_X + md_clamp(t / max(md_src_len, 0.000001), 0, 1) * RL_W );
+
+function md_draw_roll() local(i, np, x0, x1, y, h, lo, hi, v, span, s, vp, pos, dir, sl, gi)
+(
+  gfx_set(0.09, 0.10, 0.13, 1);
+  gfx_rect(RL_X, RL_Y, RL_W, RL_H);
+
+  md_src_n > 0 ? (
+    lo = 127; hi = 0;
+    i = 0;
+    while (i < md_src_n) (
+      np = BUF_NOTES + i * NOTE_STRIDE;
+      lo = min(lo, np[2]); hi = max(hi, np[2]);
+      i += 1;
+    );
+    lo -= 2; hi += 2;
+    span = max(hi - lo, 6);
+    h    = max(RL_H / span, 2);
+
+    // bar grid
+    gfx_set(0.16, 0.17, 0.21, 1);
+    s = max(md_src_tsnum * 4 / max(md_src_tsden, 1), 0.25);
+    i = 0;
+    while (i * s <= md_src_len && i < 256) ( x0 = md_roll_x(i * s); gfx_rect(x0, RL_Y, 1, RL_H); i += 1; );
+
+    // region + loop shading
+    gfx_set(0.20, 0.42, 0.58, 0.16);
+    x0 = md_roll_x(md_reg_a); x1 = md_roll_x(md_reg_b);
+    gfx_rect(x0, RL_Y, max(x1 - x0, 1), RL_H);
+    p_loopon ? (
+      gfx_set(0.95, 0.72, 0.25, 0.55);
+      x0 = md_roll_x(md_loop_a); x1 = md_roll_x(md_loop_b);
+      gfx_rect(x0, RL_Y, 1, RL_H); gfx_rect(x1 - 1, RL_Y, 1, RL_H);
+      gfx_set(0.95, 0.72, 0.25, 0.10);
+      gfx_rect(x0, RL_Y, max(x1 - x0, 1), RL_H);
+    );
+
+    // slice boundaries
+    p_mode == 2 ? (
+      gfx_set(0.45, 0.90, 0.62, 0.7);
+      i = 0;
+      while (i < md_nslices) (
+        x0 = md_roll_x(SLICES[i * 2]);
+        gfx_rect(x0, RL_Y, 1, RL_H);
+        gfx_set(0.45, 0.90, 0.62, 0.35);
+        md_txt(x0 + 2, RL_Y + 2, 40, 12, sprintf(#md_tmp, "%d", i + 1), 0);
+        gfx_set(0.45, 0.90, 0.62, 0.7);
+        i += 1;
+      );
+    );
+
+    // user markers
+    gfx_set(0.85, 0.45, 0.95, 0.8);
+    i = 0;
+    while (i < md_nmark) ( x0 = md_roll_x(MARKERS[i]); gfx_rect(x0, RL_Y, 1, RL_H); i += 1; );
+
+    // notes
+    i = 0;
+    while (i < md_src_n) (
+      np = BUF_NOTES + i * NOTE_STRIDE;
+      x0 = md_roll_x(np[0]);
+      x1 = md_roll_x(np[0] + np[1]);
+      y  = RL_Y + RL_H - (np[2] - lo + 1) * h;
+      v  = 0.35 + 0.55 * np[3] / 127;
+      s  = md_filt_gain(np[2] + p_transp, p_root) >= p_fthresh * 0.01;
+      s ? gfx_set(0.30 * v, 0.72 * v, 0.98 * v, 1) : gfx_set(0.26, 0.27, 0.31, 1);
+      gfx_rect(x0, y, max(x1 - x0, 2), max(h - 1, 2));
+      i += 1;
+    );
+
+    // live playheads
+    i = 0;
+    while (i < MAX_VOICES) (
+      vp = VOICES + i * V_STRIDE;
+      vp[V_STATE] ? (
+        vp[V_NGRAIN] > 0 ? (
+          gi = 0;
+          while (gi < vp[V_NGRAIN]) (
+            s = STREAMS + (MAX_VOICES + vp[V_GBASE] + gi) * S_STRIDE;
+            s[S_ACTIVE] ? (
+              pos = s[S_DIR] > 0 ? s[S_POS] : md_src_len - s[S_POS];
+              gfx_set(1.0, 0.55, 0.30, 0.55);
+              gfx_rect(md_roll_x(pos), RL_Y, 1, RL_H);
+            );
+            gi += 1;
+          );
+        ) : (
+          s = STREAMS + i * S_STRIDE;
+          s[S_ACTIVE] ? (
+            pos = s[S_DIR] > 0 ? s[S_POS] : md_src_len - s[S_POS];
+            gfx_set(1.0, 0.95, 0.55, 0.9);
+            gfx_rect(md_roll_x(pos), RL_Y, 2, RL_H);
+          );
+        );
+      );
+      i += 1;
+    );
+  ) : (
+    gfx_set(0.45, 0.47, 0.52, 1);
+    md_txt(RL_X, RL_Y + RL_H * 0.5 - 8, RL_W, 16, "No MIDI source loaded", 1 | 4);
+  );
+
+  gfx_set(0.24, 0.26, 0.32, 1);
+  gfx_rect(RL_X, RL_Y, RL_W, 1); gfx_rect(RL_X, RL_Y + RL_H - 1, RL_W, 1);
+  gfx_rect(RL_X, RL_Y, 1, RL_H); gfx_rect(RL_X + RL_W - 1, RL_Y, 1, RL_H);
+);
+
+// ---------------------------------------------------------------------------
+// File selection
+// ---------------------------------------------------------------------------
+// Steps slider1 through the folder and reads each name back.  md_scanning tells
+// @block (another thread) to ignore slider1 meanwhile - otherwise it would load
+// every phrase the scan passes over and cut off whatever is playing.
+function md_scan_files() local(i, sv, done)
+(
+  md_scanning = 1;
+  sv = slider1;
+  strcpy(#md_filelist, "");
+  md_nfiles = 0;
+  strcpy(64, "");
+  i = 0; done = 0;
+  while (i < 128 && !done) (
+    slider1 = i;
+    strcpy_fromslider(#md_tmp, slider1);
+    (strlen(#md_tmp) < 1 || (i > 0 && strcmp(#md_tmp, 64) == 0)) ? done = 1 : (
+      i > 0 ? strcat(#md_filelist, "|");
+      strcat(#md_filelist, #md_tmp);
+      strcpy(64, #md_tmp);
+      md_nfiles += 1;
+      i += 1;
+    );
+  );
+  slider1 = sv;
+  md_scanning = 0;
+  md_nfiles;
+);
+
+function md_file_menu() local(r)
+(
+  md_scan_files();
+  md_nfiles > 0 ? (
+    gfx_x = mouse_x; gfx_y = mouse_y;
+    r = gfx_showmenu(#md_filelist);
+    r > 0 ? (
+      slider1 = r - 1;
+      sliderchange(slider1);   // @block notices the new value and loads it
+    );
+  );
+);
+
+// ---------------------------------------------------------------------------
+// Header / tabs / status
+// ---------------------------------------------------------------------------
+function md_draw_header() local(x, w)
+(
+  gfx_set(0.11, 0.12, 0.16, 1);
+  gfx_rect(0, 0, UI_W, 38);
+  gfx_setfont(2, "Arial", 20, $'b');
+  gfx_set(0.30, 0.72, 0.98, 1);
+  md_txt(14, 8, 160, 22, "MIDULAR", 4);
+  gfx_setfont(1, "Arial", 13);
+  gfx_set(0.45, 0.48, 0.55, 1);
+  md_txt(132, 11, 180, 18, "MIDI Sampler", 4);
+
+  x = 300; w = 340;
+  (mouse_x >= x && mouse_x < x + w && mouse_y >= 6 && mouse_y < 32) ?
+    gfx_set(0.20, 0.28, 0.38, 1) : gfx_set(0.15, 0.16, 0.21, 1);
+  gfx_rect(x, 6, w, 26);
+  gfx_set(0.32, 0.36, 0.44, 1);
+  gfx_rect(x, 6, w, 1); gfx_rect(x, 31, w, 1); gfx_rect(x, 6, 1, 26); gfx_rect(x + w - 1, 6, 1, 26);
+  gfx_set(0.88, 0.92, 0.98, 1);
+  // the playing phrase's own name: after an import or a project load the file
+  // slider no longer says what is playing
+  md_txt(x + 8, 10, w - 96, 18, #md_name, 4);
+  md_src_kind == 2 ? (
+    gfx_set(0.45, 0.90, 0.62, 0.9);
+    md_txt(x + w - 88, 10, 80, 18, "IN PROJECT", 2 | 4);
+  );
+
+  gfx_set(0.50, 0.54, 0.62, 1);
+  sprintf(#md_tmp, "%d notes · %.2f beats · %.1f BPM · %d/%d",
+          md_src_n, md_src_len, md_src_tempo, md_src_tsnum | 0, md_src_tsden | 0);
+  md_txt(652, 11, 256, 18, #md_tmp, 2 | 4);
+);
+
+function md_draw_tabs() local(i, x, w, hot)
+(
+  w = 176;
+  i = 0;
+  while (i < 5) (
+    x = 14 + i * (w + 4);
+    hot = (mouse_x >= x && mouse_x < x + w && mouse_y >= TB_Y && mouse_y < TB_Y + TB_H);
+    md_page == i + 1 ? gfx_set(0.18, 0.42, 0.60, 1) : (hot ? gfx_set(0.18, 0.20, 0.25, 1) : gfx_set(0.13, 0.14, 0.18, 1));
+    gfx_rect(x, TB_Y, w, TB_H);
+    md_page == i + 1 ? gfx_set(1.0, 1.0, 1.0, 1) : gfx_set(0.60, 0.64, 0.72, 1);
+    md_field(#md_tmp, "Play|Warp and Loop|Amp and Filter|Slice|Granular", i);
+    md_txt(x, TB_Y + 5, w, 16, #md_tmp, 1 | 4);
+    i += 1;
+  );
+);
+
+function md_draw_status() local(i, n)
+(
+  n = 0;
+  i = 0;
+  while (i < MAX_VOICES) ( VOICES[i * V_STRIDE + V_STATE] ? n += 1; i += 1; );
+  gfx_set(0.11, 0.12, 0.16, 1);
+  gfx_rect(0, UI_H - 26, UI_W, 26);
+  gfx_set(0.50, 0.54, 0.62, 1);
+  sprintf(#md_tmp, "%d voices · %d slices · warp ×%.3f · %s",
+          n, md_nslices, md_ratio,
+          p_mode == 0 ? "Classic" : p_mode == 1 ? "One-Shot" : p_mode == 2 ? "Slice" : "Granular");
+  md_txt(14, UI_H - 22, 280, 18, #md_tmp, 4);
+  gfx_set(0.34, 0.37, 0.44, 1);
+  md_txt(UI_W - 640, UI_H - 22, 626, 18,
+         "Command-drag to fine-tune · Double-click to reset · Markers: Command-click to add, right-click to remove", 2 | 4);
+);
+
+// ---------------------------------------------------------------------------
+// Marker edits are mirrored into MARKERS_SV straight away, so they survive a
+// reload (which restores from MARKERS_SV) even before the project is saved.
+// ---------------------------------------------------------------------------
+function md_markers_edited()
+(
+  md_mark_edited = 1;
+  md_ser_nmark   = md_nmark;
+  md_nmark > 0 ? memcpy(MARKERS_SV, MARKERS, md_nmark);
+  md_slice_dirty = 1;
+  sliderchange(-1);
+);
+
+// ---------------------------------------------------------------------------
+// Main draw + interaction
+// ---------------------------------------------------------------------------
+function md_ui_draw() local(i, c, hot)
+(
+  gfx_set(0.075, 0.08, 0.10, 1);
+  gfx_rect(0, 0, max(gfx_w, UI_W), max(gfx_h, UI_H));
+  gfx_setfont(1, "Arial", 13);
+
+  md_draw_header();
+  md_draw_roll();
+  md_draw_tabs();
+
+  gfx_set(0.10, 0.11, 0.14, 1);
+  gfx_rect(8, PN_Y, UI_W - 16, UI_H - PN_Y - 32);
+
+  i = 0;
+  while (i < md_nctl) (
+    c = CTLS + i * C_STRIDE;
+    (c[C_PAGE] == 0 || c[C_PAGE] == md_page) ? (
+      hot = (md_drag == i) || (mouse_x >= c[C_X] && mouse_x < c[C_X] + c[C_W] &&
+                               mouse_y >= c[C_Y] && mouse_y < c[C_Y] + c[C_H]);
+      c[C_TYPE] == CT_KNOB   ? md_draw_knob(i, hot) :
+      c[C_TYPE] == CT_SELECT ? md_draw_select(i, hot) :
+                               md_draw_toggle(i, hot);
+    );
+    i += 1;
+  );
+  md_draw_status();
+);
+
+function md_ui_hit() local(i, c, r)
+(
+  r = -1;
+  i = 0;
+  while (i < md_nctl && r < 0) (
+    c = CTLS + i * C_STRIDE;
+    (c[C_PAGE] == 0 || c[C_PAGE] == md_page) ?
+      ((mouse_x >= c[C_X] && mouse_x < c[C_X] + c[C_W] &&
+        mouse_y >= c[C_Y] && mouse_y < c[C_Y] + c[C_H]) ? r = i);
+    i += 1;
+  );
+  r;
+);
+
+function md_ui_mouse() local(ci, c, dy, rng, t, i, x, w)
+(
+  // ---- press ----
+  (mouse_cap & 1) && !(md_lastcap & 1) ? (
+    md_click_t = time_precise();
+    // file button
+    (mouse_y >= 6 && mouse_y < 32 && mouse_x >= 300 && mouse_x < 640) ? md_file_menu() :
+    // tabs
+    (mouse_y >= TB_Y && mouse_y < TB_Y + TB_H && mouse_x >= 14) ? (
+      i = floor((mouse_x - 14) / 180);
+      (i >= 0 && i < 5) ? md_page = i + 1;
+    ) :
+    // piano roll: ctrl-click drops a slice marker
+    (mouse_y >= RL_Y && mouse_y < RL_Y + RL_H && mouse_x >= RL_X && mouse_x < RL_X + RL_W) ? (
+      (mouse_cap & 4) ? (
+        t = (mouse_x - RL_X) / RL_W * md_src_len;
+        md_marker_add(t);
+        md_markers_edited();
+      );
+    ) : (
+      ci = md_ui_hit();
+      ci >= 0 ? (
+        c = CTLS + ci * C_STRIDE;
+        c[C_TYPE] == CT_TOGGLE ? md_ctl_set(ci, slider(c[C_SL]) >= 0.5 ? c[C_MIN] : c[C_MAX]) :
+        c[C_TYPE] == CT_SELECT ? (
+          gfx_x = mouse_x; gfx_y = mouse_y;
+          i = gfx_showmenu(c[C_OPTS]);
+          i > 0 ? md_ctl_set(ci, c[C_MIN] + (i - 1) * max(c[C_STEP], 1));
+        ) : (
+          md_drag    = ci;
+          md_drag_y  = mouse_y;
+          md_drag_v  = slider(c[C_SL]);
+          // double click restores the default
+          (time_precise() - md_dbl_t < 0.35 && md_dbl_c == ci) ? (
+            md_ctl_set(ci, c[C_DEF]);
+            md_drag_v = c[C_DEF];
+          );
+          md_dbl_t = time_precise();
+          md_dbl_c = ci;
+        );
+      );
+    );
+  );
+
+  // ---- right click on the roll removes the nearest marker ----
+  (mouse_cap & 2) && !(md_lastcap & 2) ? (
+    (mouse_y >= RL_Y && mouse_y < RL_Y + RL_H && mouse_x >= RL_X && mouse_x < RL_X + RL_W) ? (
+      t = (mouse_x - RL_X) / RL_W * md_src_len;
+      md_marker_remove_near(t, md_src_len * 0.02) ? md_markers_edited();
+    );
+  );
+
+  // ---- drag ----
+  (mouse_cap & 1) && md_drag >= 0 ? (
+    c   = CTLS + md_drag * C_STRIDE;
+    rng = c[C_MAX] - c[C_MIN];
+    dy  = md_drag_y - mouse_y;
+    md_ctl_set(md_drag, md_drag_v + dy * rng / ((mouse_cap & 4) ? 2400 : 220));
+  );
+
+  !(mouse_cap & 1) ? md_drag = -1;
+
+  // ---- wheel ----
+  mouse_wheel != 0 ? (
+    ci = md_ui_hit();
+    ci >= 0 ? (
+      c = CTLS + ci * C_STRIDE;
+      md_ctl_set(ci, slider(c[C_SL]) + sign(mouse_wheel) * max(c[C_STEP], (c[C_MAX] - c[C_MIN]) / 100));
+    );
+    mouse_wheel = 0;
+  );
+
+  md_lastcap = mouse_cap;
+);

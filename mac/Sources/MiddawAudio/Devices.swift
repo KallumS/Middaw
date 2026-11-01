@@ -57,6 +57,24 @@ public enum DeviceCatalog {
                    more: [6, 7, 8, 9, 10, 11], sounds: 0),
         DeviceInfo(id: "reverberator", code: "reverberator", name: "Reverberator", role: .audio,
                    main: [1, 2, 3, 4, 5, 8], groups: [], more: [6, 7, 9, 10, 11, 12], sounds: 0),
+        // Source File (1) names files in REAPER's folder and Import Ticket (57)
+        // is the importer's handshake: neither is a control here.
+        DeviceInfo(id: "midular", code: "midular", name: "Midular", role: .midi,
+                   main: [2, 3, 4, 6, 9, 15],
+                   groups: [("Playback", [5, 7, 8, 10, 11, 12, 13]), ("Warp", [14, 16, 17, 18]),
+                            ("Region", [19, 20, 21, 22, 23, 24, 25, 26]), ("Envelope", [27, 28, 29, 30, 31, 32]),
+                            ("Filter", [33, 34, 35, 36, 37, 38, 39]), ("Slices", [40, 41, 42, 43, 44, 45]),
+                            ("Grains", [46, 47, 48, 49, 50, 51, 52, 53, 54])],
+                   more: [55, 56], sounds: 0),
+        // Interface Size and Reduce Motion (101, 102) are its own window's.
+        DeviceInfo(id: "reese", code: "reese_basser", name: "Reese Basser", role: .instrument,
+                   main: [1, 2, 22, 23, 9, 81],
+                   groups: [("Oscillators", [3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14]),
+                            ("Sub and Noise", [15, 16, 17, 18, 19, 20]), ("Filter", [21, 24, 25, 26]),
+                            ("Envelopes", Array(27...34)), ("LFOs", Array(35...46)), ("Distortion", Array(47...51)),
+                            ("Movement", Array(52...58)), ("Colour", Array(59...68)), ("Chorus and Width", Array(69...73)),
+                            ("Modulation", Array(83...100))],
+                   more: [74, 75, 76, 77, 78, 79, 80, 82], sounds: 0),
     ]
 
     public static func info(_ id: String) -> DeviceInfo? { all.first { $0.id == id } }
@@ -194,6 +212,43 @@ public final class JSFXDevice {
     }
     @discardableResult
     public func call(_ name: String, _ args: [Double] = []) -> Double? { locked { JSFXDevice.call($0, name, args) } }
+
+    /// A phrase into Midular, as its REAPER importer (`midular_import.lua`)
+    /// hands one over: the gmem mailbox, then the Import Ticket slider, which
+    /// the device answers in the mailbox's acknowledgement. Returns the ticket.
+    @discardableResult
+    public func importPhrase(_ notes: [Note], length: Double, tempo: Double, meter: (Int, Int), name: String) -> Int {
+        let (magic, proto, state, ticketAt, ack) = (0, 1, 2, 3, 4)
+        let (count, len, bpm, num, den, nmark, namelen) = (8, 9, 10, 11, 12, 13, 14)
+        let (nameAt, notesAt) = (320, 512)
+        var bytes: [UInt8] = []
+        for u in name.unicodeScalars where u.value >= 0x20 {
+            let b = Array(String(u).utf8)
+            if bytes.count + b.count > 128 { break }
+            bytes += b
+        }
+        let list = notes.prefix(32768)
+        return locked { i in
+            guard let g = jsfx_gmem(i) else { return 0 }
+            let ticket = Int(g[ticketAt].rounded(.down)) % 999_999 + 1
+            g[state] = 1
+            g[count] = Double(list.count); g[len] = length; g[bpm] = tempo
+            g[num] = Double(meter.0); g[den] = Double(meter.1); g[nmark] = 0; g[namelen] = Double(bytes.count)
+            for (k, b) in bytes.enumerated() { g[nameAt + k] = Double(b) }
+            for (k, n) in list.enumerated() {
+                let at = notesAt + k * 5
+                g[at] = n.start; g[at + 1] = n.len; g[at + 2] = Double(n.pitch); g[at + 3] = Double(n.vel); g[at + 4] = 0
+            }
+            g[ack] = 0; g[ticketAt] = Double(ticket); g[proto] = 1; g[magic] = 7473
+            g[state] = 2
+            jsfx_set_slider(i, 57, Double(ticket))
+            return ticket
+        }
+    }
+    /// Whether Midular has taken the phrase with this ticket.
+    public func phraseTaken(_ ticket: Int) -> Bool {
+        locked { i in jsfx_gmem(i).map { $0[4] == Double(ticket) && $0[2] == 3 } ?? false }
+    }
 
     /// The device's @serialize, as the browser version saved it:
     /// {"sliders": [...], "data": [numbers and {"s": text}]}.
