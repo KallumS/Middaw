@@ -52,9 +52,17 @@ def score_xml(parts):
             f'<part-list>{declarations}</part-list>{bodies}</score-partwise>')
 
 
+def temp_dir(test):
+    """A folder removed after the test (TestCase.enterContext is 3.11+, and a
+    Mac's own python3 is 3.9)."""
+    holder = tempfile.TemporaryDirectory()
+    test.addCleanup(holder.cleanup)
+    return Path(holder.name)
+
+
 class TestMusicXML(unittest.TestCase):
     def read(self, xml, suffix=".xml"):
-        directory = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        directory = temp_dir(self)
         path = directory / f"score{suffix}"
         if suffix == ".mxl":
             with zipfile.ZipFile(path, "w") as archive:
@@ -175,7 +183,7 @@ KERN = """!!!COM: Bach, Johann Sebastian
 
 class TestKern(unittest.TestCase):
     def read(self, text=KERN):
-        directory = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        directory = temp_dir(self)
         path = directory / "chorale.krn"
         path.write_text(text, encoding="utf-8")
         return read_kern(path)
@@ -258,7 +266,7 @@ m4-5 = m1
 
 class TestRomanText(unittest.TestCase):
     def read(self, text=ROMAN_TEXT):
-        directory = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        directory = temp_dir(self)
         path = directory / "analysis.rntxt"
         path.write_text(text, encoding="utf-8")
         return read_romantext(path)

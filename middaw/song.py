@@ -29,6 +29,18 @@ class Note:
 
 
 @dataclass
+class Control:
+    """A controller change: CC1 modulation, CC11 expression, CC64 sustain..."""
+    start: float        # beats
+    controller: int
+    value: int
+
+    def to_dict(self) -> dict:
+        return {"start": round(self.start, 5), "controller": self.controller,
+                "value": self.value}
+
+
+@dataclass
 class Track:
     name: str
     program: int = 0          # GM program; 0 = acoustic grand piano
@@ -36,9 +48,10 @@ class Track:
     role: str = ""            # which part this is: a voice, or the kit
     detail: str = ""          # how the part is realised, where that varies
     notes: list[Note] = field(default_factory=list)
+    controls: list[Control] = field(default_factory=list)
 
     def to_dict(self) -> dict:
-        return {
+        data = {
             "name": self.name,
             "program": self.program,
             "channel": self.channel,
@@ -46,6 +59,9 @@ class Track:
             "detail": self.detail,
             "notes": [n.to_dict() for n in self.notes],
         }
+        if self.controls:
+            data["controls"] = [c.to_dict() for c in self.controls]
+        return data
 
 
 @dataclass

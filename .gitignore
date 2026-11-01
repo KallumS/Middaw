@@ -4,3 +4,5 @@ web/soundfonts/
 *.mid
 !data/corpus/**/*.mid
 .venv/
+data/user/
+/build/

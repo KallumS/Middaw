@@ -1,0 +1,80 @@
+name: Mac
+on:
+  push:
+  workflow_dispatch:
+concurrency:                # a newer push replaces a run still waiting
+  group: mac-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash            # -eo pipefail, so a failing build fails the step
+jobs:
+  app:
+    runs-on: macos-15      # Apple silicon
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version && uname -m && sw_vers
+      - name: Test
+        working-directory: mac
+        run: |
+          swift test > test.log 2>&1 || { grep -E -A4 "error:|failed|Fatal|crash" test.log | head -250; exit 1; }
+          grep -E "Executed [0-9]+ tests" test.log | tail -3
+      - name: Build the app
+        if: success() || failure()
+        working-directory: mac
+        run: |
+          swift build > build.log 2>&1 || { grep -E -A4 "error:" build.log | head -200; exit 1; }
+          grep -E "warning:" build.log | sort -u | head -40 || true
+      - name: Middaw.app
+        run: |
+          mac/scripts/bundle.sh > bundle.log 2>&1 || { tail -60 bundle.log; exit 1; }
+          cd mac/build && ditto -c -k --keepParent Middaw.app Middaw.zip && ls -la
+      - name: Open a composed song and look at it
+        run: |
+          python3 -m middaw --seed 4 -o "$RUNNER_TEMP/demo.mid" -- "a hopeful folk song in G major" > /dev/null
+          APP=mac/build/Middaw.app/Contents/MacOS/Middaw
+          mkdir -p shots
+          for ed in roll score; do
+            perl -e 'alarm 90; exec @ARGV' "$APP" --snapshot "shots/$ed.png" --editor $ed "$RUNNER_TEMP/demo.mid" || echo "snapshot $ed exited $?"
+          done
+          ls -la shots
+      - name: A small picture in the log (the review sandbox cannot download artifacts)
+        if: success() || failure()
+        run: |
+          [ -f shots/roll.png ] || exit 0
+          sips -Z 720 -s format jpeg -s formatOptions 35 shots/roll.png --out roll-small.jpg >/dev/null || exit 0
+          echo "SHOT-BEGIN $(stat -f%z roll-small.jpg)"
+          base64 -b 0 -i roll-small.jpg || true
+          echo
+          echo "SHOT-END"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Middaw-shots
+          path: shots
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Middaw-app
+          path: mac/build/Middaw.zip
+          retention-days: 30
+  composer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Python 3.9 is the Mac's own python3. Runner images drop old Pythons
+      # (Ubuntu 26.04 has no 3.9), so uv supplies it.
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # The Lua goldens are what the real Lua 5.4 prints. They may be written
+      # with Middaw's own Lua where no Lua 5.4 is installed; this is where the
+      # real one checks them.
+      - name: Lua goldens from the real Lua 5.4
+        run: |
+          sudo apt-get update -q > /dev/null && sudo apt-get install -y -q lua5.4 > /dev/null
+          LUA=lua5.4 tools/lua_goldens.sh
+          git diff --stat --exit-code tests/js/lua/
+      - name: Python and JavaScript tests
+        run: uv python install 3.9 && uv run --no-project --python 3.9 python --version && uv run --no-project --python 3.9 python -m unittest discover -s tests -t . 2>&1 | tail -30

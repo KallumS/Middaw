@@ -1,0 +1,127 @@
+desc:MIDI Production Center - 16-pad MIDI sampler (chop, pads, MIDI FX)
+tags: MIDI sampler chopper pads MPC slicer
+//
+// An MPC-style pad sampler whose "samples" are MIDI phrases. Load a phrase
+// (sample it live, or send a MIDI item with the included script), chop it into
+// slices by transients, a grid, equal parts or your own markers, and play the
+// slices from 64 pads (4 banks of 16). Every pad and effect works on notes:
+//
+//   Filter      removes notes above / below / around a cutoff pitch
+//   EQ          raises or lowers velocity of notes in bands of the keyboard
+//   Compressor  pulls velocities, pitches or timing closer together
+//   Delay       repeats notes, with feedback and optional pitch steps
+//   Stutter     beat-repeats a short window of whatever the pads are playing
+//   Pitch       corrects notes to a key and scale
+//
+// Put it before an instrument on a track. See README.md for the full guide.
+//
+// Copyright (c) 2026 KallumS. GPL v3 (see LICENSE).
+
+in_pin:none
+out_pin:none
+options:no_meter gfx_hz=30 gmem=MIDIProductionCenter
+
+import mpc_core.jsfx-inc
+import mpc_engine.jsfx-inc
+import mpc_ui.jsfx-inc
+
+// Every slider is hidden with the "-" prefix: the custom panel draws them all,
+// and visible sliders would push the panel below the fold. They stay
+// automatable and are listed under the FX window's "Param" button.
+
+// --- chop ---------------------------------------------------------------------
+slider1:0<0,3,1{Transient,Grid,Equal,Markers}>-Chop Mode
+slider2:60<0,100,1>-Transient Sensitivity
+slider3:3<0,6,1{1/32,1/16,1/8,1/4,1/2,1 Bar,2 Bars}>-Chop Grid
+slider4:16<2,64,1>-Equal Slices
+slider5:1<0,1,1{Off,On}>-Include Held Notes
+
+// --- global -------------------------------------------------------------------
+slider6:0<0,1,1{Sync to Project,Original Tempo}>-Time Mode
+slider7:50<50,75,1>-Swing
+slider8:0<0,1,1{Absolute,Relative to Pad}>-Pitch Axis
+slider9:1<0,1,1{Off,On}>-Thru Unmapped Notes
+slider10:0<0,16,1{Source,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}>-Output Channel
+slider11:100<0,200,1>-Master Level
+
+// --- filter -------------------------------------------------------------------
+slider12:0<0,1,1{Off,On}>-Filter
+slider13:0<0,3,1{Low-Pass,High-Pass,Band-Pass,Notch}>-Filter Type
+slider14:72<0,127,1>-Filter Cutoff
+slider15:0<0,24,1>-Filter Slope
+slider16:0<0,100,1>-Filter Resonance
+slider17:12<1,48,1>-Filter Width
+
+// --- EQ -----------------------------------------------------------------------
+slider18:0<0,1,1{Off,On}>-EQ
+slider19:48<0,127,1>-EQ Low Note
+slider20:0<-100,100,1>-EQ Low Gain
+slider21:64<0,127,1>-EQ Mid Note
+slider22:0<-100,100,1>-EQ Mid Gain
+slider23:12<1,48,1>-EQ Mid Width
+slider24:80<0,127,1>-EQ High Note
+slider25:0<-100,100,1>-EQ High Gain
+
+// --- compressor ---------------------------------------------------------------
+slider26:0<0,1,1{Off,On}>-Compressor
+slider27:0<0,2,1{Velocity,Pitch,Timing}>-Compressor Target
+slider28:80<0,127,1>-Compressor Threshold
+slider29:4<1,20,0.1>-Compressor Ratio
+slider30:0<-64,64,1>-Compressor Makeup
+
+// --- delay --------------------------------------------------------------------
+slider31:0<0,1,1{Off,On}>-Delay
+slider32:5<0,11,1{1/32,1/16T,1/16,1/16D,1/8T,1/8,1/8D,1/4T,1/4,1/4D,1/2,1 Bar}>-Delay Time
+slider33:50<0,100,1>-Delay Feedback
+slider34:4<1,16,1>-Delay Repeats
+slider35:0<-12,12,1>-Delay Pitch Step
+slider36:50<0,100,1>-Delay Mix
+
+// --- stutter ------------------------------------------------------------------
+slider37:0<0,1,1{Off,On}>-Stutter
+slider38:3<0,7,1{1/64,1/32,1/16T,1/16,1/8T,1/8,1/4,1/2}>-Stutter Size
+slider39:0<0,32,1>-Stutter Repeats
+slider40:0<0,100,1>-Stutter Decay
+slider41:0<-12,12,1>-Stutter Pitch Step
+slider42:100<5,100,1>-Stutter Gate
+slider43:0<0,128,1>-Stutter Trigger Note
+
+// --- pitch correction ---------------------------------------------------------
+slider44:0<0,1,1{Off,On}>-Pitch Correction
+slider45:0<0,11,1{C,C#,D,D#,E,F,F#,G,G#,A,A#,B}>-Key
+slider46:0<0,11,1{Major,Natural Minor,Harmonic Minor,Melodic Minor,Dorian,Phrygian,Lydian,Mixolydian,Locrian,Major Pentatonic,Minor Pentatonic,Blues}>-Scale
+slider47:0<0,3,1{Nearest,Up,Down,Remove}>-Correct Mode
+
+// --- housekeeping -------------------------------------------------------------
+// Lets the loader script address this instance. Generated once, then saved.
+slider48:0<0,1000000,1>-Instance ID
+
+@init
+
+ext_noinit = 1;
+gfx_ext_retina = 1;
+mpc_consts();
+mpc_ui_consts();
+mpc_build_ui();
+mpc_boot();
+
+@slider
+
+// Parameters are read in @block (mpc_read_params): the panel writes sliders
+// directly and @slider is not reliably re-run for those writes.
+mpc_params_dirty = 1;
+
+@block
+
+mpc_block();
+
+@serialize
+
+// @serialize can run before @init, so the memory map must exist first.
+mpc_consts();
+mpc_serialize();
+
+@gfx 1000 660
+
+gfx_getchar();
+mpc_ui_frame();

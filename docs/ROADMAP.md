@@ -72,9 +72,10 @@ beat either alone for a long while.
 
 ## Product work that does not wait for models
 
-- **Instruments.** `Track.program` is already carried through; the front end
-  is piano-only by choice. Multi-timbral playback is a soundfont selector, not
-  a rearchitecture.
+- **Instruments.** ✅ Built, as a DAW (`docs/DAW.md`): every track picks an
+  instrument from Midi Catalogue's orchestra and a sound - Middaw Synth's
+  presets, the kit, Instant Instrument, Instrument Creator or Transient
+  Shuffler. What is left is realism: a sampled orchestra.
 - **Drums.** ✅ Built. Channel 10, a fifth part, 29 patterns written the way
   progressions are written, and the feel measured from the Groove MIDI Dataset
   (`docs/MEASUREMENTS.md`). What is left is the gap the comparison shows: our

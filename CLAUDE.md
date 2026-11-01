@@ -1,8 +1,15 @@
 # Middaw
 
-Text prompt in, MIDI out. MIDI-first: notes are composed as notes. Nothing is
-generated as audio and transcribed back — that inaccuracy is the thing this
-project exists to avoid, so no part of the pipeline may reintroduce it.
+A generative DAW for Apple silicon Macs: text prompt in, five MIDI parts
+out, then edited, varied, engraved and mixed in a native app. MIDI-first: notes are composed as notes.
+Nothing is generated as audio and transcribed back — that inaccuracy is the
+thing this project exists to avoid, so no part of the pipeline may
+reintroduce it.
+
+Two halves: the **composer** (`middaw/`, Python, everything below about
+specs, cadences and dice) and the **app** (`mac/`, Swift, see "The app" at
+the end and `docs/DAW.md`). It was a browser app until 30 October 2026;
+`docs/BROWSER-DAW.md` is the record of that and how to bring it back.
 
 ## Working here
 
@@ -10,13 +17,36 @@ project exists to avoid, so no part of the pipeline may reintroduce it.
   Middaw reads and writes Standard MIDI Files itself (`middaw/midi.py`) rather
   than wrapping a library, because byte-level MIDI accuracy is the premise of
   the product and should be inspectable and tested. Do not add `mido`,
-  `pretty_midi`, a web framework or a bundler without a real reason.
-- **Run the tests before and after any change.** They take about a second:
+  `pretty_midi`, a web framework or a bundler without a real reason. The same
+  reasoning is why Middaw has its own Lua 5.4 (`runtime/lua/`) and EEL2
+  (`runtime/jsfx/`), run natively in JavaScriptCore, and the app is a plain
+  Swift package with no third-party packages.
+- **Run the tests before and after any change.** The Python and JavaScript
+  suites take about 25 seconds (ten of them Midi Evolver's own engine
+  checks; `tests/js/` runs inside them when `node` is on the path). The
+  Swift suites need a Mac:
 
   ```sh
   python3 -m unittest discover -s tests -t .
+  cd mac && swift test
   ```
 
+- **No Mac here? CI is the Mac.** `.github/workflows/mac.yml` tests, builds
+  and bundles the app on Apple silicon on every push and uploads
+  `Middaw-app`. Read its log (only errors are printed) before calling a Swift
+  change done; code that has not compiled there has not been written. The
+  log ends with a small JPEG of the window in base64 between `SHOT-BEGIN`
+  and `SHOT-END`, for reviewers who cannot download artifacts.
+
+- **Python 3.9, the Mac's own.** Middaw is made for Apple silicon Macs, and
+  the `python3` that comes with Apple's Command Line Tools is 3.9. So no
+  `match`, no `TestCase.enterContext`, no 3.10+ library calls; `from
+  __future__ import annotations` makes `X | None` safe in annotations only.
+  The whole suite passes under 3.9 (`uv python install 3.9` to check).
+- **Swift 5 language mode, Swift 6 compiler.** Code touching the main actor
+  from an event monitor or a callback goes through `MainActor.assumeIsolated`
+  or `Task { @MainActor in }`; nothing on the audio thread allocates, locks
+  (it only ever *tries* a lock) or touches JavaScriptCore.
 - **When fixing a bug, confirm the new test fails on the old code** before
   accepting it. A test that passes against the bug is worthless.
 - Musical claims get verified, not assumed. `tests/test_render.py` asserts
@@ -25,17 +55,17 @@ project exists to avoid, so no part of the pipeline may reintroduce it.
 
 ## Words on the page
 
-The page follows Apple's writing guidelines, as the user's other apps do
-(Noterator's decision 0053): buttons and headings title-style ("Another
-Take", "Download MIDI File"); messages, hints, placeholders and the status
-line in sentence case, full stop only on a complete sentence; "…" (one
-character) for work in progress ("Composing…"); curly apostrophes; an
-error says what happened, then what to do, with no "we", "please" or
-programmer words. The server's errors are read on the page, so they are
-written the same way (`server/app.py`'s `UNREADABLE`, `TOO_LONG`,
-`FAILED`). The example prompts and the summary line are what the user types
-and what the parser read, and stay as they are. CLI help keeps argparse's
-lowercase convention. Session log: `docs/sessions/2026-10-14-apple-writing.md`.
+The app follows Apple's writing guidelines, as the user's other apps do
+(Noterator's decision 0053): buttons, menu items and headings title-style
+("Insert the Take", "Show Its Controls"); messages, tooltips, placeholders and
+the status line in sentence case, full stop only on a complete sentence; "…"
+(one character) for work in progress and for a control that asks for more
+("Sample A…"); curly apostrophes; an error says what happened, then what to
+do, with no "we", "please" or programmer words. The example prompts and the
+composer's summary line are what the user types and what the parser read, and
+stay as they are. CLI help keeps argparse's lowercase convention. The rule was
+written for the browser page (now archived, `docs/BROWSER-DAW.md`); session log:
+`docs/sessions/2026-10-14-apple-writing.md`.
 
 ## `MusicSpec` is the contract
 
@@ -83,6 +113,17 @@ to either project belongs in both** — they are independent copies of the same
 engine, exactly as Pro and Simple are over there. The ranking constants and
 their reasoning are ScaleView's; that repo's CLAUDE.md has the measurements
 behind each one, and they were measured, not tuned by ear.
+
+Two things the reader now needs that a set of pitch classes does not carry.
+**The key**: Starting Blocks' chords (`BLOCKS_CHORDS`, `BLOCKS_DIATONIC`)
+decide which roots a chord can have, and half of that is the key's own chords,
+so the same notes name differently in C major and Db major. **The notes**: a
+root sounding in two octaves that is a 1st, 3rd or 5th degree of the key reads
+as root position, so `detect_chord` takes MIDI notes and counts octaves;
+pitch classes alone are read as undoubled. The port is in step with ScaleView
+Pro df4ea43; `runtime/composer/core.js` carries the same reader, and
+`tests/test_composer_js.py` compares the two over every pitch-class set in
+nine keys, because composed chords are too plain to show a reader change.
 
 ## Where the music theory lives
 
@@ -359,8 +400,9 @@ dataset and a liability. See `docs/DATASET.md`.
   shows is that the *collection* is nearly always right — 98–99.6% of detected
   tonics belong to the notes the signature names — and the tonic *inside* it is
   where we lose, which points at the second half of `detect_key`.
-- Harmonic analysis agrees with a human analyst's root on **80.5%** of 1,041
-  chorale chords and **62.7%** of 52,685 chords of songs, quartets and sonatas.
+- Harmonic analysis agrees with a human analyst's root on **80.2%** of 1,041
+  chorale chords and **64.3%** of 52,739 chords of songs, quartets and sonatas
+  (re-measured with ScaleView Pro df4ea43's reader; 80.5% and 62.7% before).
 - **How stepwise a melody should be is a per-style constant, and ours are not
   measured.** A chorale steps 70% of the time, a nineteenth-century song 47%
   (repeating a note 21% of the time, because it is setting syllables), a
@@ -377,6 +419,58 @@ dataset and a liability. See `docs/DATASET.md`.
   is a clean pattern where a drummer's is a cloud: they hit nearly every
   sixteenth *sometimes*, and we hit exactly what the pattern says. Ghost
   density and fills close part of that gap; per-bar variation would close more.
-- The soundfont path (vendored file → CDN → built-in tone) has been exercised
-  end to end against a locally built stand-in soundfont, but never against the
-  real FluidR3 file, because the sandbox blocks both CDNs. Try it for real.
+- **The app has not been heard or touched.** CI builds it, runs every
+  instrument offline and checks the sound as numbers, and opens a composed
+  song in the real app and saves a picture of the window
+  (`Middaw --snapshot out.png [--editor roll|score] song.mid`). Nobody has yet
+  clicked it, listened to it on speakers or played it from a MIDI keyboard.
+  `docs/DAW.md` lists its other limits.
+
+## The app
+
+`mac/`, described in `docs/DAW.md`. The rules that bite if forgotten:
+
+- **The family's code runs unchanged.** `family/engines/` (Lua) and
+  `family/devices/` (JSFX) are copies, recorded in their `VENDORED.md` with
+  the commit. Never edit them here: fix the project, sync, update the table,
+  and regenerate `tests/js/lua/engines.expected` with `tools/lua_goldens.sh`.
+  If an engine misbehaves, suspect `runtime/` first — it is held to the real
+  Lua byte for byte and to Midi Evolver's own engine checks, so a difference
+  is a bug in the runtime, not a licence to patch.
+- **The engines are spoken to through `runtime/host.js` only**: JSON in, JSON
+  out, errors returned as text. Node tests it (`tests/js/test_host.js`),
+  XCTest tests it again through JavaScriptCore. JavaScriptCore has no
+  `TextDecoder`; `runtime/polyfill.js` is loaded first for that reason.
+- **Compose is `runtime/composer/`, the composer ported to JavaScript.**
+  A change to `middaw/` is a change to `runtime/composer/` too, line for
+  line: `tests/test_composer_js.py` composes every vocabulary word and mixed
+  prompts both ways and fails on any difference, and
+  `tools/make_swift_fixtures.py` writes Python's answers for the XCTest that
+  checks the copy in JavaScriptCore. Python's `round` is half-to-even on the
+  exact value, its `%` takes the divisor's sign and its dicts keep order:
+  `runtime/composer/py.js` has each, and `pyrandom.js` is `random.Random` bit
+  for bit. Use them; JavaScript's own versions give different music.
+- **The core is held to the Python.** `tools/make_swift_fixtures.py` writes
+  every key's spelling and signature, and MIDI files byte for byte; the
+  Swift tests must match. Numbers in fixtures are hex floats: a JSON reader
+  may land a decimal one ulp away, at exactly the values where rounding
+  decides.
+- **A note in the app is `{start, len, pitch, vel}`**, in beats from its
+  clip's start. The composer and MIDI files say `duration` and `velocity`;
+  `Note`'s decoder reads both.
+- **Every change is one named undo step** (`Session.commit`, on the window's
+  UndoManager), so Edit > Undo says what it undoes. Dragging commits once, on
+  release.
+- **Generated music is placed by Miderator's rules**: into the chosen bars,
+  else at the caret on the chosen track; a suggestion on a new track beside
+  it; fitted to the instrument's range and polyphony; heard on piano or kit
+  before it is used.
+- **Drums have no key.** A kit track is never transposed by a key change,
+  never fitted to a key and never inverted; its notes name instruments.
+- **The house scheme and Apple's HIG**: `HousePalette` in MiddawCore is the
+  one place the colours live, and `PaletteTests` measures them — every word
+  7:1 on every surface, ink 7:1 on every button, cool greys; on is the accent
+  *and* a bar; red never for words; the status line at the top.
+  `docs/COLOUR.md` and `docs/HIG.md` are the record.
+- **No explainer text.** A label is a word or two; how a control works goes
+  in its tooltip (`.help`), if anywhere.

@@ -1,0 +1,196 @@
+[
+ {
+  "name": "plain",
+  "tempo": 120,
+  "meter": [
+   4,
+   4
+  ],
+  "root": 1,
+  "scale": 1,
+  "tracks": [
+   {
+    "name": "Piano",
+    "channel": 0,
+    "program": 0,
+    "notes": [
+     [
+      "0x0.0p+0",
+      "0x1.0000000000000p+0",
+      "0x1.e000000000000p+5",
+      "0x1.9000000000000p+6"
+     ],
+     [
+      "0x1.0000000000000p+0",
+      "0x1.0000000000000p+0",
+      "0x1.0000000000000p+6",
+      "0x1.6800000000000p+6"
+     ],
+     [
+      "0x1.0000000000000p+1",
+      "0x1.0000000000000p+1",
+      "0x1.0c00000000000p+6",
+      "0x1.4000000000000p+6"
+     ]
+    ],
+    "controls": []
+   }
+  ],
+  "midi": "TVRoZAAAAAYAAQACAeBNVHJrAAAAIwD/UQMHoSAA/1gEBAIYCAD/WQIAAAD/AwZNaWRkYXcA/y8ATVRyawAAACsA/wMFUGlhbm8AwAAAkDxkg2CAPEAAkEBag2CAQEAAkENQh0CAQ0AA/y8A"
+ },
+ {
+  "name": "flats, odd meter, rounding",
+  "tempo": 97,
+  "meter": [
+   7,
+   8
+  ],
+  "root": 16,
+  "scale": 2,
+  "tracks": [
+   {
+    "name": "Melody",
+    "channel": 0,
+    "program": 0,
+    "notes": [
+     [
+      "0x1.1111111111111p-10",
+      "0x1.0000000000000p-2",
+      "0x1.1800000000000p+6",
+      "0x1.02ccccccccccdp+6"
+     ],
+     [
+      "0x1.999999999999ap-9",
+      "0x1.0000000000000p-1",
+      "0x1.2000000000000p+6",
+      "0x1.ff9999999999ap+6"
+     ],
+     [
+      "0x1.aaaaa7ded6ba9p+1",
+      "0x1.999999999999ap-4",
+      "0x1.2800000000000p+6",
+      "0x0.0p+0"
+     ],
+     [
+      "0x1.4000000000000p+2",
+      "0x1.0c6f7a0b5ed8dp-20",
+      "0x1.2c00000000000p+6",
+      "0x1.9000000000000p+5"
+     ],
+     [
+      "0x1.8000000000000p+2",
+      "0x1.0000000000000p-1",
+      "0x1.0400000000000p+7",
+      "0x1.9000000000000p+7"
+     ]
+    ],
+    "controls": [
+     [
+      "0x0.0p+0",
+      "0x1.6000000000000p+3",
+      "0x1.4000000000000p+5"
+     ],
+     [
+      "0x0.0p+0",
+      "0x1.0000000000000p+0",
+      "0x0.0p+0"
+     ],
+     [
+      "0x1.4000000000000p+1",
+      "0x1.0000000000000p+6",
+      "0x1.fc00000000000p+6"
+     ],
+     [
+      "0x1.800346dc5d639p+1",
+      "0x1.6000000000000p+3",
+      "0x1.2c00000000000p+8"
+     ]
+    ]
+   },
+   {
+    "name": "Kit",
+    "channel": 9,
+    "program": 0,
+    "notes": [
+     [
+      "0x0.0p+0",
+      "0x1.0000000000000p-2",
+      "0x1.2000000000000p+5",
+      "0x1.b800000000000p+6"
+     ],
+     [
+      "0x0.0p+0",
+      "0x1.0000000000000p-2",
+      "0x1.5000000000000p+5",
+      "0x1.4000000000000p+6"
+     ],
+     [
+      "0x1.0000000000000p+0",
+      "0x1.0000000000000p-2",
+      "0x1.3000000000000p+5",
+      "0x1.9000000000000p+6"
+     ],
+     [
+      "0x1.0000000000000p+0",
+      "0x1.0000000000000p-2",
+      "0x1.2000000000000p+5",
+      "0x1.6800000000000p+6"
+     ]
+    ],
+    "controls": []
+   }
+  ],
+  "midi": "TVRoZAAAAAYAAQADAeBNVHJrAAAAIwD/UQMJcD0A/1gEBwMYCAD/WQL7AQD/AwZNaWRkYXcA/y8ATVRyawAAAE8A/wMGTWVsb2R5AMAAALALKACwAQAAkEZAApBIf3aARkB6gEhAhz6wQH+BcLALf4EgkEoBMIBKQIVwkEsyAYBLQINfkH9/gXCAf0AA/y8ATVRyawAAAC8A/wMDS2l0AMkAAJkkbgCZKlB4iSRAAIkqQIJomSZkAJkkWniJJkAAiSRAAP8vAA=="
+ },
+ {
+  "name": "repeated notes retrigger, unicode name",
+  "tempo": 60,
+  "meter": [
+   3,
+   4
+  ],
+  "root": 9,
+  "scale": 5,
+  "tracks": [
+   {
+    "name": "Violin I — détaché xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "channel": 2,
+    "program": 40,
+    "notes": [
+     [
+      "0x0.0p+0",
+      "0x1.0000000000000p+0",
+      "0x1.f000000000000p+5",
+      "0x1.6800000000000p+6"
+     ],
+     [
+      "0x1.0000000000000p+0",
+      "0x1.0000000000000p+0",
+      "0x1.f000000000000p+5",
+      "0x1.6800000000000p+6"
+     ],
+     [
+      "0x1.0000000000000p+0",
+      "0x1.0000000000000p-1",
+      "0x1.0800000000000p+6",
+      "0x1.4000000000000p+6"
+     ],
+     [
+      "0x1.6000000000000p+1",
+      "0x1.0000000000000p-2",
+      "0x1.1400000000000p+6",
+      "0x1.1800000000000p+6"
+     ]
+    ],
+    "controls": [
+     [
+      "0x1.0000000000000p+0",
+      "0x1.c000000000000p+2",
+      "0x1.9000000000000p+6"
+     ]
+    ]
+   }
+  ],
+  "midi": "TVRoZAAAAAYAAQACAeBNVHJrAAAAIwD/UQMPQkAA/1gEAwIYCAD/WQIEAQD/AwZNaWRkYXcA/y8ATVRyawAAAHMA/wNAVmlvbGluIEkg4oCUIGTDqXRhY2jDqSB4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eADCKACSPlqDYLIHZACCPkAAkj5aAJJCUIFwgkJAgXCCPkCCaJJFRniCRUAA/y8A"
+ }
+]

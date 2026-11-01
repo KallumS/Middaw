@@ -1,7 +1,7 @@
 """A small, dependency-free Standard MIDI File reader and writer.
 
-Only the subset Middaw needs: format 0/1 files, note on/off, program change,
-tempo, time signature, key signature and track names. Written by hand so the
+Only the subset Middaw needs: format 0/1 files, note on/off, controllers,
+program change, tempo, time signature, key signature and track names. Written by hand so the
 project has no runtime dependencies and so the byte layout stays inspectable
 (MIDI accuracy is the entire premise of the product).
 """
@@ -11,7 +11,7 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 
-from middaw.song import DRUM_CHANNEL, Note, Song, Track
+from middaw.song import DRUM_CHANNEL, Control, Note, Song, Track
 
 MICROSECONDS_PER_MINUTE = 60_000_000
 
@@ -33,17 +33,46 @@ def _chunk(tag: bytes, payload: bytes) -> bytes:
     return tag + struct.pack(">I", len(payload)) + payload
 
 
+# The seven-note collection whose signature a scale borrows. Altered minors
+# write the natural minor's signature and show their raised notes as
+# accidentals; pentatonics and blues borrow the scale they were cut from.
+_SIGNATURE_PARENT = {
+    "harmonic_minor": "minor", "melodic_minor": "minor",
+    "minor_pentatonic": "minor", "blues": "minor",
+    "major_pentatonic": "major", "major_blues": "major",
+}
+_MINOR_THIRD = {"minor", "aeolian", "dorian", "phrygian", "locrian",
+                "harmonic_minor", "melodic_minor", "minor_pentatonic", "blues",
+                "diminished_wh"}
+
+
 def _key_signature_bytes(key_name: str) -> bytes:
-    """Best-effort key signature meta event (sharps/flats count + major/minor)."""
-    sharps_major = {"C": 0, "G": 1, "D": 2, "A": 3, "E": 4, "B": 5, "F#": 6, "F": -1,
-                    "A#": -2, "D#": -3, "G#": -4, "C#": -5}
-    parts = key_name.split()
-    root = parts[0] if parts else "C"
-    minorish = len(parts) > 1 and parts[1].startswith(("min", "aeol", "dor", "phry", "loc", "harm", "mel", "blu"))
-    accidentals = sharps_major.get(root, 0)
-    if minorish:
-        accidentals = max(-7, min(7, accidentals - 3))
-    return struct.pack(">bB", accidentals, 1 if minorish else 0)
+    """Key signature meta event: sharps (+) or flats (-), and major/minor.
+
+    Counted from the key's own spelling (ScaleView's), so Bb major has two
+    flats and D dorian none - a mode writes its parent's signature."""
+    from middaw.scaleview import ROOTS_BY_NAME, SCALES, Key
+
+    parts = key_name.split(None, 1)
+    root = parts[0] if parts and parts[0] in ROOTS_BY_NAME else "C"
+    label = parts[1].strip().lower() if len(parts) > 1 else "major"
+    mode = "major"
+    for scale_id, scale in SCALES.items():
+        if scale.name.lower() == label or scale_id == label.replace(" ", "_"):
+            mode = scale_id
+            break
+    else:
+        if label.startswith("min"):
+            mode = "minor"
+    parent = Key(root, _SIGNATURE_PARENT.get(mode, mode))
+    accidentals = 0
+    if len(parent.scale.intervals) == 7:
+        for pc in parent.active:
+            name = parent.names[pc]
+            accidentals += name[1:].count("#") + 2 * name[1:].count("x")
+            accidentals -= name[1:].count("b")
+    accidentals = max(-7, min(7, accidentals))
+    return struct.pack(">bB", accidentals, 1 if mode in _MINOR_THIRD else 0)
 
 
 def song_to_bytes(song: Song) -> bytes:
@@ -66,6 +95,12 @@ def song_to_bytes(song: Song) -> bytes:
         name = track.name.encode("utf-8")[:64]
         events.append((0, 0, b"\xff\x03" + _vlq(len(name)) + name))
         events.append((0, 1, bytes([0xC0 | (track.channel & 0x0F), track.program & 0x7F])))
+        for control in track.controls:
+            # A controller lands before a note at the same tick, so a note
+            # starts with the expression it was written with.
+            events.append((max(0, int(round(control.start * tpb))), 1,
+                           bytes([0xB0 | (track.channel & 0x0F), control.controller & 0x7F,
+                                  max(0, min(127, int(control.value)))])))
         for note in track.notes:
             start = int(round(note.start * tpb))
             end = max(start + 1, int(round(note.end * tpb)))
@@ -196,7 +231,10 @@ def bytes_to_song(data: bytes) -> MidiFile:
                 if kind in (0x80, 0x90, 0xA0, 0xB0, 0xE0):
                     data1, data2 = body[cursor], body[cursor + 1]
                     cursor += 2
-                    if kind == 0x90 and data2 > 0:
+                    if kind == 0xB0:
+                        track.controls.append(Control(start=tick / ticks_per_beat,
+                                                      controller=data1, value=data2))
+                    elif kind == 0x90 and data2 > 0:
                         open_notes.setdefault((channel, data1), []).append((tick, data2))
                     elif kind == 0x80 or (kind == 0x90 and data2 == 0):
                         stack = open_notes.get((channel, data1))

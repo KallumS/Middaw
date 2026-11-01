@@ -1,8 +1,18 @@
 # Middaw
 
-Text prompt in, MIDI out. **MIDI-first**: notes are composed as notes and
-written straight to a Standard MIDI File. Nothing is generated as audio and
-transcribed back, so nothing is approximated.
+A generative DAW for Apple silicon Macs. Describe the music and it is
+written - melody, countermelody, harmony, bass and drums on five tracks - or
+start from an ensemble and write it yourself. **MIDI-first**: notes are
+composed as notes, never generated as audio and transcribed back, so nothing
+is approximated.
+
+Then work on it the way you would in any DAW - arrange view, piano roll,
+score, mixer, undo - with the rest of the family built in: Good Idea, Midi
+Suggester and Midi Variator in the Generate panel, Starting Blocks over the
+piano roll, Midi Catalogue and Orchestration Helper in the browser, ScaleView
+in the toolbar, AutoCC on every clip, and the Battle Pass.
+**[docs/DAW.md](docs/DAW.md)** says where each one lives, and what is not
+built yet.
 
 ```
 What do you want to create?
@@ -12,31 +22,35 @@ lofi, sad | F Minor (Natural) | 82 BPM | 4/4 | 16 bars
 Fmin7  Bbmin7  Eb7  Abmaj7   Repeats every 4 bars
 ```
 
-## Run it
+## Get it
 
-No dependencies. Python 3.11+, and a browser.
+Every push is built and tested on an Apple silicon Mac by GitHub Actions:
+open the latest **Mac** run under the repository's Actions tab and download
+**Middaw-app**. Unzip it; the first time, right-click **Middaw** and choose
+**Open**.
+
+Or build it (Xcode 16, or just its Command Line Tools):
 
 ```sh
-python3 server/app.py           # http://127.0.0.1:8765
+mac/scripts/bundle.sh           # -> mac/build/Middaw.app
 ```
 
-Optional, for a real piano instead of the built-in fallback tone:
+Nothing to install: Compose runs in the app (`runtime/composer/`, the
+composer below ported to JavaScript and held to it note for note).
 
-```sh
-python3 tools/fetch_soundfont.py
-```
-
-From the command line:
+From the command line, the composer on its own:
 
 ```sh
 python3 -m middaw "a celtic jig" -o jig.mid
 python3 -m middaw "epic cinematic build in 3/4, 32 bars" --seed 42 --json
 ```
 
-Tests:
+Tests: the composer and the runtimes (Python, and JavaScript when Node is
+installed), then the app (on a Mac):
 
 ```sh
 python3 -m unittest discover -s tests -t .
+cd mac && swift test
 ```
 
 ## What it understands
@@ -97,8 +111,9 @@ genre adds it to both at once.
 | `middaw/` | the generator: prompt → spec → notes → MIDI |
 | `middaw/scaleview.py` | scales, key-aware spelling and the chord reader, ported from [ScaleView Pro](https://github.com/KallumS/scaleview-for-reaper) |
 | `middaw/corpus/` | the labelled dataset: schema, analysis, statistics, CLI |
-| `server/app.py` | the local web app (standard library only) |
-| `web/` | one screen, no build step |
+| `mac/` | the app: a Swift package (SwiftUI, Core Audio, Core MIDI, JavaScriptCore): [docs/DAW.md](docs/DAW.md) |
+| `runtime/` | Lua 5.4 and EEL2 in JavaScript, so the family's engines and devices run unchanged |
+| `family/` | the family's Lua engines and JSFX devices, vendored unchanged |
 | `data/vocab/tags.json` | the shared vocabulary |
 | `docs/` | the design decisions |
 
@@ -119,6 +134,12 @@ genre adds it to both at once.
   why the label schema is also the prompt vocabulary
 - **[docs/DATASET.md](docs/DATASET.md)** — sourcing MIDI you are actually
   allowed to use, and the two-clearance problem that catches everybody
+- **[docs/DAW.md](docs/DAW.md)** — the app: how it is built, where each
+  family project lives, what is not built yet
+- **[docs/BROWSER-DAW.md](docs/BROWSER-DAW.md)** — the browser version it
+  replaced, and how to get it back
+- **[docs/HIG.md](docs/HIG.md)** and **[docs/COLOUR.md](docs/COLOUR.md)** —
+  Apple's guidelines and the house scheme, checked
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — how the pieces fit
 - **[docs/ROADMAP.md](docs/ROADMAP.md)** — rules → corpus statistics → model
 
@@ -149,4 +170,4 @@ for generation by default. This is enforced rather than documented because
 
 ## Licence
 
-GNU General Public License v3 - see [LICENSE](LICENSE). `middaw/scaleview.py` is ported from ScaleView for REAPER, also GPL v3.
+GNU General Public License v3 - see [LICENSE](LICENSE). `middaw/scaleview.py` is ported from ScaleView for REAPER, and everything under `family/` is the family's own GPL v3 code, unchanged. The notation glyphs carry their own licence (`family/engines/notation/sb_glyphs-OFL.txt`).
