@@ -114,6 +114,17 @@ engine, exactly as Pro and Simple are over there. The ranking constants and
 their reasoning are ScaleView's; that repo's CLAUDE.md has the measurements
 behind each one, and they were measured, not tuned by ear.
 
+Two things the reader now needs that a set of pitch classes does not carry.
+**The key**: Starting Blocks' chords (`BLOCKS_CHORDS`, `BLOCKS_DIATONIC`)
+decide which roots a chord can have, and half of that is the key's own chords,
+so the same notes name differently in C major and Db major. **The notes**: a
+root sounding in two octaves that is a 1st, 3rd or 5th degree of the key reads
+as root position, so `detect_chord` takes MIDI notes and counts octaves;
+pitch classes alone are read as undoubled. The port is in step with ScaleView
+Pro df4ea43; `runtime/composer/core.js` carries the same reader, and
+`tests/test_composer_js.py` compares the two over every pitch-class set in
+nine keys, because composed chords are too plain to show a reader change.
+
 ## Where the music theory lives
 
 `docs/THEORY.md` records everything taken from the source material — Kallum's
@@ -389,8 +400,9 @@ dataset and a liability. See `docs/DATASET.md`.
   shows is that the *collection* is nearly always right — 98–99.6% of detected
   tonics belong to the notes the signature names — and the tonic *inside* it is
   where we lose, which points at the second half of `detect_key`.
-- Harmonic analysis agrees with a human analyst's root on **80.5%** of 1,041
-  chorale chords and **62.7%** of 52,685 chords of songs, quartets and sonatas.
+- Harmonic analysis agrees with a human analyst's root on **80.2%** of 1,041
+  chorale chords and **64.3%** of 52,739 chords of songs, quartets and sonatas
+  (re-measured with ScaleView Pro df4ea43's reader; 80.5% and 62.7% before).
 - **How stepwise a melody should be is a per-style constant, and ours are not
   measured.** A chorale steps 70% of the time, a nineteenth-century song 47%
   (repeating a note 21% of the time, because it is setting syllables), a

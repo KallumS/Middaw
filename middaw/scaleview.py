@@ -16,9 +16,17 @@ and on what a set of notes is called. Two things come across:
   usable for corpus labelling, where every chord symbol in the dataset is
   derived by this function and never typed by hand.
 
+Since ScaleView Pro df4ea43 (October 2026) the reader also takes Starting
+Blocks' chords as its dictionary of roots: where the notes are a Blocks chord,
+the name is on one of Blocks' roots for them. One table of that is the key's
+own chords, so the `key` passed to `detect_chord` decides readings, not only
+draws; C major when none is given, as ScaleView assumes with no scale chosen.
+
 The ranking constants and their reasoning are ScaleView's; see that repo's
 CLAUDE.md for the measurements behind each one. Keep the two in step: a fix
-here probably belongs there too.
+here probably belongs there too. In step with ScaleView Pro's reader at
+df4ea43, checked against the Lua script itself over 157,740 readings in ten
+keys.
 """
 
 from __future__ import annotations
@@ -200,11 +208,17 @@ CORE_RANK = {
     "sus4/P/none": 10, "sus2/P/none": 11,
     "min/P/maj7": 12,
     "maj/#/b7": 13, "maj/b/b7": 14, "maj/#/maj7": 15,
-    "sus4/P/b7": 16, "sus2/P/b7": 17,
-    "sus4/P/maj7": 18, "sus2/P/maj7": 19,
-    # A missing third is a different chord, not a thinner one.
-    "none/P/b7": 30, "none/P/maj7": 31,
-    "none/b/maj7": 32, "none/b/b7": 33, "none/P/none": 34,
+    # maj7b5 was missing, though players write it constantly as the Lydian
+    # tonic: without it D D# G A read Dsus4b9 rather than D#maj7b5/D.
+    "maj/b/maj7": 16,
+    "sus4/P/b7": 17, "sus2/P/b7": 18,
+    "sus4/P/maj7": 19, "sus2/P/maj7": 20,
+    # A missing third is a different chord, not a thinner one. One whose fifth
+    # is *also* altered is odd twice over, so those two sit past COST_INVERSION
+    # from an unnamed quality with a third (25): D E A# reads Bb(b5)/E, not
+    # E7b5(no3). The perfect-fifth ones stay, which keeps C G Bb as C7(no3).
+    "none/P/b7": 30, "none/P/maj7": 31, "none/P/none": 34,
+    "none/b/maj7": 41, "none/b/b7": 42,
 }
 
 RANK_UNNAMED = {"maj": 25, "min": 25, "sus4": 70, "sus2": 70, "none": 90}
@@ -220,6 +234,10 @@ COST_ALTERED = 5         # b9, #9, #11, b13 colouring a chord at home with it
 COST_CLASHING = 18       # the same alteration where it does not belong
 COST_SUS_EXTRA = 12      # a suspension does not carry added tones
 COST_SIXTH = 4
+# A minor sixth is the one sixth that is also something else: A C E F# is
+# Amin6 and equally F#min7b5. The two tied exactly, and the half-diminished is
+# what Scaler, jazznet and the DCML and When in Rome analysts write.
+COST_MIN_SIXTH = 5
 
 SPECIAL = {
     "min/b/none": "dim", "min/b/bb7": "dim7", "min/b/b7": "min7b5",
@@ -233,10 +251,19 @@ EXTENSION = {
 }
 
 ASSUMED_KEY = {0, 2, 4, 5, 7, 9, 11}
+# The same assumption's first, third and fifth degrees, for the doubled-degree
+# rule. Change the assumed key and this has to change with it.
+ASSUMED_TONIC = {0, 4, 7}
 
 
-def _core(has: set[int]) -> tuple[str, str, str, set[int]]:
-    """Read the intervals present into a third, a fifth and a seventh."""
+def _core(has: set[int], prefer_sharp_five: bool = False
+          ) -> tuple[str, str, str, set[int]]:
+    """Read the intervals present into a third, a fifth and a seventh.
+
+    Where both a flattened and a raised fifth sound, which one is *the* fifth
+    is a choice, so `prefer_sharp_five` asks for the other reading and
+    `analyse` costs both: C E F# G# B is Cmaj7#5#11, not Cmaj7b5b13.
+    """
     used = {0}
     if 4 in has:
         third = "maj"; used.add(4)
@@ -251,6 +278,8 @@ def _core(has: set[int]) -> tuple[str, str, str, set[int]]:
 
     if 7 in has:
         fifth = "P"; used.add(7)
+    elif 6 in has and 8 in has and prefer_sharp_five:
+        fifth = "#"; used.add(8)
     elif 6 in has:
         fifth = "b"; used.add(6)
     elif 8 in has:
@@ -308,9 +337,10 @@ def _rank_of(third: str, fifth: str, seventh: str) -> int:
     return RANK_UNNAMED[third] + (RANK_TWICE_ODD if seventh != "none" else 0)
 
 
-def analyse(has: set[int], root: int, bass: int) -> tuple[str, int, int]:
+def analyse_as(has: set[int], root: int, bass: int,
+               prefer_sharp_five: bool = False) -> tuple[str, int, int]:
     """Name the intervals in `has` (relative to `root`), and say what it cost."""
-    third, fifth, seventh, used = _core(has)
+    third, fifth, seventh, used = _core(has, prefer_sharp_five)
     rank = _rank_of(third, fifth, seventh)
     name, cost = _core_name(third, fifth, seventh), rank
 
@@ -379,7 +409,8 @@ def analyse(has: set[int], root: int, bass: int) -> tuple[str, int, int]:
     else:
         # No seventh, so nothing stacks: everything above the triad is an add.
         if sixth:
-            cost += COST_SIXTH
+            cost += (COST_MIN_SIXTH if (third == "min" and fifth == "P")
+                     else COST_SIXTH)
             mark = "b5" if fifth == "b" else ("#5" if fifth == "#" else "")
             if naturals.get(9) and third in ("maj", "min"):
                 naturals.pop(9, None)
@@ -393,6 +424,13 @@ def analyse(has: set[int], root: int, bass: int) -> tuple[str, int, int]:
                 name = "6" + mark
             else:
                 name += "(add6)"
+        # A diminished seventh carrying a ninth is a dim9: the number rises as
+        # it does under any other seventh. Renamed only - the cost is what an
+        # added tone costs, so which reading wins is untouched.
+        if seventh == "bb7" and naturals.get(9):
+            naturals.pop(9, None)
+            name = name.replace("dim7", "dim9", 1)
+            cost += COST_ADD
         for degree in (9, 11, 13):
             if naturals.get(degree):
                 cost += COST_CLASH if (degree == 11 and third == "maj") else COST_ADD
@@ -404,8 +442,15 @@ def analyse(has: set[int], root: int, bass: int) -> tuple[str, int, int]:
         # A complete triad is allowed to carry an alteration, which is what
         # Scaler does - but not a b13, whose note is almost always a chord tone
         # of something plainer.
-        at_home = (fifth not in ("b", "#") and token != "maj7"
-                   and (token == "#11" or dominant or (triad and token != "b13")))
+        # An altered fifth is no bar on a dominant standing on its own root:
+        # 7#5b9, 7b5#9 and 7b9b13 are the altered dominants every lead sheet
+        # writes. Only from the bass - from an inversion it read F A C G C#
+        # over C as Aaug7#9/C.
+        plain_fifth = fifth not in ("b", "#")
+        at_home = (token != "maj7"
+                   and ((dominant and (plain_fifth or root == bass))
+                        or (plain_fifth and (token == "#11"
+                                             or (triad and token != "b13")))))
         # A flattened sixth is a b13 only when a seventh is under it; without
         # one it is an added flat sixth. Only the printed name changes.
         if token == "b13" and seventh == "none":
@@ -432,52 +477,213 @@ def analyse(has: set[int], root: int, bass: int) -> tuple[str, int, int]:
     return name, cost, rank
 
 
+def analyse(has: set[int], root: int, bass: int) -> tuple[str, int, int]:
+    """With both fifths sounding and no perfect one, cost both readings."""
+    name, cost, rank = analyse_as(has, root, bass, False)
+    if 6 in has and 8 in has and 7 not in has:
+        alt_name, alt_cost, alt_rank = analyse_as(has, root, bass, True)
+        if alt_cost < cost:
+            return alt_name, alt_cost, alt_rank
+    return name, cost, rank
+
+
+def tonic_degrees(key: Key) -> set[int]:
+    """The first, third and fifth degrees of the key, read off its scale."""
+    intervals = key.scale.intervals
+    return {(key.tonic + intervals[degree]) % 12
+            for degree in (0, 2, 4) if degree < len(intervals)}
+
+
+def read_as_root_position(root: int, bass: int, voices: dict[int, int],
+                          key: Key) -> bool:
+    """A doubled degree of the key claims the bass.
+
+    A root that is a first, third or fifth degree of the key and sounds in
+    more than one octave is how a chord is voiced in root position, so the
+    slash comes off: E G C C is C. It can only ever remove a slash. The cost
+    model is untouched; this decides how the winner is written down.
+    """
+    if root == bass:
+        return True
+    if voices.get(root, 0) < 2:
+        return False
+    return root in tonic_degrees(key)
+
+
+# Starting Blocks' chords decide which roots a chord can have. Where the notes
+# are a Blocks chord - one of its chord types on any root, in any inversion,
+# or one of the key's own chords on its degrees - the name is on one of
+# Blocks' roots for them, the reader's cost choosing between them as always.
+# Other notes are read as before. Copied unchanged from Starting Blocks'
+# `sb_engine.lua` (`M.CHORDS` intervals, `M.DIATONIC` offsets) at fc4dd32, by
+# way of ScaleView Pro df4ea43. Measured there: on Blocks' own 670,248 chords
+# the root is Blocks' 74.4% of the time, against 52% before.
+BLOCKS_CHORDS = (
+    (0, 4, 7), (0, 3, 7), (0, 3, 6), (0, 4, 8), (0, 4, 6), (0, 7),
+    (0, 4, 7, 9), (0, 3, 7, 9), (0, 4, 7, 9, 14), (0, 3, 7, 9, 14), (0, 4, 7, 10), (0, 4, 7, 11),
+    (0, 3, 7, 10), (0, 3, 7, 11), (0, 3, 6, 10), (0, 3, 6, 9), (0, 4, 8, 10), (0, 4, 8, 11),
+    (0, 4, 6, 10), (0, 3, 6, 11), (0, 4, 7, 9, 10),
+    (0, 4, 7, 10, 14), (0, 4, 7, 11, 14), (0, 3, 7, 10, 14), (0, 3, 7, 11, 14), (0, 4, 7, 10, 14, 17),
+    (0, 4, 7, 11, 14, 17), (0, 3, 7, 10, 14, 17), (0, 4, 7, 10, 14, 17, 21), (0, 4, 7, 11, 14, 17, 21),
+    (0, 3, 7, 10, 14, 17, 21),
+    (0, 4, 7, 10, 13), (0, 4, 7, 10, 15), (0, 4, 7, 10, 18), (0, 4, 7, 10, 20), (0, 4, 8, 10, 13),
+    (0, 4, 8, 10, 15), (0, 4, 6, 10, 13), (0, 4, 8, 10, 13, 15), (0, 4, 7, 10, 13, 21),
+    (0, 4, 7, 11, 18), (0, 3, 6, 10, 14), (0, 4, 8, 10, 14), (0, 4, 6, 10, 14), (0, 4, 7, 10, 14, 18),
+    (0, 4, 8, 11, 18), (0, 4, 6, 10, 13, 21),
+    (0, 2, 7), (0, 5, 7), (0, 5, 7, 10), (0, 5, 7, 10, 14), (0, 5, 7, 11), (0, 4, 7, 14),
+    (0, 3, 7, 14), (0, 4, 5, 7), (0, 4, 7, 17), (0, 4, 7, 21), (0, 2, 4, 7), (0, 2, 3, 7),
+    (0, 5, 10), (0, 5, 10, 15), (0, 7, 14), (0, 2, 4), (0, 1, 2), (0, 2, 4, 5),
+    (0, 6, 10, 16, 21, 26), (0, 4, 6, 7, 10, 13), (0, 6, 10, 15), (0, 5, 10, 15, 19), (0, 5, 6, 7),
+    (0, 1, 6), (0, 6, 7), (0, 1, 4, 5, 8, 9), (0, 7, 9, 13, 16), (0, 8, 11, 16, 21), (0, 4, 10),
+    (0, 4, 6, 10), (0, 4, 7, 10),
+)
+# Scale degrees above the one chosen: triad, 7th, 9th, 11th, 13th, 6th,
+# sus2, sus4, 5th.
+BLOCKS_DIATONIC = (
+    (0, 2, 4), (0, 2, 4, 6), (0, 2, 4, 6, 8), (0, 2, 4, 6, 8, 10), (0, 2, 4, 6, 8, 10, 12),
+    (0, 2, 4, 5), (0, 1, 4), (0, 3, 4), (0, 4),
+)
+
+
+def mask_from(classes, root: int) -> int:
+    """A set of pitch classes as a 12-bit mask, read from a root."""
+    mask = 0
+    for pc in classes:
+        mask |= 1 << ((pc - root) % 12)
+    return mask
+
+
+# Every chord type, as the pitch classes it holds above its root.
+BLOCKS_TYPES = {mask_from(shape, 0) for shape in BLOCKS_CHORDS}
+
+# The key's own chords, built once per key: mask -> the roots it is built on.
+_KEY_CHORDS: dict[tuple[int, str], dict[int, set[int]]] = {}
+
+
+def blocks_key_chords(key: Key) -> dict[int, set[int]]:
+    cache_key = (key.tonic, key.scale_id)
+    chords = _KEY_CHORDS.get(cache_key)
+    if chords is None:
+        intervals = key.scale.intervals
+        n = len(intervals)
+
+        def pitch(degree: int) -> int:
+            return key.tonic + intervals[degree % n] + 12 * (degree // n)
+
+        chords = {}
+        for degree in range(n):
+            root = pitch(degree) % 12
+            for offsets in BLOCKS_DIATONIC:
+                mask = 0
+                for o in offsets:
+                    mask |= 1 << (pitch(degree + o) % 12)
+                chords.setdefault(mask, set()).add(root)
+        _KEY_CHORDS[cache_key] = chords
+    return chords
+
+
+def blocks_roots(classes: set[int], key: Key) -> set[int] | None:
+    """The roots Blocks builds these notes on, or None if it builds them on none."""
+    in_key = blocks_key_chords(key).get(mask_from(classes, 0), set())
+    roots = {root for root in range(12)
+             if root in classes
+             and (root in in_key or mask_from(classes, root) in BLOCKS_TYPES)}
+    return roots or None
+
+
 def detect_chord(pitch_classes, bass: int | None = None,
                  key: Key | None = None) -> str | None:
-    """Name a set of pitch classes. `bass` decides inversions.
+    """Name a set of notes. `bass` decides inversions.
+
+    `pitch_classes` may be MIDI notes rather than pitch classes: a pitch class
+    sounding in more than one octave is what lets a doubled root of the key
+    read as root position. Pitch classes alone are read exactly as before.
+    `key` settles draws and supplies Blocks' chords; C major when not given.
 
     Returns None for an empty set; returns the notes spelled out when there is
     no chord to find, which is what ScaleView shows rather than guessing.
     """
-    classes = {pc % 12 for pc in pitch_classes}
+    notes = {int(n) for n in pitch_classes}
+    classes = {n % 12 for n in notes}
     if not classes:
         return None
+    voices: dict[int, int] = {}
+    for n in notes:
+        voices[n % 12] = voices.get(n % 12, 0) + 1   # octaves it is sounding in
     if bass is None:
-        bass = min(classes)
+        bass = min(notes)
     bass %= 12
     key = key or Key("C", "major")
     name_of = key.chord_note_name
+    in_key = key.active if key else ASSUMED_KEY
+    count = len(classes)
 
-    if len(classes) == 1:
-        return name_of(next(iter(classes)))
+    def written(root: int, quality: str) -> str:
+        name = name_of(root) + quality
+        if not read_as_root_position(root, bass, voices, key):
+            name += "/" + name_of(bass)
+        return name
+
+    def fit_of(root: int) -> int:
+        return (100 if root in in_key else 0) + sum(1 for pc in classes if pc in in_key)
+
+    def better(cost, fit, slash, rank, best) -> bool:
+        # The cheaper reading, then the key, then no slash, then the commoner
+        # quality. C D G Bb over C is C7sus2, not GminAdd11/C.
+        return (best is None or cost < best[0]
+                or (cost == best[0] and fit > best[1])
+                or (cost == best[0] and fit == best[1] and best[2] and not slash)
+                or (cost == best[0] and fit == best[1] and slash == best[2]
+                    and rank < best[3]))
+
+    if count == 1:
+        return name_of(bass)
+
+    # A Blocks chord is named on one of Blocks' roots for it, chosen the way
+    # the reader below chooses, in the reader's own words from that root.
+    blocks = blocks_roots(classes, key)
+    if blocks:
+        pick = None
+        for root in range(12):
+            if root not in blocks:
+                continue
+            has = {(pc - root) % 12 for pc in classes}
+            quality, cost, rank = analyse(has, root, bass)
+            if count == 2:
+                quality = ("5" if 7 in has else "maj(no5)" if 4 in has
+                           else "min(no5)" if 3 in has else quality)
+            fit, slash = fit_of(root), root != bass
+            if better(cost, fit, slash, rank, pick):
+                pick = (cost, fit, slash, rank, root, quality)
+        return written(pick[4], pick[5])
 
     def spell_out() -> str:
         return " ".join(name_of(pc) for pc in range(12) if pc in classes)
 
-    # Two notes are an interval rather than a chord, and only the bare fifth
-    # has a name of its own.
-    if len(classes) == 2:
+    # Two notes are an interval rather than a chord, except the bare fifth and
+    # a third. A third names a chord, and the missing fifth is said out loud:
+    # printing C for C E would claim a G nobody is playing.
+    if count == 2:
         for root in range(12):
             if root in classes and (root + 7) % 12 in classes:
-                name = name_of(root) + "5"
-                return name if root == bass else f"{name}/{name_of(bass)}"
+                return written(root, "5")
+        for root in range(12):
+            if root in classes:
+                quality = ("maj" if (root + 4) % 12 in classes
+                           else "min" if (root + 3) % 12 in classes else None)
+                if quality:
+                    return written(root, quality + "(no5)")
         return spell_out()
 
     # Past a certain thickness there is no chord left to find, only a cluster.
-    if len(classes) > 7:
+    if count > 7:
         return spell_out()
 
-    in_key = key.active if key else ASSUMED_KEY
     best = None
     for root in sorted(classes):
         has = {(pc - root) % 12 for pc in classes}
         name, cost, rank = analyse(has, root, bass)
-        fit = (100 if root in in_key else 0) + sum(1 for pc in classes if pc in in_key)
-        if (best is None or cost < best[1]
-                or (cost == best[1] and fit > best[3])
-                or (cost == best[1] and fit == best[3] and rank < best[2])):
-            best = (name, cost, rank, fit, root)
-
-    name, _cost, _rank, _fit, root = best
-    symbol = name_of(root) + name
-    return symbol if root == bass else f"{symbol}/{name_of(bass)}"
+        fit, slash = fit_of(root), root != bass
+        if better(cost, fit, slash, rank, best):
+            best = (cost, fit, slash, rank, root, name)
+    return written(best[4], best[5])

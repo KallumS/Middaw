@@ -140,8 +140,9 @@ Practical rules worth encoding:
   incomplete voicings are normal and a "no5" chord barely changes function. ◐
 - **A missing third has to be said out loud** — `maj7b5(no3)`, not silence. ✅
 - **The natural 11 clashes with a major third**; omit it or bracket it. ○
-- **Two notes are an interval, not a chord**, and only the bare fifth has a name
-  of its own. ✅
+- **Two notes are an interval, not a chord**, except the bare fifth and a
+  third: C E is Cmaj(no5), the missing fifth said out loud because with two
+  notes it cannot be silent. ✅
 - **Past seven notes there is no chord left to find, only a cluster.** ✅
 - **All chords are each other in disguise.** G Bb D F# is Gm∆7; put F# at the
   bottom and it starts to sound like F#+(b9). Voicing changes function. ○

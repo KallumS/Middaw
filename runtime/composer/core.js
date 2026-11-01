@@ -109,20 +109,23 @@
   var CORE_RANK = {
     'maj/P/none': 1, 'min/P/none': 2, 'maj/P/b7': 3, 'min/P/b7': 4, 'maj/P/maj7': 5,
     'min/b/b7': 6, 'min/b/bb7': 7, 'min/b/none': 8, 'maj/#/none': 9, 'sus4/P/none': 10, 'sus2/P/none': 11,
-    'min/P/maj7': 12, 'maj/#/b7': 13, 'maj/b/b7': 14, 'maj/#/maj7': 15, 'sus4/P/b7': 16, 'sus2/P/b7': 17,
-    'sus4/P/maj7': 18, 'sus2/P/maj7': 19, 'none/P/b7': 30, 'none/P/maj7': 31, 'none/b/maj7': 32, 'none/b/b7': 33, 'none/P/none': 34
+    'min/P/maj7': 12, 'maj/#/b7': 13, 'maj/b/b7': 14, 'maj/#/maj7': 15, 'maj/b/maj7': 16,
+    'sus4/P/b7': 17, 'sus2/P/b7': 18, 'sus4/P/maj7': 19, 'sus2/P/maj7': 20,
+    'none/P/b7': 30, 'none/P/maj7': 31, 'none/P/none': 34, 'none/b/maj7': 41, 'none/b/b7': 42
   };
   var RANK_UNNAMED = { maj: 25, min: 25, sus4: 70, sus2: 70, none: 90 };
   var RANK_TWICE_ODD = 12, RANK_NO_FIFTH = 20, RANK_NO_FIFTH7 = 4, RANK_ELEVENTH = 6, COST_INVERSION = 14;
   var COST_NATURAL = 1, COST_ADD = 2, COST_CLASH = 6, COST_ALTERED = 5, COST_CLASHING = 18, COST_SUS_EXTRA = 12, COST_SIXTH = 4;
+  var COST_MIN_SIXTH = 5;
   var SPECIAL = {
     'min/b/none': 'dim', 'min/b/bb7': 'dim7', 'min/b/b7': 'min7b5', 'maj/#/none': 'aug', 'maj/#/b7': 'aug7',
     'maj/#/maj7': 'maj7#5', 'maj/b/b7': '7b5', 'min/P/maj7': 'minMaj7', 'min/none/maj7': 'minMaj7'
   };
   var EXTENSION = { 1: ['b9', true, null], 2: ['9', false, 9], 3: ['#9', true, null], 5: ['11', false, 11], 6: ['#11', true, null], 8: ['b13', true, null] };
   var ASSUMED_KEY = new Set([0, 2, 4, 5, 7, 9, 11]);
+  var ASSUMED_TONIC = new Set([0, 4, 7]);
 
-  function core(has) {
+  function core(has, prefer_sharp_five) {
     var used = new Set([0]), third, fifth, seventh;
     if (has.has(4)) { third = 'maj'; used.add(4); }
     else if (has.has(3)) { third = 'min'; used.add(3); }
@@ -130,6 +133,7 @@
     else if (has.has(2)) { third = 'sus2'; used.add(2); }
     else third = 'none';
     if (has.has(7)) { fifth = 'P'; used.add(7); }
+    else if (has.has(6) && has.has(8) && prefer_sharp_five) { fifth = '#'; used.add(8); }
     else if (has.has(6)) { fifth = 'b'; used.add(6); }
     else if (has.has(8)) { fifth = '#'; used.add(8); }
     else fifth = 'none';
@@ -161,8 +165,8 @@
     if (rank !== undefined) return rank;
     return RANK_UNNAMED[third] + (seventh !== 'none' ? RANK_TWICE_ODD : 0);
   }
-  function analyse(has, root, bass) {
-    var c = core(has), third = c[0], fifth = c[1], seventh = c[2], used = c[3];
+  function analyse_as(has, root, bass, prefer_sharp_five) {
+    var c = core(has, prefer_sharp_five), third = c[0], fifth = c[1], seventh = c[2], used = c[3];
     var rank = rank_of(third, fifth, seventh);
     var name = core_name(third, fifth, seventh), cost = rank;
     var naturals = {}, altered = [], sixth = false, as_eleventh = false;
@@ -198,7 +202,7 @@
       if (spare.length) name += '(' + spare.join(',') + ')';
     } else {
       if (sixth) {
-        cost += COST_SIXTH;
+        cost += (third === 'min' && fifth === 'P') ? COST_MIN_SIXTH : COST_SIXTH;
         var mark = fifth === 'b' ? 'b5' : (fifth === '#' ? '#5' : '');
         if (naturals[9] && (third === 'maj' || third === 'min')) {
           delete naturals[9];
@@ -208,6 +212,11 @@
         else if (third === 'maj') name = fifth === '#' ? 'aug6' : ('6' + mark);
         else if (third === 'none') name = '6' + mark;
         else name += '(add6)';
+      }
+      if (seventh === 'bb7' && naturals[9]) {
+        delete naturals[9];
+        name = name.replace('dim7', 'dim9');
+        cost += COST_ADD;
       }
       [9, 11, 13].forEach(function (degree) {
         if (naturals[degree]) {
@@ -219,7 +228,9 @@
     var dominant = third === 'maj' && seventh === 'b7';
     var triad = (third === 'maj' || third === 'min') && fifth === 'P';
     altered.forEach(function (token) {
-      var at_home = fifth !== 'b' && fifth !== '#' && token !== 'maj7' && (token === '#11' || dominant || (triad && token !== 'b13'));
+      var plain_fifth = fifth !== 'b' && fifth !== '#';
+      var at_home = token !== 'maj7' && ((dominant && (plain_fifth || root === bass)) ||
+        (plain_fifth && (token === '#11' || (triad && token !== 'b13'))));
       var shown = (token === 'b13' && seventh === 'none') ? 'b6' : (token === 'maj7' ? '(maj7)' : token);
       cost += at_home ? COST_ALTERED : COST_CLASHING;
       name += ((name === '' && seventh === 'none') ? 'add' : '') + shown;
@@ -233,38 +244,146 @@
     if (root !== bass) cost += COST_INVERSION;
     return [name, cost, rank];
   }
+  function analyse(has, root, bass) {
+    var a = analyse_as(has, root, bass, false);
+    if (has.has(6) && has.has(8) && !has.has(7)) {
+      var alt = analyse_as(has, root, bass, true);
+      if (alt[1] < a[1]) return alt;
+    }
+    return a;
+  }
+  function tonic_degrees(key) {
+    var intervals = key.scale.intervals;
+    return new Set([0, 2, 4].filter(function (d) { return d < intervals.length; })
+      .map(function (d) { return P.mod(key.tonic + intervals[d], 12); }));
+  }
+  function read_as_root_position(root, bass, voices, key) {
+    if (root === bass) return true;
+    if ((voices[root] || 0) < 2) return false;
+    return tonic_degrees(key).has(root);
+  }
+  // Starting Blocks' chords decide which roots a chord can have: from
+  // sb_engine.lua at fc4dd32, by way of ScaleView Pro df4ea43.
+  var BLOCKS_CHORDS = [
+    [0, 4, 7], [0, 3, 7], [0, 3, 6], [0, 4, 8], [0, 4, 6], [0, 7],
+    [0, 4, 7, 9], [0, 3, 7, 9], [0, 4, 7, 9, 14], [0, 3, 7, 9, 14], [0, 4, 7, 10], [0, 4, 7, 11],
+    [0, 3, 7, 10], [0, 3, 7, 11], [0, 3, 6, 10], [0, 3, 6, 9], [0, 4, 8, 10], [0, 4, 8, 11],
+    [0, 4, 6, 10], [0, 3, 6, 11], [0, 4, 7, 9, 10],
+    [0, 4, 7, 10, 14], [0, 4, 7, 11, 14], [0, 3, 7, 10, 14], [0, 3, 7, 11, 14], [0, 4, 7, 10, 14, 17],
+    [0, 4, 7, 11, 14, 17], [0, 3, 7, 10, 14, 17], [0, 4, 7, 10, 14, 17, 21], [0, 4, 7, 11, 14, 17, 21],
+    [0, 3, 7, 10, 14, 17, 21],
+    [0, 4, 7, 10, 13], [0, 4, 7, 10, 15], [0, 4, 7, 10, 18], [0, 4, 7, 10, 20], [0, 4, 8, 10, 13],
+    [0, 4, 8, 10, 15], [0, 4, 6, 10, 13], [0, 4, 8, 10, 13, 15], [0, 4, 7, 10, 13, 21],
+    [0, 4, 7, 11, 18], [0, 3, 6, 10, 14], [0, 4, 8, 10, 14], [0, 4, 6, 10, 14], [0, 4, 7, 10, 14, 18],
+    [0, 4, 8, 11, 18], [0, 4, 6, 10, 13, 21],
+    [0, 2, 7], [0, 5, 7], [0, 5, 7, 10], [0, 5, 7, 10, 14], [0, 5, 7, 11], [0, 4, 7, 14],
+    [0, 3, 7, 14], [0, 4, 5, 7], [0, 4, 7, 17], [0, 4, 7, 21], [0, 2, 4, 7], [0, 2, 3, 7],
+    [0, 5, 10], [0, 5, 10, 15], [0, 7, 14], [0, 2, 4], [0, 1, 2], [0, 2, 4, 5],
+    [0, 6, 10, 16, 21, 26], [0, 4, 6, 7, 10, 13], [0, 6, 10, 15], [0, 5, 10, 15, 19], [0, 5, 6, 7],
+    [0, 1, 6], [0, 6, 7], [0, 1, 4, 5, 8, 9], [0, 7, 9, 13, 16], [0, 8, 11, 16, 21], [0, 4, 10],
+    [0, 4, 6, 10], [0, 4, 7, 10]
+  ];
+  var BLOCKS_DIATONIC = [
+    [0, 2, 4], [0, 2, 4, 6], [0, 2, 4, 6, 8], [0, 2, 4, 6, 8, 10], [0, 2, 4, 6, 8, 10, 12],
+    [0, 2, 4, 5], [0, 1, 4], [0, 3, 4], [0, 4]
+  ];
+  function mask_from(classes, root) {
+    var mask = 0;
+    classes.forEach(function (pc) { mask |= 1 << P.mod(pc - root, 12); });
+    return mask;
+  }
+  var BLOCKS_TYPES = new Set(BLOCKS_CHORDS.map(function (shape) { return mask_from(shape, 0); }));
+  var KEY_CHORDS = new Map();
+  function blocks_key_chords(key) {
+    var cache_key = key.tonic + '/' + key.scale_id;
+    var chords = KEY_CHORDS.get(cache_key);
+    if (chords === undefined) {
+      var intervals = key.scale.intervals, n = intervals.length;
+      var pitch = function (degree) { return key.tonic + intervals[P.mod(degree, n)] + 12 * P.floordiv(degree, n); };
+      chords = new Map();
+      for (var degree = 0; degree < n; degree++) {
+        var root = P.mod(pitch(degree), 12);
+        BLOCKS_DIATONIC.forEach(function (offsets) {
+          var mask = 0;
+          offsets.forEach(function (o) { mask |= 1 << P.mod(pitch(degree + o), 12); });
+          if (!chords.has(mask)) chords.set(mask, new Set());
+          chords.get(mask).add(root);
+        });
+      }
+      KEY_CHORDS.set(cache_key, chords);
+    }
+    return chords;
+  }
+  function blocks_roots(classes, key) {
+    var in_key = blocks_key_chords(key).get(mask_from(classes, 0)) || new Set();
+    var roots = new Set();
+    for (var root = 0; root < 12; root++) {
+      if (classes.has(root) && (in_key.has(root) || BLOCKS_TYPES.has(mask_from(classes, root)))) roots.add(root);
+    }
+    return roots.size ? roots : null;
+  }
   function detect_chord(pitch_classes, bass, key) {
-    var classes = new Set(Array.from(pitch_classes, function (pc) { return P.mod(pc, 12); }));
+    var notes = new Set(Array.from(pitch_classes, function (n) { return P.int(n); }));
+    var classes = new Set(Array.from(notes, function (n) { return P.mod(n, 12); }));
     if (!classes.size) return null;
-    var sortedc = Array.from(classes).sort(function (a, b) { return a - b; });
-    if (bass === undefined || bass === null) bass = sortedc[0];
+    var voices = {};
+    notes.forEach(function (n) { var pc = P.mod(n, 12); voices[pc] = (voices[pc] || 0) + 1; });
+    if (bass === undefined || bass === null) bass = Math.min.apply(null, Array.from(notes));
     bass = P.mod(bass, 12);
     key = key || new Key('C', 'major');
     var name_of = function (pc) { return key.chord_note_name(pc); };
-    if (classes.size === 1) return name_of(sortedc[0]);
+    var in_key = key ? key.active : ASSUMED_KEY;
+    var count = classes.size;
+    var written = function (root, quality) {
+      var name = name_of(root) + quality;
+      if (!read_as_root_position(root, bass, voices, key)) name += '/' + name_of(bass);
+      return name;
+    };
+    var fit_of = function (root) {
+      return (in_key.has(root) ? 100 : 0) + Array.from(classes).filter(function (pc) { return in_key.has(pc); }).length;
+    };
+    var better = function (cost, fit, slash, rank, best) {
+      return best === null || cost < best[0] || (cost === best[0] && fit > best[1]) ||
+        (cost === best[0] && fit === best[1] && best[2] && !slash) ||
+        (cost === best[0] && fit === best[1] && slash === best[2] && rank < best[3]);
+    };
+    if (count === 1) return name_of(bass);
+    var root, has, a, fit, slash;
+    var blocks = blocks_roots(classes, key);
+    if (blocks) {
+      var pick = null;
+      for (root = 0; root < 12; root++) {
+        if (!blocks.has(root)) continue;
+        has = new Set(Array.from(classes, function (pc) { return P.mod(pc - root, 12); }));
+        a = analyse(has, root, bass);
+        var quality = a[0];
+        if (count === 2) quality = has.has(7) ? '5' : has.has(4) ? 'maj(no5)' : has.has(3) ? 'min(no5)' : quality;
+        fit = fit_of(root); slash = root !== bass;
+        if (better(a[1], fit, slash, a[2], pick)) pick = [a[1], fit, slash, a[2], root, quality];
+      }
+      return written(pick[4], pick[5]);
+    }
     var spell_out = function () { return P.range(12).filter(function (pc) { return classes.has(pc); }).map(name_of).join(' '); };
-    if (classes.size === 2) {
-      for (var root = 0; root < 12; root++) {
-        if (classes.has(root) && classes.has(P.mod(root + 7, 12))) {
-          var nm = name_of(root) + '5';
-          return root === bass ? nm : nm + '/' + name_of(bass);
-        }
+    if (count === 2) {
+      for (root = 0; root < 12; root++) {
+        if (classes.has(root) && classes.has(P.mod(root + 7, 12))) return written(root, '5');
+      }
+      for (root = 0; root < 12; root++) {
+        if (!classes.has(root)) continue;
+        var q = classes.has(P.mod(root + 4, 12)) ? 'maj' : classes.has(P.mod(root + 3, 12)) ? 'min' : null;
+        if (q) return written(root, q + '(no5)');
       }
       return spell_out();
     }
-    if (classes.size > 7) return spell_out();
-    var in_key = key ? key.active : ASSUMED_KEY;
+    if (count > 7) return spell_out();
     var best = null;
-    sortedc.forEach(function (r) {
-      var has = new Set(sortedc.map(function (pc) { return P.mod(pc - r, 12); }));
-      var a = analyse(has, r, bass);
-      var fit = (in_key.has(r) ? 100 : 0) + sortedc.filter(function (pc) { return in_key.has(pc); }).length;
-      if (best === null || a[1] < best[1] || (a[1] === best[1] && fit > best[3]) || (a[1] === best[1] && fit === best[3] && a[2] < best[2])) {
-        best = [a[0], a[1], a[2], fit, r];
-      }
+    Array.from(classes).sort(function (x, y) { return x - y; }).forEach(function (r) {
+      var h = new Set(Array.from(classes, function (pc) { return P.mod(pc - r, 12); }));
+      var b = analyse(h, r, bass);
+      var f = fit_of(r), sl = r !== bass;
+      if (better(b[1], f, sl, b[2], best)) best = [b[1], f, sl, b[2], r, b[0]];
     });
-    var symbol = name_of(best[4]) + best[0];
-    return best[4] === bass ? symbol : symbol + '/' + name_of(bass);
+    return written(best[4], best[5]);
   }
 
   // ================================================================== theory

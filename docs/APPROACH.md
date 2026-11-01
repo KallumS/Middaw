@@ -133,6 +133,10 @@ and piano sonatas rather than chorales — the same tool says something harder:
 | harmony: same root and quality | 78.7% | 56.6% |
 | analyst numerals we could not express | 0 | 72 (0.1%) |
 
+(Those are the September runs. With the reader brought up to ScaleView Pro
+df4ea43 the harmony rows read 80.2% / 78.5% and 64.3% / 58.6%; see
+`MEASUREMENTS.md`.)
+
 That is the honest shape of it. Four voices moving in crotchets is the easiest
 harmony there is to read; an arpeggiated piano accompaniment under a singer,
 modulating, is not, and our window-naming loses eighteen points when it meets
