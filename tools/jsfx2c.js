@@ -26,7 +26,9 @@ const DEVICES = [
   ['midi_production_center', 'MIDI_Production_Center.jsfx'],
   ['midi_evolver', 'Midi Evolver.jsfx'],
   ['reverberator', 'Reverberator.jsfx'],
-  ['transient_shuffler', 'TransientShuffler.jsfx']
+  ['transient_shuffler', 'TransientShuffler.jsfx'],
+  ['midular', 'Midular.jsfx'],
+  ['reese_basser', 'ReeseBasser.jsfx']
 ];
 
 // ------------------------------------------------------------ helpers ----
@@ -39,8 +41,10 @@ function num(v) {
   return (v < 0 || Object.is(v, -0)) ? '(-' + s + ')' : s;
 }
 
-function cstr(s) {
-  const bytes = Buffer.from(String(s), 'utf8');
+// A lexed literal is already bytes, one per character (the runtime keeps
+// strings as REAPER does); everything else is UTF-8 text.
+function cstr(s, isBytes) {
+  const bytes = Buffer.from(String(s), isBytes ? 'latin1' : 'utf8');
   let out = '"';
   for (const b of bytes) {
     if (b === 0x22) out += '\\"';
@@ -97,6 +101,13 @@ function impure(n) {
 
 function T(e) { return 'jsfx_T(' + e + ')'; }
 
+// this.x, this.child.x: the namespace the function was called in.
+function resolveThis(name, ctx) {
+  const ns = ctx && ctx.ns ? ctx.ns : '';
+  if (name === 'this') return ns;
+  return ns ? ns + '.' + name.slice(5) : name.slice(5);
+}
+
 // --------------------------------------------------------- compiler ----
 class CCompiler {
   constructor() {
@@ -136,12 +147,16 @@ class CCompiler {
     return 'static double ' + cn + '(jsfx_inst *S) { double *const v = S->v; (void)v; double r = 0.0;' + temps + ' ' + body + ' return r; }';
   }
 
+  // As runtime/jsfx/jsfx.js: a function called as ns.f() keeps its
+  // instance() variables, and anything it names this.x, in ns.
   ref(name, ctx) {
     if (ctx) {
       const pi = ctx.fn.params.indexOf(name);
       if (pi >= 0) return 'p' + pi;
       if (ctx.fn.locals.indexOf(name) >= 0) return 'v[' + this.slot(ctx.fn.name + '::' + name) + ']';
+      if (ctx.fn.instance.indexOf(name) >= 0) return 'v[' + this.slot(ctx.ns ? ctx.ns + '.' + name : name) + ']';
     }
+    if (name.indexOf('this.') === 0) return 'v[' + this.slot(resolveThis(name, ctx)) + ']';
     return 'v[' + this.slot(name) + ']';
   }
 
@@ -382,36 +397,39 @@ class CCompiler {
       case 'sprintf':
         return this.arrayCall(args, ctx, 2, (cnt, a) => 'jsfx_sprintf(S, ' + a + '[0], ' + a + '[1], ' + Math.max(0, args.length - 2) + ', ' + a + ' + 2)');
     }
-    if (this.funcs[name]) return this.userCall(this.funcs[name], args, ctx);
+    if (this.funcs[name]) return this.userCall(this.funcs[name], args, ctx, '');
     if (name.indexOf('.') > 0) {
-      const base = name.slice(name.lastIndexOf('.') + 1);
-      if (this.funcs[base]) return this.userCall(this.funcs[base], args, ctx);
+      const base = name.slice(name.lastIndexOf('.') + 1), prefix = name.slice(0, name.lastIndexOf('.'));
+      if (this.funcs[base]) return this.userCall(this.funcs[base], args, ctx, prefix === 'this' || prefix.indexOf('this.') === 0 ? resolveThis(prefix, ctx) : prefix);
     }
     if (/^gfx_|^mouse_/.test(name)) return '(' + args.map((x) => '(void)(' + this.expr(x, ctx) + '), ').join('') + '0.0)';
     if (BUILTINS.indexOf(name) >= 0) return this.arrayCall(args, ctx, 0, (cnt, a) => 'jsfx_b_' + name + '(S, ' + cnt + ', ' + a + ')');
     return '(' + args.map((x) => '(void)(' + this.expr(x, ctx) + '), ').join('') + 'jsfx_unknown(S, ' + cstr(name) + '))';
   }
 
-  ensure(fn) {
-    const cn = 'F_' + cname(fn.name);
-    if (this.compiled[fn.name]) return cn;
-    this.compiled[fn.name] = true;
+  // One compiled copy per function and namespace, as EEL2 does.
+  ensure(fn, ns) {
+    ns = ns || '';
+    const cn = 'F_' + cname(fn.name) + (ns ? '__' + cname(ns) : '');
+    const key = fn.name + '@' + ns;
+    if (this.compiled[key]) return cn;
+    this.compiled[key] = true;
     const saved = this.temps;
     this.temps = 0;
-    const body = this.stmts(fn.body, { fn: fn }, true, 'r');
+    const body = this.stmts(fn.body, { fn: fn, ns: ns }, true, 'r');
     const temps = this.tempDecl();
     this.temps = saved;
     const params = ['jsfx_inst *S'].concat(fn.params.map((_, i) => 'double p' + i));
     this.funcCode.push('static double ' + cn + '(' + params.join(', ') + ') { double *const v = S->v; (void)v; double r = 0.0;' + temps + ' ' + body + ' return r; }');
-    this.order.push({ fn: fn, cn: cn });
+    this.order.push({ fn: fn, cn: cn, ns: ns });
     return cn;
   }
 
-  userCall(fn, args, ctx) {
+  userCall(fn, args, ctx, ns) {
     if (args.length !== fn.params.length && !(args.length === 1 && fn.params.length === 0)) {
       throw new J.EelError(fn.name + '() takes ' + fn.params.length + ' arguments, given ' + args.length);
     }
-    const cn = this.ensure(fn);
+    const cn = this.ensure(fn, ns);
     const used = args.slice(0, fn.params.length);
     return this.ordered(used, ctx, (x) => cn + '(' + ['S'].concat(x).join(', ') + ')');
   }
@@ -443,12 +461,13 @@ function translate(id, file) {
   parsed.sections.gfx.forEach((part) => { try { J.parseEel(J.lexEel(part.code, part.line), C.funcs); } catch (e) { /* not run */ } });
   const skipped = [];
   own.forEach((name) => {
-    try { C.ensure(C.funcs[name]); } catch (e) { skipped.push(name + ': ' + e.message); C.compiled[name] = false; }
+    try { C.ensure(C.funcs[name], ''); } catch (e) { skipped.push(name + ': ' + e.message); C.compiled[name + '@'] = false; }
   });
 
   const gmem = (/gmem=(\S+)/.exec(parsed.options) || [])[1] || '';
   const sliderSlot = [];
-  for (let i = 0; i <= 64; i++) {
+  const top = Math.max(64, ...parsed.sliders.map((sl) => sl.index));
+  for (let i = 0; i <= top; i++) {
     const sl = parsed.sliders.find((s) => s.index === i);
     sliderSlot.push(sl ? C.slots[sl.variable] : (i >= 1 ? C.slots['slider' + i] : -1));
   }
@@ -471,14 +490,15 @@ function translate(id, file) {
   L.push('');
   order.forEach((name) => sections[name].forEach((s) => L.push(s.code)));
   L.push('');
-  const callable = C.order.filter((f) => f.fn.params.length <= 16);
+  // the host calls a function by its own name, outside any namespace
+  const callable = C.order.filter((f) => f.ns === '' && f.fn.params.length <= 16);
   callable.forEach((f) => {
     const a = f.fn.params.map((_, i) => 'a[' + i + ']');
     L.push('static double W_' + f.cn.slice(2) + '(jsfx_inst *S, const double *a) { (void)a; return ' + f.cn + '(' + ['S'].concat(a).join(', ') + '); }');
   });
   L.push('');
   const arr = (type, name, items) => 'static ' + type + ' ' + name + '[] = {' + (items.length ? items.join(', ') : '0') + '};';
-  L.push(arr('const char *const', 'strings', C.strConsts.map(cstr)));
+  L.push(arr('const char *const', 'strings', C.strConsts.map((x) => cstr(x, true))));
   const varnames = [];
   for (let i = 0; i < C.slots.__count; i++) varnames.push(cstr(C.names[i]));
   L.push(arr('const char *const', 'varnames', varnames));
@@ -494,7 +514,7 @@ function translate(id, file) {
   L.push('const jsfx_desc jsfx_device_' + id + ' = {');
   L.push('  .id = ' + cstr(id) + ', .desc = ' + cstr(parsed.desc) + ',');
   L.push('  .nvars = ' + C.slots.__count + ', .varnames = varnames,');
-  L.push('  .nsliders = ' + parsed.sliders.length + ', .sliders = sliders, .sliderSlot = sliderSlot,');
+  L.push('  .nsliders = ' + parsed.sliders.length + ', .sliders = sliders, .sliderSlot = sliderSlot, .nsliderSlot = ' + sliderSlot.length + ',');
   L.push('  .nsections = {' + order.map((n) => sections[n].length).join(', ') + '},');
   L.push('  .sections = {' + order.map((n) => 'sections_' + n).join(', ') + '},');
   L.push('  .nstrings = ' + C.strConsts.length + ', .strings = strings, .nnamed = ' + C.nnamed + ',');

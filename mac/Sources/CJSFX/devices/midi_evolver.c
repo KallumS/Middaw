@@ -309,7 +309,7 @@ static const jsfx_func funcs[] = {{"clampv", 3, W_clampv},
 const jsfx_desc jsfx_device_midi_evolver = {
   .id = "midi_evolver", .desc = "Midi Evolver - held chords grow into evolving motion",
   .nvars = 449, .varnames = varnames,
-  .nsliders = 33, .sliders = sliders, .sliderSlot = sliderSlot,
+  .nsliders = 33, .sliders = sliders, .sliderSlot = sliderSlot, .nsliderSlot = 65,
   .nsections = {1, 1, 1, 0, 1},
   .sections = {sections_init, sections_slider, sections_block, sections_sample, sections_serialize},
   .nstrings = 0, .strings = strings, .nnamed = 0,

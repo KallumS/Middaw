@@ -49,6 +49,23 @@ test('EEL2 functions: parameters by value, locals that keep their value', () => 
   assert.deepStrictEqual(r, [49, 3, 10, 0]);
 });
 
+test('EEL2 pseudo-objects: a function called as ns.f() keeps its instance() variables in ns', () => {
+  // REAPER's JSFX reference: instance(x) in a function called as a.f() means
+  // a.x. Reese Basser's two envelopes (aenv_o, menv_o) are built this way.
+  const r = run('function inc() instance(n) ( n += 1 ); function peek() ( this.n );' +
+                'a.inc(); a.inc(); b.inc(); x = a.n; y = b.n; z = n; w = b.peek();',
+                ['x', 'y', 'z', 'w']);
+  assert.deepStrictEqual(r, [2, 1, 0, 1]);
+});
+
+test('EEL2 strings are bytes: a UTF-8 character counts as many as it takes', () => {
+  // REAPER keeps strings as bytes, so an em dash is three. Reese Basser counts
+  // the entries of a list with str_getchar and its labels carry em dashes.
+  const fx = new J.JSFX('desc:t\n@init\nn = strlen("a\u2014b"); c = str_getchar("\u2014", 0); d = str_getchar("\u2014", 3);\n');
+  fx.init(48000);
+  assert.deepStrictEqual([fx.getVar('n'), fx.getVar('c'), fx.getVar('d')], [5, 0xE2, 0]);
+});
+
 test('EEL2 memory: indexing, compound writes, memset and memcpy, unwritten reads 0', () => {
   const r = run('buf = 1000; buf[0] = 5; buf[3] = 7; buf[3] += 1; a = buf[3]; b = buf[1]; c = 2000000[0];' +
                 'memset(5000, 2, 4); memcpy(6000, 5000, 4); d = 6000[3]; e = 6000[4]; big = 4000000; big[0] = 1; f = big[];',

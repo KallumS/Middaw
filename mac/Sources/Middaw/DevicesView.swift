@@ -257,6 +257,9 @@ struct DeviceActions: View {
                     }
                 }
             }
+        case "midular":
+            Button("Load the Clip") { s.loadClipIntoMidular(device.id) }.house().disabled(s.clip == nil)
+                .help("Make the chosen clip the phrase Midular plays")
         case "autocc":
             Button("Draw into the Clip") { s.drawDynamics() }.house().disabled(s.clip == nil)
                 .help("Write the curves AutoCC plays into the chosen clip’s controller lanes")
@@ -490,6 +493,17 @@ extension Session {
         }
         if let c = clipID { select(clip: c, on: tid) }
         say("Inserted the take: \(notes.count) notes. Take Midi Evolver off the track to hear just the notes.", undoable: true)
+    }
+
+    /// The chosen clip into Midular, as its REAPER importer hands one over.
+    func loadClipIntoMidular(_ id: String) {
+        guard let c = clip else { say("Choose a clip first."); return }
+        Studio.shared.becameActive(self)
+        guard let d = Studio.shared.audio.renderer.device(id) else { return }
+        let name = c.name.isEmpty ? "Clip" : c.name
+        d.importPhrase(c.notes, length: c.length, tempo: project.tempo,
+                       meter: (project.meter.first ?? 4, project.meter.count > 1 ? project.meter[1] : 4), name: name)
+        say("Loaded “\(name)” into Midular. Play a key to hear it.")
     }
 
     /// The chosen clip into MIDI Production Center, as its REAPER loader writes it.

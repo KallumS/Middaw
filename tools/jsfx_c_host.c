@@ -80,7 +80,8 @@ int main(int argc, char **argv) {
     id[k] = 0;
     static const char *const map[][2] = {
         {"AutoCC", "autocc"}, {"Instrument-Creator", "instrument_creator"}, {"MIDI_Production_Center", "midi_production_center"},
-        {"Midi Evolver", "midi_evolver"}, {"Reverberator", "reverberator"}, {"TransientShuffler", "transient_shuffler"}};
+        {"Midi Evolver", "midi_evolver"}, {"Reverberator", "reverberator"}, {"TransientShuffler", "transient_shuffler"},
+        {"Midular", "midular"}, {"ReeseBasser", "reese_basser"}};
     for (size_t i = 0; i < sizeof map / sizeof map[0]; i++) if (strcmp(id, map[i][0]) == 0) desc = jsfx_find(map[i][1]);
     if (!desc) { fprintf(stderr, "no compiled device for %s\n", argv[1]); return 1; }
     setvbuf(stdout, NULL, _IOLBF, 0);

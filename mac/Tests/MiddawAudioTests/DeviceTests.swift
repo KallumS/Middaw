@@ -96,6 +96,39 @@ final class DeviceTests: XCTestCase {
         XCTAssertGreaterThan(ccs, 0)
     }
 
+    /// Reese Basser at its defaults. It was silent until the runtime kept each
+    /// pseudo-object's instance() variables apart (its two envelopes).
+    func testReeseBasserPlaysANote() {
+        let p = song(sound: Device(device: "reese"), notes: [Note(start: 0, len: 1, pitch: 36)])
+        let out = Bounce.render(p, sampleRate: 48000, tail: 0.5)
+        XCTAssertGreaterThan(rms(out.left[0..<24000]), 0.001)
+        XCTAssertTrue(out.left.allSatisfy { $0.isFinite })
+    }
+
+    /// A clip handed to Midular the way its REAPER importer hands one over is
+    /// taken, and a key at its root plays it back, looping.
+    func testMidularPlaysAnImportedPhrase() {
+        let d = JSFXDevice(Device(device: "midular"), sampleRate: 48000)!
+        let time = DeviceTime(tempo: 120, playing: true, beat: 0, num: 4, den: 4)
+        for _ in 0..<4 { _ = d.process(256, nil, 0, nil, 0, nil, 0, time) }
+        let phrase = [Note(start: 0, len: 0.5, pitch: 72, vel: 100), Note(start: 0.5, len: 0.5, pitch: 76, vel: 90),
+                      Note(start: 1, len: 1, pitch: 79, vel: 80)]
+        let ticket = d.importPhrase(phrase, length: 2, tempo: 120, meter: (4, 4), name: "Clip")
+        for _ in 0..<4 { _ = d.process(256, nil, 0, nil, 0, nil, 0, time) }
+        XCTAssertTrue(d.phraseTaken(ticket))
+        let midi = UnsafeMutablePointer<jsfx_midi>.allocate(capacity: 1)
+        defer { midi.deallocate() }
+        midi[0] = jsfx_midi(offset: 0, len: 3, data: (0x90, 60, 100))
+        var ons: [Int] = []
+        for b in 0..<200 {
+            let n = d.process(256, nil, 0, nil, 0, b == 0 ? UnsafePointer(midi) : nil, b == 0 ? 1 : 0, time)
+            for k in 0..<max(0, n) where d.midiOut[k].data.0 & 0xF0 == 0x90 && d.midiOut[k].data.2 > 0 {
+                ons.append(Int(d.midiOut[k].data.1))
+            }
+        }
+        XCTAssertEqual(Array(ons.prefix(4)), [72, 76, 79, 72])
+    }
+
     /// Saved and opened again, a device is as it was.
     func testStateSurvivesSavingAndReopening() {
         var dev = Device(device: "evolver")

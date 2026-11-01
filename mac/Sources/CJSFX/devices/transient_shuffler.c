@@ -240,7 +240,7 @@ static const jsfx_func funcs[] = {{"lowpass", 4, W_lowpass},
 const jsfx_desc jsfx_device_transient_shuffler = {
   .id = "transient_shuffler", .desc = "Transient Shuffler",
   .nvars = 503, .varnames = varnames,
-  .nsliders = 12, .sliders = sliders, .sliderSlot = sliderSlot,
+  .nsliders = 12, .sliders = sliders, .sliderSlot = sliderSlot, .nsliderSlot = 65,
   .nsections = {1, 1, 1, 1, 1},
   .sections = {sections_init, sections_slider, sections_block, sections_sample, sections_serialize},
   .nstrings = 39, .strings = strings, .nnamed = 15,

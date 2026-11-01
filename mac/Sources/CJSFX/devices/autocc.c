@@ -219,7 +219,7 @@ static const jsfx_func funcs[] = {{"mkcurve", 3, W_mkcurve},
 const jsfx_desc jsfx_device_autocc = {
   .id = "autocc", .desc = "AutoCC - automatic MIDI CC curves for orchestral libraries",
   .nvars = 284, .varnames = varnames,
-  .nsliders = 20, .sliders = sliders, .sliderSlot = sliderSlot,
+  .nsliders = 20, .sliders = sliders, .sliderSlot = sliderSlot, .nsliderSlot = 65,
   .nsections = {1, 1, 1, 0, 1},
   .sections = {sections_init, sections_slider, sections_block, sections_sample, sections_serialize},
   .nstrings = 0, .strings = strings, .nnamed = 0,

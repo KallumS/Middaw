@@ -8,10 +8,12 @@ extern const jsfx_desc jsfx_device_midi_production_center;
 extern const jsfx_desc jsfx_device_midi_evolver;
 extern const jsfx_desc jsfx_device_reverberator;
 extern const jsfx_desc jsfx_device_transient_shuffler;
-static const jsfx_desc *const all[] = {&jsfx_device_autocc, &jsfx_device_instrument_creator, &jsfx_device_midi_production_center, &jsfx_device_midi_evolver, &jsfx_device_reverberator, &jsfx_device_transient_shuffler};
-int jsfx_count(void) { return 6; }
-const jsfx_desc *jsfx_at(int i) { return i >= 0 && i < 6 ? all[i] : NULL; }
+extern const jsfx_desc jsfx_device_midular;
+extern const jsfx_desc jsfx_device_reese_basser;
+static const jsfx_desc *const all[] = {&jsfx_device_autocc, &jsfx_device_instrument_creator, &jsfx_device_midi_production_center, &jsfx_device_midi_evolver, &jsfx_device_reverberator, &jsfx_device_transient_shuffler, &jsfx_device_midular, &jsfx_device_reese_basser};
+int jsfx_count(void) { return 8; }
+const jsfx_desc *jsfx_at(int i) { return i >= 0 && i < 8 ? all[i] : NULL; }
 const jsfx_desc *jsfx_find(const char *id) {
-    for (int i = 0; i < 6; i++) if (strcmp(all[i]->id, id) == 0) return all[i];
+    for (int i = 0; i < 8; i++) if (strcmp(all[i]->id, id) == 0) return all[i];
     return NULL;
 }

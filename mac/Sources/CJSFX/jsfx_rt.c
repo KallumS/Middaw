@@ -242,7 +242,7 @@ double jsfx_match(jsfx_inst *S, int ci, double pat, double str) {
 /* ------------------------------------------------------------ sliders -- */
 static int slider_slot(jsfx_inst *S, double n) {
     int i = (int)trunc(n);
-    if (i < 0 || i > 64) return -1;
+    if (i < 0 || i >= S->d->nsliderSlot) return -1;
     return S->d->sliderSlot[i];
 }
 double jsfx_slider_idx(jsfx_inst *S, double n) { int s = slider_slot(S, n); return s < 0 ? 0 : S->v[s]; }
@@ -532,8 +532,8 @@ static double run(jsfx_inst *S, int which) {
 void jsfx_init(jsfx_inst *S, double srate) {
     const jsfx_desc *d = S->d;
     if (srate > 0) S->srate = srate;
-    double keep[128];
-    int n = d->nsliders < 128 ? d->nsliders : 128;
+    double keep[256];
+    int n = d->nsliders < 256 ? d->nsliders : 256;
     for (int i = 0; i < n; i++) keep[i] = S->v[d->sliderSlot[d->sliders[i].index]];
     memset(S->v, 0, sizeof(double) * ((size_t)d->nvars + 16));
     /* EEL2's memory starts at zero: a fresh calloc is zero pages the system
