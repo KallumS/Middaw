@@ -64,10 +64,18 @@ name the same chord over the same span.
 
 | Corpus | Analyses | Chords | Same root | Root and quality | Numerals we cannot express |
 | --- | --- | --- | --- | --- | --- |
-| When in Rome | 535 | 52,685 | **62.7%** | 56.6% | 72 (0.1%) |
-| music21 chorales | 18 | 1,041 | 80.5% | 78.7% | 0 |
+| When in Rome | 536 | 52,739 | **64.3%** | 58.6% | 72 (0.1%) |
+| music21 chorales | 18 | 1,041 | 80.2% | 78.5% | 0 |
 
-Eighteen points between four voices in crotchets and an arpeggiated piano
+Re-measured on 1 November 2026, after the chord reader was brought up to
+ScaleView Pro df4ea43 — Starting Blocks' chords deciding which roots a chord
+can have. When in Rome has one more analysis than on 14 September; the
+previous reader, run on the same copy, still gives exactly the figures it gave
+then (62.7% and 56.6%), so the change is the reader's: **+1.6 points of root on
+songs, quartets and sonatas, −0.3 on chorales** (three chords of 1,041). Key
+detection and every melody figure are unchanged, since neither reads chords.
+
+Sixteen points between four voices in crotchets and an arpeggiated piano
 accompaniment under a modulating song. The chorale figure is the ceiling; the
 other is the number to quote.
 

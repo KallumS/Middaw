@@ -21,6 +21,7 @@ from pathlib import Path
 from middaw.corpus.stats import load_corpus_priors
 from middaw.prompt import parse_prompt
 from middaw.render import render
+from middaw.scaleview import Key, detect_chord
 
 ROOT = Path(__file__).resolve().parent.parent
 NODE = shutil.which("node")
@@ -54,6 +55,41 @@ def cases():
         if rng.random() < 0.6:
             prompt += " " + rng.choice(EXTRAS)
         out.append([prompt, rng.randrange(1, 2**31)])
+    return out
+
+
+# The chord reader on its own. Composed chords are plain triads and sevenths,
+# which read the same under almost any reader, so composing cannot tell
+# whether a change to it was ported: every set of two to seven pitch classes,
+# every bass of the smaller ones and doubled notes, in keys that each draw on
+# different Blocks chords, can.
+READER_KEYS = [None, ("C", "major"), ("Db", "major"), ("D", "minor"), ("Gb", "blues"),
+               ("A#", "harmonic_minor"), ("F", "dorian"), ("E", "major_pentatonic"),
+               ("B", "diminished_hw")]
+
+READER_JS = """
+const fs = require('fs'), path = require('path'), root = process.argv[1];
+for (const f of ['py', 'pyrandom', 'core']) require(path.join(root, 'runtime', 'composer', f + '.js'));
+const C = globalThis.MiddawComposer;
+const [keys, voicings] = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(keys.map((k) => {
+  const key = k ? new C.Key(k[0], k[1]) : null;
+  return voicings.map((v) => C.detect_chord(v, null, key));
+})));
+"""
+
+
+def reader_voicings():
+    from itertools import combinations
+    out = []
+    for size in range(2, 8):
+        out += [[60 + pc for pc in s] for s in combinations(range(12), size)]
+    for size in (3, 4):
+        for s in combinations(range(12), size):
+            for b in s[1:]:
+                out.append([48 + b] + [60 + pc for pc in s if pc != b])
+            for d in s:
+                out.append([48 + s[-1]] + [60 + pc for pc in s if pc != s[-1]] + [72 + d])
     return out
 
 
@@ -98,6 +134,19 @@ class TestComposerInJavaScript(unittest.TestCase):
         self.assertEqual(len(got), len(todo))
         wrong = [(case, d) for case, a, b in zip(todo, expected, got) for d in [differs(a, b)] if d]
         self.assertFalse(wrong, "%d of %d differ, first: %s" % (len(wrong), len(todo), wrong[:3]))
+
+    def test_the_chord_reader_reads_the_same(self):
+        voicings = reader_voicings()
+        out = subprocess.run([NODE, "-e", READER_JS, str(ROOT)], input=json.dumps([READER_KEYS, voicings]),
+                             capture_output=True, text=True, timeout=600)
+        self.assertEqual(out.returncode, 0, out.stderr[-3000:])
+        got = json.loads(out.stdout)
+        wrong = []
+        for k, names in zip(READER_KEYS, got):
+            key = Key(*k) if k else None
+            wrong += [(k, v, want, js) for v, js in zip(voicings, names)
+                      for want in [detect_chord(v, None, key)] if want != js]
+        self.assertEqual(len(wrong), 0, "%d readings differ, first: %s" % (len(wrong), wrong[:3]))
 
     def test_the_corpus_is_empty_so_the_port_needs_no_priors(self):
         # render() uses corpus priors only when data/corpus has entries; the
