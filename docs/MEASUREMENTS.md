@@ -64,7 +64,23 @@ name the same chord over the same span.
 
 | Corpus | Analyses | Chords | Same root | Root and quality | Numerals we cannot express |
 | --- | --- | --- | --- | --- | --- |
-| When in Rome | 536 | 52,739 | **64.3%** | 58.6% | 72 (0.1%) |
+| When in Rome | 535 | 52,685 | **64.1%** | 58.2% | 72 (0.1%) |
+| music21 chorales | 18 | 1,041 | 80.5% | 78.8% | 0 |
+
+Re-measured on 8 November 2026, after ScaleView Pro took Starting Blocks' chord
+list back out (f13f8a6, its decision 0011 reversed) and this port followed. The
+reader with the list, run the same day on the same copies, gives exactly the
+figures below (64.3% / 58.6% and 80.2% / 78.5%), so the change is the
+reader's: **-0.2 points of root on songs, quartets and sonatas** (118 of
+52,685), **+0.3 on chorales** (three of 1,041). When in Rome's current
+checkout has 535 analyses and 52,685 chords where the 1 November run had 536
+and 52,739. Key detection and every melody figure are unchanged.
+
+The figures with the list in force, kept for comparison:
+
+| Corpus | Analyses | Chords | Same root | Root and quality | Numerals we cannot express |
+| --- | --- | --- | --- | --- | --- |
+| When in Rome | 536 | 52,739 | 64.3% | 58.6% | 72 (0.1%) |
 | music21 chorales | 18 | 1,041 | 80.2% | 78.5% | 0 |
 
 Re-measured on 1 November 2026, after the chord reader was brought up to

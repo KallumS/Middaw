@@ -262,66 +262,6 @@
     if ((voices[root] || 0) < 2) return false;
     return tonic_degrees(key).has(root);
   }
-  // Starting Blocks' chords decide which roots a chord can have: from
-  // sb_engine.lua at fc4dd32, by way of ScaleView Pro df4ea43.
-  var BLOCKS_CHORDS = [
-    [0, 4, 7], [0, 3, 7], [0, 3, 6], [0, 4, 8], [0, 4, 6], [0, 7],
-    [0, 4, 7, 9], [0, 3, 7, 9], [0, 4, 7, 9, 14], [0, 3, 7, 9, 14], [0, 4, 7, 10], [0, 4, 7, 11],
-    [0, 3, 7, 10], [0, 3, 7, 11], [0, 3, 6, 10], [0, 3, 6, 9], [0, 4, 8, 10], [0, 4, 8, 11],
-    [0, 4, 6, 10], [0, 3, 6, 11], [0, 4, 7, 9, 10],
-    [0, 4, 7, 10, 14], [0, 4, 7, 11, 14], [0, 3, 7, 10, 14], [0, 3, 7, 11, 14], [0, 4, 7, 10, 14, 17],
-    [0, 4, 7, 11, 14, 17], [0, 3, 7, 10, 14, 17], [0, 4, 7, 10, 14, 17, 21], [0, 4, 7, 11, 14, 17, 21],
-    [0, 3, 7, 10, 14, 17, 21],
-    [0, 4, 7, 10, 13], [0, 4, 7, 10, 15], [0, 4, 7, 10, 18], [0, 4, 7, 10, 20], [0, 4, 8, 10, 13],
-    [0, 4, 8, 10, 15], [0, 4, 6, 10, 13], [0, 4, 8, 10, 13, 15], [0, 4, 7, 10, 13, 21],
-    [0, 4, 7, 11, 18], [0, 3, 6, 10, 14], [0, 4, 8, 10, 14], [0, 4, 6, 10, 14], [0, 4, 7, 10, 14, 18],
-    [0, 4, 8, 11, 18], [0, 4, 6, 10, 13, 21],
-    [0, 2, 7], [0, 5, 7], [0, 5, 7, 10], [0, 5, 7, 10, 14], [0, 5, 7, 11], [0, 4, 7, 14],
-    [0, 3, 7, 14], [0, 4, 5, 7], [0, 4, 7, 17], [0, 4, 7, 21], [0, 2, 4, 7], [0, 2, 3, 7],
-    [0, 5, 10], [0, 5, 10, 15], [0, 7, 14], [0, 2, 4], [0, 1, 2], [0, 2, 4, 5],
-    [0, 6, 10, 16, 21, 26], [0, 4, 6, 7, 10, 13], [0, 6, 10, 15], [0, 5, 10, 15, 19], [0, 5, 6, 7],
-    [0, 1, 6], [0, 6, 7], [0, 1, 4, 5, 8, 9], [0, 7, 9, 13, 16], [0, 8, 11, 16, 21], [0, 4, 10],
-    [0, 4, 6, 10], [0, 4, 7, 10]
-  ];
-  var BLOCKS_DIATONIC = [
-    [0, 2, 4], [0, 2, 4, 6], [0, 2, 4, 6, 8], [0, 2, 4, 6, 8, 10], [0, 2, 4, 6, 8, 10, 12],
-    [0, 2, 4, 5], [0, 1, 4], [0, 3, 4], [0, 4]
-  ];
-  function mask_from(classes, root) {
-    var mask = 0;
-    classes.forEach(function (pc) { mask |= 1 << P.mod(pc - root, 12); });
-    return mask;
-  }
-  var BLOCKS_TYPES = new Set(BLOCKS_CHORDS.map(function (shape) { return mask_from(shape, 0); }));
-  var KEY_CHORDS = new Map();
-  function blocks_key_chords(key) {
-    var cache_key = key.tonic + '/' + key.scale_id;
-    var chords = KEY_CHORDS.get(cache_key);
-    if (chords === undefined) {
-      var intervals = key.scale.intervals, n = intervals.length;
-      var pitch = function (degree) { return key.tonic + intervals[P.mod(degree, n)] + 12 * P.floordiv(degree, n); };
-      chords = new Map();
-      for (var degree = 0; degree < n; degree++) {
-        var root = P.mod(pitch(degree), 12);
-        BLOCKS_DIATONIC.forEach(function (offsets) {
-          var mask = 0;
-          offsets.forEach(function (o) { mask |= 1 << P.mod(pitch(degree + o), 12); });
-          if (!chords.has(mask)) chords.set(mask, new Set());
-          chords.get(mask).add(root);
-        });
-      }
-      KEY_CHORDS.set(cache_key, chords);
-    }
-    return chords;
-  }
-  function blocks_roots(classes, key) {
-    var in_key = blocks_key_chords(key).get(mask_from(classes, 0)) || new Set();
-    var roots = new Set();
-    for (var root = 0; root < 12; root++) {
-      if (classes.has(root) && (in_key.has(root) || BLOCKS_TYPES.has(mask_from(classes, root)))) roots.add(root);
-    }
-    return roots.size ? roots : null;
-  }
   function detect_chord(pitch_classes, bass, key) {
     var notes = new Set(Array.from(pitch_classes, function (n) { return P.int(n); }));
     var classes = new Set(Array.from(notes, function (n) { return P.mod(n, 12); }));
@@ -348,21 +288,7 @@
         (cost === best[0] && fit === best[1] && slash === best[2] && rank < best[3]);
     };
     if (count === 1) return name_of(bass);
-    var root, has, a, fit, slash;
-    var blocks = blocks_roots(classes, key);
-    if (blocks) {
-      var pick = null;
-      for (root = 0; root < 12; root++) {
-        if (!blocks.has(root)) continue;
-        has = new Set(Array.from(classes, function (pc) { return P.mod(pc - root, 12); }));
-        a = analyse(has, root, bass);
-        var quality = a[0];
-        if (count === 2) quality = has.has(7) ? '5' : has.has(4) ? 'maj(no5)' : has.has(3) ? 'min(no5)' : quality;
-        fit = fit_of(root); slash = root !== bass;
-        if (better(a[1], fit, slash, a[2], pick)) pick = [a[1], fit, slash, a[2], root, quality];
-      }
-      return written(pick[4], pick[5]);
-    }
+    var root;
     var spell_out = function () { return P.range(12).filter(function (pc) { return classes.has(pc); }).map(name_of).join(' '); };
     if (count === 2) {
       for (root = 0; root < 12; root++) {

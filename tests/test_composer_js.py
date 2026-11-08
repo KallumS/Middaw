@@ -61,8 +61,8 @@ def cases():
 # The chord reader on its own. Composed chords are plain triads and sevenths,
 # which read the same under almost any reader, so composing cannot tell
 # whether a change to it was ported: every set of two to seven pitch classes,
-# every bass of the smaller ones and doubled notes, in keys that each draw on
-# different Blocks chords, can.
+# every bass of the smaller ones and doubled notes, in keys that each spell and
+# double differently, can.
 READER_KEYS = [None, ("C", "major"), ("Db", "major"), ("D", "minor"), ("Gb", "blues"),
                ("A#", "harmonic_minor"), ("F", "dorian"), ("E", "major_pentatonic"),
                ("B", "diminished_hw")]
