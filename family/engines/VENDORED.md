@@ -9,8 +9,8 @@ their own repository, then run `tools/sync_engines.sh` and update this table.
 | --- | --- | --- | --- |
 | `good-idea/` | KallumS/Good-Idea | 91500c5 | gi_theory.lua, gi_idea.lua |
 | `midi-catalogue/` | KallumS/Midi-Catalogue | 4eb91a8 | mc_theory.lua, mc_orchestra.lua, mc_catalogue.lua |
-| `midi-suggester/` | KallumS/Midi-Suggester | 2eb02f1 | ms_theory.lua, ms_read.lua, ms_harmony.lua, ms_melody.lua |
-| `midi-variator/` | KallumS/Midi-Variator | f72b39d | mv_theory.lua, mv_vary.lua |
+| `midi-suggester/` | KallumS/Midi-Suggester | 2eb02f1; ms_theory.lua from 3d5b911 (branch `claude/remove-blocks-0011`) | ms_theory.lua, ms_read.lua, ms_harmony.lua, ms_melody.lua |
+| `midi-variator/` | KallumS/Midi-Variator | f72b39d; mv_theory.lua from 4a858ef (branch `claude/remove-blocks-0011`) | mv_theory.lua, mv_vary.lua |
 | `starting-blocks/` | KallumS/Starting-Blocks-Notation | fa54c16 | sb_engine.lua (identical to Starting Blocks') |
 | `adapters/` | KallumS/Noterator | 42c2c2f | common.lua and one adapter per engine, shared with Miderator |
 | `notation/` | KallumS/Starting-Blocks-Notation | 178a548 (branch `claude/rests-as-played`, not yet merged) | sb_notate.lua, sb_draw.lua, sb_glyphs.lua, sb_glyphs-OFL.txt (the glyphs' licence) |

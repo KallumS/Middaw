@@ -134,8 +134,9 @@ and piano sonatas rather than chorales — the same tool says something harder:
 | analyst numerals we could not express | 0 | 72 (0.1%) |
 
 (Those are the September runs. With the reader brought up to ScaleView Pro
-df4ea43 the harmony rows read 80.2% / 78.5% and 64.3% / 58.6%; see
-`MEASUREMENTS.md`.)
+df4ea43 the harmony rows read 80.2% / 78.5% and 64.3% / 58.6%; with
+Starting Blocks' chord list taken back out (f13f8a6), 80.5% / 78.8% and
+64.1% / 58.2%. See `MEASUREMENTS.md`.)
 
 That is the honest shape of it. Four voices moving in crotchets is the easiest
 harmony there is to read; an arpeggiated piano accompaniment under a singer,

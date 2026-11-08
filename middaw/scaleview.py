@@ -16,17 +16,18 @@ and on what a set of notes is called. Two things come across:
   usable for corpus labelling, where every chord symbol in the dataset is
   derived by this function and never typed by hand.
 
-Since ScaleView Pro df4ea43 (October 2026) the reader also takes Starting
-Blocks' chords as its dictionary of roots: where the notes are a Blocks chord,
-the name is on one of Blocks' roots for them. One table of that is the key's
-own chords, so the `key` passed to `detect_chord` decides readings, not only
-draws; C major when none is given, as ScaleView assumes with no scale chosen.
+ScaleView Pro took Starting Blocks' chords as a dictionary of roots in df4ea43
+(October 2026) and dropped it again in f13f8a6 (1.3.0, its decision 0011
+reversed): Blocks lists only complete chords, so a chord played with a note
+left out lost its root to a complete chord with the same notes. This port
+follows. The `key` passed to `detect_chord` settles draws and decides which
+doubled roots read as root position; C major when none is given, as ScaleView
+assumes with no scale chosen.
 
 The ranking constants and their reasoning are ScaleView's; see that repo's
 CLAUDE.md for the measurements behind each one. Keep the two in step: a fix
 here probably belongs there too. In step with ScaleView Pro's reader at
-df4ea43, checked against the Lua script itself over 157,740 readings in ten
-keys.
+f13f8a6 (1.3.0), checked against the Lua script itself.
 """
 
 from __future__ import annotations
@@ -510,87 +511,6 @@ def read_as_root_position(root: int, bass: int, voices: dict[int, int],
     return root in tonic_degrees(key)
 
 
-# Starting Blocks' chords decide which roots a chord can have. Where the notes
-# are a Blocks chord - one of its chord types on any root, in any inversion,
-# or one of the key's own chords on its degrees - the name is on one of
-# Blocks' roots for them, the reader's cost choosing between them as always.
-# Other notes are read as before. Copied unchanged from Starting Blocks'
-# `sb_engine.lua` (`M.CHORDS` intervals, `M.DIATONIC` offsets) at fc4dd32, by
-# way of ScaleView Pro df4ea43. Measured there: on Blocks' own 670,248 chords
-# the root is Blocks' 74.4% of the time, against 52% before.
-BLOCKS_CHORDS = (
-    (0, 4, 7), (0, 3, 7), (0, 3, 6), (0, 4, 8), (0, 4, 6), (0, 7),
-    (0, 4, 7, 9), (0, 3, 7, 9), (0, 4, 7, 9, 14), (0, 3, 7, 9, 14), (0, 4, 7, 10), (0, 4, 7, 11),
-    (0, 3, 7, 10), (0, 3, 7, 11), (0, 3, 6, 10), (0, 3, 6, 9), (0, 4, 8, 10), (0, 4, 8, 11),
-    (0, 4, 6, 10), (0, 3, 6, 11), (0, 4, 7, 9, 10),
-    (0, 4, 7, 10, 14), (0, 4, 7, 11, 14), (0, 3, 7, 10, 14), (0, 3, 7, 11, 14), (0, 4, 7, 10, 14, 17),
-    (0, 4, 7, 11, 14, 17), (0, 3, 7, 10, 14, 17), (0, 4, 7, 10, 14, 17, 21), (0, 4, 7, 11, 14, 17, 21),
-    (0, 3, 7, 10, 14, 17, 21),
-    (0, 4, 7, 10, 13), (0, 4, 7, 10, 15), (0, 4, 7, 10, 18), (0, 4, 7, 10, 20), (0, 4, 8, 10, 13),
-    (0, 4, 8, 10, 15), (0, 4, 6, 10, 13), (0, 4, 8, 10, 13, 15), (0, 4, 7, 10, 13, 21),
-    (0, 4, 7, 11, 18), (0, 3, 6, 10, 14), (0, 4, 8, 10, 14), (0, 4, 6, 10, 14), (0, 4, 7, 10, 14, 18),
-    (0, 4, 8, 11, 18), (0, 4, 6, 10, 13, 21),
-    (0, 2, 7), (0, 5, 7), (0, 5, 7, 10), (0, 5, 7, 10, 14), (0, 5, 7, 11), (0, 4, 7, 14),
-    (0, 3, 7, 14), (0, 4, 5, 7), (0, 4, 7, 17), (0, 4, 7, 21), (0, 2, 4, 7), (0, 2, 3, 7),
-    (0, 5, 10), (0, 5, 10, 15), (0, 7, 14), (0, 2, 4), (0, 1, 2), (0, 2, 4, 5),
-    (0, 6, 10, 16, 21, 26), (0, 4, 6, 7, 10, 13), (0, 6, 10, 15), (0, 5, 10, 15, 19), (0, 5, 6, 7),
-    (0, 1, 6), (0, 6, 7), (0, 1, 4, 5, 8, 9), (0, 7, 9, 13, 16), (0, 8, 11, 16, 21), (0, 4, 10),
-    (0, 4, 6, 10), (0, 4, 7, 10),
-)
-# Scale degrees above the one chosen: triad, 7th, 9th, 11th, 13th, 6th,
-# sus2, sus4, 5th.
-BLOCKS_DIATONIC = (
-    (0, 2, 4), (0, 2, 4, 6), (0, 2, 4, 6, 8), (0, 2, 4, 6, 8, 10), (0, 2, 4, 6, 8, 10, 12),
-    (0, 2, 4, 5), (0, 1, 4), (0, 3, 4), (0, 4),
-)
-
-
-def mask_from(classes, root: int) -> int:
-    """A set of pitch classes as a 12-bit mask, read from a root."""
-    mask = 0
-    for pc in classes:
-        mask |= 1 << ((pc - root) % 12)
-    return mask
-
-
-# Every chord type, as the pitch classes it holds above its root.
-BLOCKS_TYPES = {mask_from(shape, 0) for shape in BLOCKS_CHORDS}
-
-# The key's own chords, built once per key: mask -> the roots it is built on.
-_KEY_CHORDS: dict[tuple[int, str], dict[int, set[int]]] = {}
-
-
-def blocks_key_chords(key: Key) -> dict[int, set[int]]:
-    cache_key = (key.tonic, key.scale_id)
-    chords = _KEY_CHORDS.get(cache_key)
-    if chords is None:
-        intervals = key.scale.intervals
-        n = len(intervals)
-
-        def pitch(degree: int) -> int:
-            return key.tonic + intervals[degree % n] + 12 * (degree // n)
-
-        chords = {}
-        for degree in range(n):
-            root = pitch(degree) % 12
-            for offsets in BLOCKS_DIATONIC:
-                mask = 0
-                for o in offsets:
-                    mask |= 1 << (pitch(degree + o) % 12)
-                chords.setdefault(mask, set()).add(root)
-        _KEY_CHORDS[cache_key] = chords
-    return chords
-
-
-def blocks_roots(classes: set[int], key: Key) -> set[int] | None:
-    """The roots Blocks builds these notes on, or None if it builds them on none."""
-    in_key = blocks_key_chords(key).get(mask_from(classes, 0), set())
-    roots = {root for root in range(12)
-             if root in classes
-             and (root in in_key or mask_from(classes, root) in BLOCKS_TYPES)}
-    return roots or None
-
-
 def detect_chord(pitch_classes, bass: int | None = None,
                  key: Key | None = None) -> str | None:
     """Name a set of notes. `bass` decides inversions.
@@ -598,7 +518,7 @@ def detect_chord(pitch_classes, bass: int | None = None,
     `pitch_classes` may be MIDI notes rather than pitch classes: a pitch class
     sounding in more than one octave is what lets a doubled root of the key
     read as root position. Pitch classes alone are read exactly as before.
-    `key` settles draws and supplies Blocks' chords; C major when not given.
+    `key` settles draws; C major when not given.
 
     Returns None for an empty set; returns the notes spelled out when there is
     no chord to find, which is what ScaleView shows rather than guessing.
@@ -638,24 +558,6 @@ def detect_chord(pitch_classes, bass: int | None = None,
 
     if count == 1:
         return name_of(bass)
-
-    # A Blocks chord is named on one of Blocks' roots for it, chosen the way
-    # the reader below chooses, in the reader's own words from that root.
-    blocks = blocks_roots(classes, key)
-    if blocks:
-        pick = None
-        for root in range(12):
-            if root not in blocks:
-                continue
-            has = {(pc - root) % 12 for pc in classes}
-            quality, cost, rank = analyse(has, root, bass)
-            if count == 2:
-                quality = ("5" if 7 in has else "maj(no5)" if 4 in has
-                           else "min(no5)" if 3 in has else quality)
-            fit, slash = fit_of(root), root != bass
-            if better(cost, fit, slash, rank, pick):
-                pick = (cost, fit, slash, rank, root, quality)
-        return written(pick[4], pick[5])
 
     def spell_out() -> str:
         return " ".join(name_of(pc) for pc in range(12) if pc in classes)

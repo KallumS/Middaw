@@ -86,11 +86,11 @@ of 363,963 sonorities in the music21 core corpus and 100% of all 17,688
 three-to-seven-note voicings; a 62-pattern table scored 93.3% and 23.9% on the
 same tests.
 
-Since ScaleView Pro df4ea43 the roots it may choose come from Starting Blocks:
-where the notes are one of Blocks' 78 chord types on any root and in any
-inversion, or one of the key's own chords on its degrees, the name is on one
-of Blocks' roots for them, and the reader's cost picks between those. The key
-therefore decides readings as well as draws. A root of the key doubled in
+Every note held may be the root, and the reader's cost picks between them;
+the key spells and settles draws. (From ScaleView Pro df4ea43 to f13f8a6 the
+roots came from Starting Blocks' chord list instead; Pro reversed that, its
+decision 0011, because a list of complete chords cannot see a note left out.)
+A root of the key doubled in
 another octave reads as root position (E G C C is C), and two notes a third
 apart are a chord with its fifth said to be missing (Cmaj(no5)).
 

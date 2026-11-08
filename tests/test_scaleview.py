@@ -1,11 +1,11 @@
 """Fidelity tests for the ScaleView Pro port.
 
 Every chord case here is lifted from `tests/test_scaleview_pro.lua` in
-github.com/KallumS/scaleview-for-reaper, at the head that carries df4ea43
-(Starting Blocks' roots), in the suite's order and under the key the suite
-had selected. If the port drifts from the original engine, these fail.
-Comments are the Lua suite's own. Its three "Simplify Note Names" cases are
-left out: Middaw has no such option.
+github.com/KallumS/scaleview-for-reaper, at the head that carries f13f8a6
+(ScaleView Pro 1.3.0, Starting Blocks' roots taken back out), in the suite's
+order and under the key the suite had selected. If the port drifts from the
+original engine, these fail. Comments are the Lua suite's own. Its three
+"Simplify Note Names" cases are left out: Middaw has no such option.
 """
 
 import unittest
@@ -87,10 +87,8 @@ class TestScaleViewProSuite(unittest.TestCase):
     (("D", "minor"), [53, 57, 62, 74], 'Dmin'),  # in D minor it is one, so the slash comes off
     (("D", "minor"), [53, 57, 62], 'Dmin/F'),  # and an undoubled root is still an inversion
     # what the Scaler comparison moved
-    # Blocks builds these notes as D7b9 over its seventh, never on C - was Cdim9
-    (None, [60, 62, 63, 66, 69], 'D7b9/C'),
-    # Am6 and F#m7b5 are both Blocks chords: the half-diminished, as before
-    (None, [60, 76, 78, 81], 'F#min7b5/C'),
+    (None, [60, 62, 63, 66, 69], 'Cdim9'),  # a dim7 with a ninth in it
+    (None, [60, 76, 78, 81], 'F#min7b5/C'),  # A C E F# is the half-diminished, not Amin6
     (None, [60, 63, 67, 69], 'Cmin6'),  # but a minor sixth in root position stays
     (None, [62, 63, 67, 69], 'D#maj7b5/D'),  # was Dsus4b9, which has no third in it
     (None, [64, 70, 74], 'A#(b5)/E'),  # was E7b5(no3), which has none either
@@ -112,31 +110,18 @@ class TestScaleViewProSuite(unittest.TestCase):
     (None, [48, 63, 66, 70, 74], 'Cmin9b5'),
     # a draw goes to the reading without a slash
     (None, [48, 62, 67, 70], 'C7sus2'),  # was GminAdd11/C
-    # Blocks builds C D F G only as its quartal tetrad on D - was Csus4Add9
-    (None, [48, 62, 65, 67], 'Dmin7(11)/C'),
+    (None, [48, 62, 65, 67], 'Csus4Add9'),  # G7sus over C, was Dmin7(11)/C
     (None, [45, 60, 64, 67], 'Amin7'),  # a real difference in cost still decides
     # C6 against Amin7 - the bass decides
     (None, [45, 60, 64, 67], 'Amin7'),  # A in the bass
     (None, [48, 64, 67, 69], 'C6'),  # C in the bass
     (None, [43, 60, 64, 69], 'Amin7/G'),  # neither: the commoner chord, with a slash
-    # Blocks' roots
-    (None, [60, 63, 66, 71], 'CminMaj7b5'),  # Blocks' diminished major seventh on C - was Baddb9/C
-    # I6 and vi7 over C are both Blocks chords: the cheaper reading
-    (None, [48, 64, 67, 69], 'C6'),
-    (None, [60, 65, 67], 'Csus4'),  # and Csus4 stays Csus4, though Blocks builds Fsus2 over C too
-    (None, [71, 77], 'B(b5)(no3)'),  # B F is Blocks' fifth on B in C major
-    (None, [65, 71], 'B(b5)(no3)/F'),  # and over F, its first inversion
-    (None, [60, 62, 65, 67], 'Dmin7(11)/C'),  # C D F G is Blocks' quartal tetrad on D, in any key
-    # a ninth chord's fourth inversion puts its ninth in the bass
-    (None, [64, 74, 78, 81, 84], 'D9/E'),
-    # Blocks' altered dominant on C, inverted high - was A#min11b5/C
-    (None, [60, 61, 63, 64, 68, 70], 'Caug7b9#9'),
-    # in Db major Blocks builds no chord on B: an interval, read out
-    (("Db", "major"), [71, 77], 'F B'),
-    # a chord type counts on any root, in any key
-    (("Db", "major"), [60, 62, 65, 67], 'Dmin7(11)/C'),
-    (("Db", "major"), [61, 65, 68], 'Db'),  # Blocks' I in Db major
-    (None, [61, 65, 68], 'C#'),  # no Blocks chord on C# in C major - the reader names it, sharp
+    # the reader decides the root, not a chord list
+    (None, [60, 62, 64, 67, 69, 71], 'Cmaj13'),  # the 11th left out, as it always is - was Amin11/C
+    (None, [60, 62, 63, 70], 'Cmin9'),  # a shell with no fifth - was A#add9Add11/C
+    (None, [60, 62, 70], 'C7sus2'),  # was A#add9/C
+    (None, [60, 65, 71], 'Cmaj7sus4'),  # was Fadd#11(no3)/C
+    (None, [71, 77], 'F B'),  # a tritone is an interval, read out - was B(b5)(no3)
     # one and two notes
     (None, [60], 'C'),
     (None, [60, 67], 'C5'),  # a bare fifth
@@ -176,15 +161,14 @@ class TestScaleViewProSuite(unittest.TestCase):
     (None, [60, 63, 67, 69, 70], 'Cmin7(13)'),
     (None, [60, 61, 64, 67, 69, 70], 'C13b9'),
     (None, [60, 62, 64, 66, 67, 69, 70], 'C13#11'),
-    # Blocks' 13b9b5 on F#; Blocks has no 7#9#11 - was C7#9#11
-    (None, [60, 63, 64, 66, 67, 70], 'F#13b5b9/C'),
+    (None, [60, 63, 64, 66, 67, 70], 'C7#9#11'),
     (None, [60, 62, 64, 65, 67], 'Cadd9Add11'),
     (None, [60, 62, 63, 65, 67], 'CminAdd9Add11'),
     # five notes: Hutchinson 31.4 prints exactly this as Cm7(11)
     (None, [60, 63, 65, 67, 70], 'Cmin7(11)'),
     # six notes, the ninth among them: the same list prints Cm11
     (None, [60, 62, 63, 65, 67, 70], 'Cmin11'),
-    (None, [60, 63, 65, 66, 70], 'D#min6/9/C'),  # Blocks' m6/9 on Eb - was Cmin7b5(11)
+    (None, [60, 63, 65, 66, 70], 'Cmin7b5(11)'),
     # a third outranks a quality with none
     (None, [69, 71, 77], 'F(b5)/A'),  # E# A B over A; Scaler: F maj(b5) / A
     (None, [65, 69, 71], 'F(b5)'),  # and rooted, where the bass does not decide it
@@ -204,14 +188,19 @@ class TestScaleViewProSuite(unittest.TestCase):
     # both sevenths at once
     (("C", "major"), [55, 59, 62, 66, 77], 'G7(maj7)'),  # G B D F with an F# over it
     # a flat sixth is a b6 until a seventh arrives
-    (("C", "major"), [60, 64, 67, 68], 'G#maj7#5/C'),  # Blocks' maj7#5 on Ab
+    (("C", "major"), [60, 64, 67, 68], 'Caddb6'),  # C E G Ab, no seventh
     (("C", "major"), [60, 64, 67, 68, 70], 'C7b13'),  # and a b13 once one does
     # a sixth does not swallow an altered fifth
     (("C", "major"), [60, 62, 64, 68, 69], 'C6/9#5'),  # was C6/9, which claims a natural fifth
     (("C", "major"), [60, 64, 70], 'C7'),  # a shell voicing is still a seventh chord
     (("C", "major"), [60, 67, 70], 'C7(no3)'),  # but a missing third changes the quality
-    # Blocks builds C D G B as Gadd11 over its eleventh, and has no Cmaj7sus2 - was Cmaj7sus2
-    (("C", "major"), [60, 62, 67, 71], 'Gadd11/C'),
+    # deliberately not Cmaj9(no3): a 2 with no 3 is a suspension
+    (("C", "major"), [60, 62, 67, 71], 'Cmaj7sus2'),
+    (("C", "major"), [65, 79, 84, 88], 'Fmaj7sus2'),  # F G C E over F: Scaler Fmaj7(sus2)
+    (("C", "major"), [64, 75, 78, 83], 'Emaj7sus2'),  # E D# F# B over E: Scaler Emaj7(sus2)
+    (("C", "major"), [64, 77, 79, 84], 'Cadd11/E'),  # a chord tone in the bass keeps the add11
+    (("C", "major"), [67, 77, 84, 88], 'Cadd11/G'),  # and over its fifth
+    (("C", "major"), [60, 76, 77, 79], 'Cadd11'),  # and from its own root
     # the scale does not overrule the notes
     (("C", "major"), [54, 58, 61], 'F#'),  # F# A# C# is F# major, however far from C major
     (("C", "major"), [60, 64, 67, 70], 'C7'),  # and a dominant 7 stays a dominant 7
@@ -233,10 +222,12 @@ class TestScaleViewProSuite(unittest.TestCase):
 
 
 class TestKeyChords(unittest.TestCase):
-    """df4ea43 makes the reading depend on the key's own chords."""
+    """The key spells; it does not choose the root. While ScaleView Pro took
+    Starting Blocks' chords as a dictionary (df4ea43, reversed in f13f8a6) the
+    key's own chords decided readings, so B F was B(b5)(no3) in C major."""
 
     def test_the_same_notes_in_two_keys(self):
-        self.assertEqual(chord([71, 77]), "B(b5)(no3)")
+        self.assertEqual(chord([71, 77]), "F B")
         self.assertEqual(chord([71, 77], ("Db", "major")), "F B")
         self.assertEqual(chord([61, 65, 68]), "C#")
         self.assertEqual(chord([61, 65, 68], ("Db", "major")), "Db")

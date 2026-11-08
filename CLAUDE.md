@@ -114,14 +114,17 @@ engine, exactly as Pro and Simple are over there. The ranking constants and
 their reasoning are ScaleView's; that repo's CLAUDE.md has the measurements
 behind each one, and they were measured, not tuned by ear.
 
-Two things the reader now needs that a set of pitch classes does not carry.
-**The key**: Starting Blocks' chords (`BLOCKS_CHORDS`, `BLOCKS_DIATONIC`)
-decide which roots a chord can have, and half of that is the key's own chords,
-so the same notes name differently in C major and Db major. **The notes**: a
-root sounding in two octaves that is a 1st, 3rd or 5th degree of the key reads
-as root position, so `detect_chord` takes MIDI notes and counts octaves;
-pitch classes alone are read as undoubled. The port is in step with ScaleView
-Pro df4ea43; `runtime/composer/core.js` carries the same reader, and
+**The notes**: a root sounding in two octaves that is a 1st, 3rd or 5th degree
+of the key reads as root position, so `detect_chord` takes MIDI notes and
+counts octaves; pitch classes alone are read as undoubled. The key spells and
+settles draws; it does not choose the root. (From df4ea43 to f13f8a6 Starting
+Blocks' chord list decided which roots a chord could have, and the key's own
+chords were half of it. ScaleView Pro removed it - its decision 0011,
+reversed - because a list of complete chords cannot see a note left out: a
+Cmaj13 without its 11th read `Amin11/C`. This port and `core.js` followed on
+8 November 2026.) The port is in step with ScaleView Pro f13f8a6 (1.3.0),
+diffed against the Lua script over 427,776 readings, byte-identical;
+`runtime/composer/core.js` carries the same reader, and
 `tests/test_composer_js.py` compares the two over every pitch-class set in
 nine keys, because composed chords are too plain to show a reader change.
 
@@ -400,9 +403,10 @@ dataset and a liability. See `docs/DATASET.md`.
   shows is that the *collection* is nearly always right — 98–99.6% of detected
   tonics belong to the notes the signature names — and the tonic *inside* it is
   where we lose, which points at the second half of `detect_key`.
-- Harmonic analysis agrees with a human analyst's root on **80.2%** of 1,041
-  chorale chords and **64.3%** of 52,739 chords of songs, quartets and sonatas
-  (re-measured with ScaleView Pro df4ea43's reader; 80.5% and 62.7% before).
+- Harmonic analysis agrees with a human analyst's root on **80.5%** of 1,041
+  chorale chords and **64.1%** of 52,685 chords of songs, quartets and sonatas
+  (re-measured 8 November 2026 with ScaleView Pro f13f8a6's reader; with
+  df4ea43's Starting Blocks dictionary it was 80.2% and 64.3%).
 - **How stepwise a melody should be is a per-style constant, and ours are not
   measured.** A chorale steps 70% of the time, a nineteenth-century song 47%
   (repeating a note 21% of the time, because it is setting syllables), a
