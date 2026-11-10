@@ -165,3 +165,48 @@ test('@serialize keeps a device as it was', () => {
   assert.strictEqual(b.getSlider(2), 16);
   assert.strictEqual(b.getSlider(7), 4242);
 });
+
+// ------------------------------------------------------------- @gfx ---
+// Off unless asked for; with { gfx: true } a host draws (the Ableton devices).
+function recorder() {
+  const calls = [];
+  return new Proxy({ calls }, {
+    get(t, name) {
+      if (name === 'calls') return calls;
+      if (name === 'gfx_measurestr') return (fx, s) => { calls.push([name, fx.str(s)]); fx.gm = [fx.str(s).length * 7, 12]; return 1; };
+      if (typeof name === 'string' && name.startsWith('gfx_')) return (fx, ...a) => { calls.push([name].concat(a)); return 0; };
+      return undefined;
+    }
+  });
+}
+
+test('@gfx is not run unless asked for, and then a host draws it', () => {
+  const src = 'desc:t\n@init\nn = 0;\n@gfx 300 200\nn += 1; gfx_set(1, 0, 0); gfx_rect(10, 20, gfx_w - 20, 30);\n' +
+              'gfx_measurestr("Hello", w, h); gfx_x = 5; gfx_drawstr("Hello"); clicked = mouse_cap & 1;\n';
+  const plain = new J.JSFX(src);
+  plain.init(48000);
+  assert.strictEqual(plain.runGfx(recorder(), 300, 200), 0, 'nothing to run without { gfx: true }');
+  assert.strictEqual(plain.getVar('n'), 0);
+  const fx = new J.JSFX(src, { gfx: true });
+  fx.init(48000);
+  const host = recorder();
+  fx.runGfx(host, 300, 200, { x: 4, y: 5, cap: 1 });
+  assert.strictEqual(fx.getVar('n'), 1);
+  assert.deepStrictEqual(host.calls.map((c) => c[0]), ['gfx_set', 'gfx_rect', 'gfx_measurestr', 'gfx_drawstr']);
+  assert.deepStrictEqual(host.calls[1].slice(1), [10, 20, 280, 30]);
+  assert.deepStrictEqual([fx.getVar('w'), fx.getVar('h')], [35, 12]);
+  assert.strictEqual(fx.getVar('clicked'), 1);
+  assert.strictEqual(fx.getVar('gfx_x'), 5);
+});
+
+test('every family device’s window runs on a host without an error', () => {
+  for (const name of fs.readdirSync(DEV).filter((f) => f.endsWith('.jsfx'))) {
+    const fx = new J.JSFX(fs.readFileSync(path.join(DEV, name), 'utf8'),
+      { gfx: true, readImport: (n) => fs.readFileSync(path.join(DEV, n), 'utf8') });
+    fx.init(48000);
+    const host = recorder();
+    const size = fx.file.gfxSize || [600, 400];
+    for (let f = 0; f < 3; f++) fx.runGfx(host, size[0], size[1], { x: 40, y: 40, cap: f === 1 ? 1 : 0 });
+    assert.ok(host.calls.length > 10, name + ' drew ' + host.calls.length);
+  }
+});
