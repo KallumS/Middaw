@@ -441,6 +441,11 @@ dataset and a liability. See `docs/DATASET.md`.
   If an engine misbehaves, suspect `runtime/` first — it is held to the real
   Lua byte for byte and to Midi Evolver's own engine checks, so a difference
   is a bug in the runtime, not a licence to patch.
+- **`runtime/` has copies outside this repo.** The family's Max for Live
+  devices (branch `ableton` in eighteen repositories) carry the Lua and JSFX
+  runtimes and `host.js` in `ableton/kit/runtime/`, unchanged, with the commit
+  in `ableton/kit/VENDORED.md`. A fix here is copied there, to all eighteen,
+  and each device rebuilt and tested.
 - **The engines are spoken to through `runtime/host.js` only**: JSON in, JSON
   out, errors returned as text. Node tests it (`tests/js/test_host.js`),
   XCTest tests it again through JavaScriptCore. JavaScriptCore has no

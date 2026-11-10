@@ -105,8 +105,11 @@ runtime/composer/            the composer, ported from middaw/ (Python) for Comp
 
 - **VST3 or Audio Unit versions of the devices.** They are C now, which is
   what a plug-in wrapper needs; the wrapper is not written.
-- **Devices are not bypassed or automated**, and @gfx is not run: a device's
-  own window is replaced by its sliders.
+- **Devices are not bypassed or automated**, and the app does not run @gfx:
+  a device's own window is replaced by its sliders. The runtime can now run
+  it (`new JSFX(src, { gfx: true })`, then `runGfx` on a host that supplies
+  the `gfx_*` calls); the family's Ableton devices use that to show each
+  JSFX's own window, and the app could do the same.
 
 ## Not tried
 
