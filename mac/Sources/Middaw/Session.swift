@@ -74,7 +74,7 @@ enum SoundChoice: Hashable {
         }
     }
 
-    func device() -> Device {
+    @MainActor func device() -> Device {
         switch self {
         case .synth(let p): return Device(device: "synth", preset: p)
         case .kit: return Device(device: "kit")

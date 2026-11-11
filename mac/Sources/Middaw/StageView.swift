@@ -3,6 +3,7 @@ import AppKit
 import MiddawCore
 import MiddawEngines
 import MiddawAudio
+import CoreAudioKit
 
 /// The stage, seen from above with the audience at the bottom: a seat for
 /// every player of the orchestra, and the front, where anything that is not
