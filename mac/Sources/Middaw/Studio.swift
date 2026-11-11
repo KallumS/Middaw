@@ -76,6 +76,18 @@ final class Studio: ObservableObject {
 
     func instrument(_ id: String) -> Engines.Instrument? { instruments.first { $0.id == id } }
 
+    /// Midi Catalogue's instruments by family, in its order, for the menus.
+    var families: [(name: String, instruments: [Engines.Instrument])] {
+        var order: [String] = []
+        var by: [String: [Engines.Instrument]] = [:]
+        for i in instruments where i.low != nil || i.isDrums {
+            let f = i.family ?? "Other"
+            if by[f] == nil { order.append(f) }
+            by[f, default: []].append(i)
+        }
+        return order.map { ($0, by[$0]!) }
+    }
+
     /// Look again for Audio Units: one installed while Middaw is open.
     func rescanPlugins() { plugins = PluginCatalog.instruments() }
 

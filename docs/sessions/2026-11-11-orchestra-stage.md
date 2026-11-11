@@ -66,3 +66,10 @@ library in a seat.
   podium. The seats' positions are now the middles of their wedges, so what
   is drawn is what is heard; the Studio became 24 m wide so the outermost
   wedges sit inside it.
+- The side panels went into the menus at the top, as asked: Stage (add
+  players and ensembles, the front, the hall), Player (name, instrument,
+  seat, sound, mute, solo, with where the player is heard and their range at
+  the top), Clip (Vary, Suggest, Transform, AutoCC, Quantize, Duplicate,
+  Split, Export). The level is a card at the end of Devices; Midi
+  Catalogue's ideas are Generate's Catalogue tab; Orchestration Helper is a
+  window (Help > Orchestration Guide, Help > About the instrument).

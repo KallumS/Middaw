@@ -6,143 +6,47 @@ import MiddawCore
 import MiddawEngines
 import MiddawAudio
 
-// ------------------------------------------------------------- inspector --
-/// The chosen player: what they play, where they sit, what plays them, how
-/// loud - and what Orchestration Helper says about the instrument.
-struct InspectorView: View {
-    @EnvironmentObject var s: Session
-    var body: some View {
-        VStack(spacing: 0) {
-            Text(s.track?.name ?? "Player").heading().lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 12).frame(height: 40)
-            Divider().overlay(Theme.rule)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    TrackInspector()
-                }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .background(Theme.ground)
-    }
+// ----------------------------------------------------- about a player --
+/// Where the player is heard from: the seat's distance and side in the hall.
+@MainActor func placeText(_ t: Track, in p: Project) -> String {
+    guard let seat = Stage.seat(t.seat) else { return "At the front: no hall, in the middle" }
+    let hall = Hall.named(p.hall)
+    let sound = Stage.sound(seat, in: hall)
+    return String(format: "%@: %.1f m away, %@, %.1f dB", seat.name, sound.distance, panText(sound.pan).lowercased(), 20 * log10(sound.direct))
 }
 
-struct TrackInspector: View {
+/// What the instrument can play, from Midi Catalogue.
+func rangeText(_ i: Engines.Instrument) -> String? {
+    guard let lo = i.low, let hi = i.high, !i.isDrums else { return nil }
+    var s = "\(Theory.noteName(lo)) to \(Theory.noteName(hi))"
+    if let sw = i.sweet, sw.count == 2 { s += ", best \(Theory.noteName(sw[0]))–\(Theory.noteName(sw[1]))" }
+    if let p = i.poly { s += p == 1 ? ", one note at a time" : ", \(p) notes at once" }
+    return s
+}
+
+/// The player's level, mute and solo, at the end of their chain in Devices.
+struct MixCard: View {
     @EnvironmentObject var s: Session
-    @EnvironmentObject var studio: Studio
-    @State private var name = ""
+    let track: Track
     @State private var volume = 0.8
-
     var body: some View {
-        if let t = s.track {
-            VStack(alignment: .leading, spacing: 10) {
-                Row(label: "Name") {
-                    TextField("Name", text: $name).onSubmit {
-                        let n = name.trimmingCharacters(in: .whitespaces)
-                        if !n.isEmpty { s.updateTrack(t.id, "Rename Track") { $0.name = n } }
-                    }
-                }
-                Row(label: "Instrument") {
-                    Picker("", selection: Binding(get: { t.instrument }, set: { s.setInstrument(t.id, $0) })) {
-                        ForEach(families, id: \.0) { fam, list in
-                            Section(fam) { ForEach(list) { i in Text(i.name).tag(i.id) } }
-                        }
-                    }.labelsHidden()
-                }
-                if let i = studio.instrument(t.instrument), let lo = i.low, let hi = i.high {
-                    Text(rangeText(i, lo, hi)).foregroundStyle(Theme.textDim).font(.system(size: 12))
-                }
-                Row(label: "Sits") {
-                    Picker("", selection: Binding(get: { t.seat ?? "" }, set: { s.place(t.id, seat: $0.isEmpty ? nil : $0) })) {
-                        Text("At the Front").tag("")
-                        ForEach(StageSection.allCases, id: \.self) { sec in
-                            let open = Stage.seats.filter { $0.section == sec && ($0.id == t.seat || !s.project.takenSeats.contains($0.id)) }
-                            if !open.isEmpty { Section(sec.name) { ForEach(open) { seat in Text(seat.name).tag(seat.id) } } }
-                        }
-                    }.labelsHidden()
-                }
-                Text(placeText(t)).foregroundStyle(Theme.textDim).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
-            }
-            .onAppear { load(t) }
-            .onChange(of: t.id) { _, _ in load(t) }
-
-            if let c = s.clip {
-                Divider().overlay(Theme.rule)
-                Text("Clip").heading()
-                Text("Bar \(s.project.bar(of: c.start) + 1), \(barsText(c.length)), \(c.notes.count) notes")
-                    .foregroundStyle(Theme.textDim).font(.system(size: 12))
-                if let src = c.source, let g = src.generator {
-                    Text("Made with \(g)\(src.title.map { ": \($0)" } ?? "")").foregroundStyle(Theme.textDim).font(.system(size: 12)).lineLimit(2)
-                }
-                HStack(spacing: 6) {
-                    Button("Vary…") { s.generating = true; GenerateModel.request = "midi-variator" }.house()
-                    Button("Suggest…") { s.generating = true; GenerateModel.request = "midi-suggester" }.house()
-                    Menu("More") {
-                        Menu("Transform") { ForEach(Session.Shape.allCases, id: \.self) { sh in Button(sh.rawValue) { s.transform(sh) } } }
-                        Button("Draw Dynamics with AutoCC") { s.drawDynamics() }
-                    }
-                    .fixedSize()
-                }
-            }
-
-            Divider().overlay(Theme.rule)
-            Text("Sound").heading()
-            SoundPanel(track: t)
-
-            Divider().overlay(Theme.rule)
-            Text("Mix").heading()
-            Row(label: "Level") {
-                Slider(value: $volume, in: 0...1) { editing in if !editing { s.updateTrack(t.id, "Change Level") { $0.volume = volume } } }
-                Text(dbText(volume)).frame(width: 52, alignment: .trailing).foregroundStyle(Theme.text).monospacedDigit()
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Level").heading()
+            HStack(spacing: 8) {
+                Slider(value: $volume, in: 0...1) { editing in if !editing { s.updateTrack(track.id, "Change Level") { $0.volume = volume } } }
+                Text(dbText(volume)).frame(width: 56, alignment: .trailing).foregroundStyle(Theme.text).monospacedDigit()
             }
             HStack(spacing: 4) {
-                Button("Mute") { s.updateTrack(t.id, t.mute ? "Unmute" : "Mute") { $0.mute.toggle() } }.house(on: t.mute, compact: true)
-                Button("Solo") { s.updateTrack(t.id, t.solo ? "Unsolo" : "Solo") { $0.solo.toggle() } }.house(on: t.solo, compact: true)
+                Button("Mute") { s.updateTrack(track.id, track.mute ? "Unmute" : "Mute") { $0.mute.toggle() } }.house(on: track.mute, compact: true)
+                Button("Solo") { s.updateTrack(track.id, track.solo ? "Unsolo" : "Solo") { $0.solo.toggle() } }.house(on: track.solo, compact: true)
             }
-
-            if let entry = OrchestrationGuide.shared.entry(for: t.instrument, name: studio.instrument(t.instrument)?.name) {
-                Divider().overlay(Theme.rule)
-                Text("About the \(entry.title)").heading()
-                Text(entry.summary).foregroundStyle(Theme.text).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
-            }
-        } else {
-            Text("Choose a player on the stage, or describe some music in Generate.").foregroundStyle(Theme.textDim)
+            Text(placeText(track, in: s.project)).foregroundStyle(Theme.textDim).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
         }
-    }
-
-    func load(_ t: Track) { name = t.name; volume = t.volume }
-
-    /// Where the player is heard from: the seat's distance and side in the hall.
-    func placeText(_ t: Track) -> String {
-        guard let seat = Stage.seat(t.seat) else { return "Heard as it is: no hall, in the middle." }
-        let hall = Hall.named(s.project.hall)
-        let sound = Stage.sound(seat, in: hall)
-        let db = 20 * log10(sound.direct)
-        return String(format: "%.1f m from the microphones, %@, direct sound %.1f dB, in the %@.",
-                      sound.distance, panText(sound.pan).lowercased(), db, hall.name)
-    }
-
-    var families: [(String, [Engines.Instrument])] {
-        var order: [String] = []
-        var by: [String: [Engines.Instrument]] = [:]
-        for i in studio.instruments where i.low != nil || i.isDrums {
-            let f = i.family ?? "Other"
-            if by[f] == nil { order.append(f) }
-            by[f, default: []].append(i)
-        }
-        return order.map { ($0, by[$0]!) }
-    }
-
-    func rangeText(_ i: Engines.Instrument, _ lo: Int, _ hi: Int) -> String {
-        var s = "\(Theory.noteName(lo)) to \(Theory.noteName(hi))"
-        if let sw = i.sweet, sw.count == 2 { s += ", best \(Theory.noteName(sw[0]))–\(Theory.noteName(sw[1]))" }
-        if let p = i.poly { s += p == 1 ? ", one note at a time" : ", \(p) notes at once" }
-        return s
-    }
-    func barsText(_ beats: Double) -> String {
-        let bars = beats / s.project.beatsPerBar
-        return bars == bars.rounded() ? "\(Int(bars)) \(bars == 1 ? "bar" : "bars")" : String(format: "%.2f bars", bars)
+        .padding(10)
+        .frame(width: 220, alignment: .topLeading)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.raised))
+        .onAppear { volume = track.volume }
+        .onChange(of: track.volume) { _, v in volume = v }
     }
 }
 
@@ -260,70 +164,25 @@ struct SoundPanel: View {
     }
 }
 
-// ----------------------------------------------------------- the browser --
-/// Ensembles and instruments to add; Midi Catalogue's ideas; Orchestration
-/// Helper's guide.
-struct BrowserView: View {
-    @EnvironmentObject var s: Session
-    @EnvironmentObject var studio: Studio
-    @State private var tab = 0
-    @State private var search = ""
+// ----------------------------------------------------------- the guide --
+/// Orchestration Helper's guide, in a window of its own (Window > Orchestration
+/// Guide, or Help > About the instrument): searchable by instrument, composer
+/// or character.
+@MainActor
+final class GuideSearch: ObservableObject {
+    static let shared = GuideSearch()
+    @Published var text = ""
+}
 
+struct GuideWindow: View {
+    @EnvironmentObject var studio: Studio
+    @ObservedObject var search = GuideSearch.shared
     var body: some View {
         VStack(spacing: 0) {
-            Picker("", selection: $tab) {
-                Text("Sounds").tag(0); Text("Ideas").tag(1); Text("Guide").tag(2)
-            }
-            .pickerStyle(.segmented).labelsHidden().padding(10)
-            Divider().overlay(Theme.rule)
-            switch tab {
-            case 0: sounds
-            case 1: IdeasView()
-            default: guide
-            }
-        }
-        .background(Theme.ground)
-    }
-
-    var sounds: some View {
-        List {
-            Section("Ensembles") {
-                ForEach(ensembles, id: \.name) { e in
-                    Button(e.name) { s.addEnsemble(e.name, e.ids, stage: e.stage) }.buttonStyle(.plain)
-                        .help(e.stage ? "Seat \(e.ids.count) \(e.ids.count == 1 ? "player" : "players") on the stage"
-                                      : "Add \(e.ids.count) \(e.ids.count == 1 ? "player" : "players") at the front")
-                }
-            }
-            ForEach(families, id: \.0) { fam, list in
-                Section(fam) {
-                    ForEach(list) { i in
-                        Button(i.name) { s.addPlayer(i.id) }.buttonStyle(.plain)
-                            .help(Stage.isOrchestral(i.id) ? "Seat a \(i.name) on the stage" : "Add a \(i.name) at the front")
-                    }
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
-    }
-
-    var families: [(String, [Engines.Instrument])] {
-        var order: [String] = []
-        var by: [String: [Engines.Instrument]] = [:]
-        for i in studio.instruments where i.low != nil {
-            let f = i.family ?? "Other"
-            if by[f] == nil { order.append(f) }
-            by[f, default: []].append(i)
-        }
-        return order.map { ($0, by[$0]!) }
-    }
-
-    var guide: some View {
-        VStack(spacing: 0) {
-            TextField("Search: an instrument, a composer, a character", text: $search)
+            TextField("Search: an instrument, a composer, a character", text: $search.text)
                 .textFieldStyle(.roundedBorder).padding(10)
             List {
-                ForEach(OrchestrationGuide.shared.search(search)) { e in
+                ForEach(studio.engines == nil ? [] : OrchestrationGuide.shared.search(search.text)) { e in
                     DisclosureGroup {
                         Text(e.summary).font(.system(size: 12)).foregroundStyle(Theme.text).fixedSize(horizontal: false, vertical: true)
                     } label: {
@@ -334,6 +193,7 @@ struct BrowserView: View {
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
         }
+        .background(Theme.ground)
     }
 }
 

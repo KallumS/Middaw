@@ -12,7 +12,7 @@ violins close and to the side, the timpani far back. Synths and drum machines
 play at the front, dry. Under the stage, the chosen player's part as MIDI,
 notation, drums or a step sequencer, undo - with the rest of the family built in: Good Idea, Midi
 Suggester and Midi Variator in the Generate panel, Starting Blocks over the
-piano roll, Midi Catalogue and Orchestration Helper in the browser, ScaleView
+piano roll, Midi Catalogue in Generate, Orchestration Helper in Help, ScaleView
 in the toolbar, AutoCC on every clip, and the Battle Pass.
 **[docs/DAW.md](docs/DAW.md)** says where each one lives, and what is not
 built yet; **[docs/STAGE.md](docs/STAGE.md)** is the stage and its acoustics.

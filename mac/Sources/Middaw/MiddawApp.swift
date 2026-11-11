@@ -14,7 +14,7 @@ struct MiddawApp: App {
                 .preferredColorScheme(.dark)
                 .tint(Theme.accent)
         }
-        .commands { MiddawCommands() }
+        .commands { MiddawCommands(studio: studio) }
         Window("Battle Pass", id: "battle-pass") {
             PassWindow()
                 .environmentObject(studio)
@@ -22,6 +22,13 @@ struct MiddawApp: App {
                 .tint(Theme.accent)
         }
         .defaultSize(width: 620, height: 680)
+        Window("Orchestration Guide", id: "guide") {
+            GuideWindow()
+                .environmentObject(studio)
+                .preferredColorScheme(.dark)
+                .tint(Theme.accent)
+        }
+        .defaultSize(width: 420, height: 600)
     }
 }
 
@@ -81,8 +88,9 @@ enum Snapshot {
     }
 }
 
-/// The song's window: browser; the stage over the chosen player's part and
-/// its editor; inspector.
+/// The song's window: the stage over the chosen player's part and its editor,
+/// the whole width. Everything else is in the menus at the top: Stage,
+/// Player, Clip.
 struct SongWindow: View {
     @ObservedObject var document: SongDocument
     @StateObject private var session: Session
@@ -97,23 +105,18 @@ struct SongWindow: View {
     var body: some View {
         VStack(spacing: 0) {
             StatusLine()
-            HSplitView {
-                if session.showBrowser {
-                    BrowserView().frame(minWidth: 190, idealWidth: 220, maxWidth: 320)
+            VSplitView {
+                StageView().frame(minHeight: 260, idealHeight: 400)
+                VStack(spacing: 0) {
+                    ArrangeView().frame(height: 40 + 58 * CGFloat(max(1, min(3, ArrangeView.rows(session).count))))
+                    EditorView()
                 }
-                VSplitView {
-                    StageView().frame(minHeight: 260, idealHeight: 400)
-                    VStack(spacing: 0) {
-                        ArrangeView().frame(height: 40 + 58 * CGFloat(max(1, min(3, ArrangeView.rows(session).count))))
-                        EditorView()
-                    }
-                    .frame(minHeight: 280, idealHeight: 440)
-                }
-                .frame(minWidth: 560)
-                InspectorView().frame(minWidth: 260, idealWidth: 290, maxWidth: 380)
+                .frame(minHeight: 280, idealHeight: 440)
             }
+            .frame(minWidth: 560)
         }
         .background(Theme.ground)
+        .sheet(isPresented: $session.renaming) { RenameSheet().environmentObject(session) }
         .toolbar { SongToolbar() }
         .environmentObject(session)
         .focusedSceneObject(session)
@@ -317,48 +320,3 @@ struct KeyPicker: View {
     }
 }
 
-// ----------------------------------------------------------------- menus --
-struct MiddawCommands: Commands {
-    @FocusedObject var s: Session?
-
-    var body: some Commands {
-        CommandGroup(after: .importExport) {
-            Button("Export MIDI File…") { s?.exportMIDI() }.keyboardShortcut("e", modifiers: [.command, .shift]).disabled(s == nil)
-            Button("Export Audio…") { s?.exportAudio() }.disabled(s == nil)
-        }
-        CommandGroup(after: .pasteboard) {
-            Divider()
-            Button("Duplicate") { s?.duplicate() }.keyboardShortcut("d").disabled(s?.clip == nil)
-            Button("Split at the Caret") { s?.split() }.keyboardShortcut("e").disabled(s?.clip == nil)
-            Button("Select All Notes") { s?.selectAllNotes() }.keyboardShortcut("a", modifiers: [.command, .option]).disabled(s?.clip == nil)
-            Divider()
-            Button("Quantize") { s?.quantize() }.disabled(s?.clip == nil)
-            Menu("Transform") {
-                ForEach(Session.Shape.allCases, id: \.self) { shape in Button(shape.rawValue) { s?.transform(shape) } }
-            }
-            .disabled(s?.clip == nil)
-        }
-        CommandMenu("Player") {
-            Button("New Player at the Front") { s?.addTrack("synth") }.keyboardShortcut("n", modifiers: [.command, .option])
-            Button("Duplicate the Player") { if let id = s?.selection.trackID { s?.duplicateTrack(id) } }.disabled(s?.selection.trackID == nil)
-            Button("Remove the Player") { if let id = s?.selection.trackID { s?.deleteTrack(id) } }.disabled(s?.selection.trackID == nil)
-            Divider()
-            Menu("Hall") { ForEach(Hall.all) { h in Button(h.name) { s?.setHall(h.id) } } }.disabled(s == nil)
-        }
-        CommandMenu("Transport") {
-            Button(s?.playing == true ? "Stop" : "Play") { s?.playStop() }
-            Button("Play from the Start") { s?.playStop(fromStart: true) }
-            Button("Record") { s?.toggleRecord() }
-            Button("Loop") { s?.toggleLoop() }
-            Button("Metronome") { s?.toggleMetronome() }
-        }
-        CommandGroup(after: .sidebar) {
-            Button("Show or Hide the Browser") { s?.showBrowser.toggle() }.keyboardShortcut("b", modifiers: [.command, .option])
-            Button("MIDI") { s?.editor = .roll }.keyboardShortcut("p", modifiers: [.command, .option])
-            Button("Notation") { s?.editor = .score }.keyboardShortcut("s", modifiers: [.command, .option])
-            Button("Drums") { s?.editor = .drums }
-            Button("Step Sequencer") { s?.editor = .steps }
-            Button("Devices") { s?.editor = .devices }
-        }
-    }
-}

@@ -29,6 +29,7 @@ struct DevicesView: View {
                         DeviceCard(device: d, trackID: t.id)
                     }
                     AddDeviceMenu(track: t)
+                    MixCard(track: t).padding(.leading, 12)
                 }
                 .padding(10)
             }

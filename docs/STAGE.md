@@ -66,7 +66,7 @@ back from the front edge where the conductor stands; `height` is where the
 instrument sounds from. The listener is the main microphone pair, 3 m in
 front of the conductor and 3.5 m up, where a Decca tree hangs.
 
-An orchestral instrument asked for by name (the browser, an ensemble,
+An orchestral instrument asked for by name (Stage > Add a Player, an ensemble,
 Compose, a song from before the stage) takes the first free seat for it. The
 piano is the exception: it is as often a band's as an orchestra's, so it
 takes the piano seat only when asked for on its own or by an orchestral
@@ -148,7 +148,7 @@ code.
 ## What it cannot do yet
 
 - **The seating is fixed.** A wedge cannot be dragged; a player can move to
-  any free seat or to the front, from the inspector or the seat's menu.
+  any free seat or to the front, from Player > Seat or the seat's menu.
 - **No directivity.** Every instrument radiates the same way in every
   direction; a horn's bell pointing backwards is not modelled.
 - **No measured halls.** The rooms are calculated, not recorded. A measured

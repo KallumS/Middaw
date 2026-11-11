@@ -22,7 +22,17 @@ the bars, the loop and the chords) and its editor, in four tabs: **MIDI**
 **Drums** (a lane per drum) and the **Step Sequencer** - with the player's
 **Devices** a button beside them. **Generate** (G, or the toolbar) opens
 the generators to the right of the editor, beside the notes they write, as
-Ableton shows its own; the inspector on the far right is the chosen player. Shift-click more players to show their parts
+Ableton shows its own.
+
+There are no side panels: the stage and the editor take the whole width,
+and the rest is in the menus at the top. **Stage**: add a player or an
+ensemble, a player or a drum machine at the front, the hall. **Player**:
+where the chosen player sits and how loud they are heard, their range, and
+their name, instrument, seat, sound (Middaw's, the family's, or any Audio
+Unit by maker), mute and solo. **Clip**: Vary, Suggest, Transform, Draw
+Dynamics with AutoCC, Quantize, Duplicate, Split, Export. The player's level
+is the last card in Devices; Midi Catalogue's ideas are Generate's
+Catalogue tab; Orchestration Helper's guide is a window of its own (Help). Shift-click more players to show their parts
 together and choose bars across them.
 
 (It was a browser app until 30 October 2026; `docs/BROWSER-DAW.md` says what
@@ -108,10 +118,10 @@ runtime/composer/            the composer, ported from middaw/ (Python) for Comp
 | **Midi Variator** | Generate > Vary, or Vary… on a clip: variations, each saying what it changed |
 | **Starting Blocks** | The Blocks bar over the piano roll: click to hear, double-click to put it at the caret, which moves on |
 | **Starting Blocks Notation** | The Notation tab, a part or the full score, dark or a light page; a clip's silences are rests (its `opts.rests`) |
-| **Midi Catalogue** | Browser > Ideas; its instruments are every player's Instrument and the stage's seats; its Shape It is Transform |
+| **Midi Catalogue** | Generate > Catalogue; its instruments are every player's Instrument and the stage's seats; its Shape It is Transform |
 | **Noterator** | The ensembles (String Quartet, Big Band, Beat Maker…) and the adapters every engine is driven through |
 | **Miderator** | The placement rules: into the chosen bars, else at the caret; fitted to the instrument; heard on piano or kit first |
-| **Orchestration Helper** | The inspector's About, and Browser > Guide |
+| **Orchestration Helper** | Help > About the instrument, and the Orchestration Guide window |
 | **Instant Virtual Instrument** | Played by > Instant Instrument: drop a sound on a player and play it across the keyboard |
 | **AutoCC** | Draw Dynamics with AutoCC on any clip: its curves drawn into the clip's controller lanes |
 | **DAW Battle Pass** | The ring in the toolbar: active minutes fill the tier. Its window (Window > Battle Pass): quests to claim or reroll, the check-in calendar, crates, tokens, ideas to put at the caret, gear, the shop and daily deals, stats. Saved in Application Support |
@@ -139,6 +149,7 @@ runtime/composer/            the composer, ported from middaw/ (Python) for Comp
 This was written on Linux and built only by CI. CI does open the real app on
 an Apple silicon Mac, load a composed song into it and save pictures of the
 window (piano roll and score), and the first of those showed the song, its
-chords lane, the Blocks bar and the inspector as intended. Nobody has yet
+chords lane, the Blocks bar and the inspector as intended (the inspector has
+since become the menus). Nobody has yet
 clicked through it, heard it through speakers or played it from a MIDI
 keyboard; the first person to do so will find what the tests could not.

@@ -47,7 +47,7 @@ final class GenerateModel: ObservableObject {
     }
 
     func refresh(_ s: Session) {
-        guard which != "compose" else { return }
+        guard which != "compose" && which != "ideas" else { return }
         do {
             let ses = try session(which)
             try ses.useKey(s.project.key)
@@ -263,17 +263,18 @@ struct GenerateView: View {
                 Text("Idea").tag("good-idea")
                 Text("Suggest").tag("midi-suggester")
                 Text("Vary").tag("midi-variator")
+                Text("Catalogue").tag("ideas")
             }
             .pickerStyle(.segmented).labelsHidden()
             .onChange(of: model.which) { _, _ in model.results = []; model.message = nil; model.refresh(s) }
 
-            if model.which == "compose" { compose } else { engine }
+            if model.which == "compose" { compose } else if model.which == "ideas" { IdeasView() } else { engine }
 
             if let m = model.message { Text(m).foregroundStyle(Theme.warnText).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true) }
 
             if model.which == "compose" {
                 if let c = model.composed { composedCard(c) }
-            } else {
+            } else if model.which != "ideas" {
                 ForEach(Array(model.results.enumerated()), id: \.offset) { _, r in resultCard(r) }
             }
         }
@@ -387,7 +388,7 @@ struct MiniRoll: View {
     }
 }
 
-/// Midi Catalogue's ideas, in the browser: browse by kind, hear, insert.
+/// Midi Catalogue's ideas, in the Generate panel: browse by kind, hear, insert.
 struct IdeasView: View {
     @EnvironmentObject var s: Session
     @EnvironmentObject var studio: Studio

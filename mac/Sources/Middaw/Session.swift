@@ -117,7 +117,8 @@ final class Session: ObservableObject {
     @Published var status: String = ""
     @Published var statusOffersUndo = false
     @Published var statusIsWarning = false
-    @Published var showBrowser = true
+    /// Player > Rename… asks for the name in a sheet.
+    @Published var renaming = false
     @Published var position: Double = 0
     @Published var playing = false
     /// The Generate panel's state, kept while it is hidden.
@@ -267,7 +268,7 @@ final class Session: ObservableObject {
         select(track: id)
     }
 
-    /// An instrument from the browser: into its seat if it has one free.
+    /// An instrument from Stage > Add a Player: into its seat if it has one free.
     func addPlayer(_ instrumentID: String) {
         var id: String?, seated = false
         commit("Add a Player") { p in
@@ -626,7 +627,6 @@ final class Session: ObservableObject {
         case "c": toggleMetronome()
         case "f": follow.toggle()
         case "g": generating.toggle()
-        case "b": showBrowser.toggle()
         case "d": drawing.toggle()
         case "q": quantize()
         case "1": grid = 4
