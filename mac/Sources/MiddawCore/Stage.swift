@@ -176,9 +176,11 @@ public enum Stage {
 
     public static func seat(_ id: String?) -> Seat? { id.flatMap { i in seats.first { $0.id == i } } }
 
-    /// The first free seat for an instrument, in seating order.
+    /// The first free seat for an instrument: the principal's before the
+    /// second's (Flute 1, then Flute 2), wherever they sit in the fan.
     public static func freeSeat(for instrument: String, taken: Set<String>) -> Seat? {
-        seats.first { $0.automatic && $0.instrument == instrument && !taken.contains($0.id) }
+        seats.filter { $0.automatic && $0.instrument == instrument && !taken.contains($0.id) }
+            .min { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     /// Instruments that belong in the orchestra when a song does not say:
