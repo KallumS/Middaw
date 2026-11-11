@@ -83,18 +83,30 @@ final class AudioTests: XCTestCase {
         XCTAssertTrue(violins.left.allSatisfy { $0.isFinite && abs($0) <= 1 })
     }
 
-    /// The timpani are further away than the violins: less direct sound for
-    /// the same hall, so the hall is a larger share of what is heard.
+    /// The timpani are further away than the violins: of what reaches the
+    /// microphones from a seat - direct sound, reflections, the hall's tail -
+    /// the direct sound is a much smaller share. That ratio is how an ear
+    /// hears distance.
     func testTheBackOfTheStageIsFurtherAway() {
-        let rate = 24000.0
-        func ratio(_ seat: String) -> Double {
-            let out = Bounce.render(seated(seat), sampleRate: rate, tail: 1)
-            let both = zip(out.left, out.right).map { ($0 + $1) / 2 }
-            let direct = rms(both[0..<Int(rate * 0.25)])
-            let hall = rms(both[Int(rate * 0.6)..<Int(rate * 1.2)])
-            return hall / direct
+        let rate = 24000.0, hall = Hall.concert
+        let tailEnergy = pow(Stage.reference / hall.criticalDistance, 2)
+        func directToReverberant(_ id: String) -> Double {
+            let seat = Stage.seat(id)!
+            XCTAssertGreaterThan(Stage.sound(seat, in: hall).reflections.first!.delay, 0.001, id)
+            let voice = SeatVoice(seat: seat, hall: hall, sampleRate: rate)
+            let n = Int(rate * 0.2)
+            var inL = [Float](repeating: 0, count: n), inR = inL, outL = inL, outR = inL, tail = inL
+            inL[0] = 1; inR[0] = 1
+            voice.process(n, inL, inR, gain: 1, &outL, &outR, &tail)
+            let both = zip(outL, outR).map { Double($0) * Double($0) + Double($1) * Double($1) }
+            let early = Int(rate * 0.0008)
+            let direct = both[0..<early].reduce(0, +)
+            let reflected = both[early...].reduce(0, +)
+            let fed = tail.reduce(0.0) { $0 + Double($1) * Double($1) }
+            return direct / (reflected + 2 * tailEnergy * fed)
         }
-        XCTAssertGreaterThan(ratio("timp"), ratio("vln1") * 1.3)
+        let violins = directToReverberant("vln1"), timpani = directToReverberant("timp")
+        XCTAssertLessThan(10 * log10(timpani / violins), -4)
     }
 
     /// A drier room leaves less behind.
