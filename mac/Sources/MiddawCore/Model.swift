@@ -151,8 +151,25 @@ public indirect enum JSONValue: Codable, Hashable {
     }
 }
 
-/// An instrument or effect on a track: Middaw's own (synth, kit, sampler) or
-/// one of the family's JSFX, with its slider values and saved state.
+/// An Audio Unit instrument installed on the Mac, by the four codes Core
+/// Audio finds it with. `device` is "au" on a device that has one.
+public struct PluginRef: Codable, Hashable {
+    public var type: UInt32
+    public var subtype: UInt32
+    public var manufacturer: UInt32
+    public var name: String
+    public var maker: String
+    public init(type: UInt32, subtype: UInt32, manufacturer: UInt32, name: String, maker: String) {
+        self.type = type; self.subtype = subtype; self.manufacturer = manufacturer; self.name = name; self.maker = maker
+    }
+
+    /// "aumu" as Core Audio's number.
+    public static func code(_ s: String) -> UInt32 { s.utf8.prefix(4).reduce(UInt32(0)) { $0 << 8 | UInt32($1) } }
+}
+
+/// An instrument or effect on a track: Middaw's own (synth, kit, sampler),
+/// one of the family's JSFX, or an Audio Unit - with its slider values and
+/// saved state.
 public struct Device: Codable, Hashable, Identifiable {
     public var id: String
     public var device: String
@@ -163,12 +180,14 @@ public struct Device: Codable, Hashable, Identifiable {
     public var samples: [Sample?]?
     public var presetIndex: Int?
     public var presetName: String?
+    /// The Audio Unit, when `device` is "au". Its own state is kept in `state`.
+    public var plugin: PluginRef?
 
     public init(id: String = makeID("d"), device: String, preset: String? = nil, sliders: [Int: Double] = [:]) {
         self.id = id; self.device = device; self.preset = preset; self.sliders = sliders
     }
 
-    enum CodingKeys: String, CodingKey { case id, device, preset, sliders, state, sample, samples, presetIndex, presetName }
+    enum CodingKeys: String, CodingKey { case id, device, preset, sliders, state, sample, samples, presetIndex, presetName, plugin }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -185,6 +204,7 @@ public struct Device: Codable, Hashable, Identifiable {
         samples = try? c.decodeIfPresent([Sample?].self, forKey: .samples)
         presetIndex = try? c.decodeIfPresent(Int.self, forKey: .presetIndex)
         presetName = try? c.decodeIfPresent(String.self, forKey: .presetName)
+        plugin = try? c.decodeIfPresent(PluginRef.self, forKey: .plugin)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -197,6 +217,7 @@ public struct Device: Codable, Hashable, Identifiable {
         try c.encodeIfPresent(samples, forKey: .samples)
         try c.encodeIfPresent(presetIndex, forKey: .presetIndex)
         try c.encodeIfPresent(presetName, forKey: .presetName)
+        try c.encodeIfPresent(plugin, forKey: .plugin)
     }
 }
 
@@ -208,13 +229,17 @@ public struct Track: Codable, Hashable, Identifiable {
     /// melody, counter, chords, bass, drums - or empty.
     public var role: String
     public var drums: Bool
+    /// Where the player sits on the stage (`Stage.seats`), which decides the
+    /// hall's sound on it; nil plays at the front, dry and in the middle.
+    public var seat: String?
     public var sound: Device
     public var midiFx: [Device]
     public var audioFx: [Device]
     /// 0.8 is unity; the fader is in dB, (volume - 0.8) * 60.
     public var volume: Double
+    /// Pan and the reverb send from before the stage: kept so an older song
+    /// saves as it opened, but the seat decides both now.
     public var pan: Double
-    /// To the reverb return.
     public var send: Double
     public var mute: Bool
     public var solo: Bool
@@ -222,15 +247,15 @@ public struct Track: Codable, Hashable, Identifiable {
     public var clips: [Clip]
 
     public init(id: String = makeID("t"), name: String = "Track", instrument: String = "pno", role: String = "",
-                drums: Bool = false, sound: Device? = nil) {
-        self.id = id; self.name = name; self.instrument = instrument; self.role = role; self.drums = drums
+                drums: Bool = false, seat: String? = nil, sound: Device? = nil) {
+        self.id = id; self.name = name; self.instrument = instrument; self.role = role; self.drums = drums; self.seat = seat
         self.sound = sound ?? Device(device: drums ? "kit" : "synth", preset: drums ? nil : "keys")
         midiFx = []; audioFx = []; volume = 0.8; pan = 0; send = 0
         mute = false; solo = false; arm = false; clips = []
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, instrument, role, drums, sound, midiFx, audioFx, volume, pan, send, mute, solo, arm, clips
+        case id, name, instrument, role, drums, seat, sound, midiFx, audioFx, volume, pan, send, mute, solo, arm, clips
     }
 
     public init(from decoder: Decoder) throws {
@@ -240,6 +265,7 @@ public struct Track: Codable, Hashable, Identifiable {
         instrument = try c.decodeIfPresent(String.self, forKey: .instrument) ?? "pno"
         role = try c.decodeIfPresent(String.self, forKey: .role) ?? ""
         drums = try c.decodeIfPresent(Bool.self, forKey: .drums) ?? false
+        seat = try c.decodeIfPresent(String.self, forKey: .seat)
         sound = try c.decodeIfPresent(Device.self, forKey: .sound) ?? Device(device: drums ? "kit" : "synth")
         midiFx = try c.decodeIfPresent([Device].self, forKey: .midiFx) ?? []
         audioFx = try c.decodeIfPresent([Device].self, forKey: .audioFx) ?? []
@@ -275,7 +301,8 @@ public struct Loop: Codable, Hashable {
     public init(on: Bool = false, start: Double = 0, end: Double = 16) { self.on = on; self.start = start; self.end = end }
 }
 
-/// The reverb return: an effects chain every track can send to.
+/// The reverb return from before the stage, kept so an older song saves as
+/// it opened. The hall is the reverb now.
 public struct Return: Codable, Hashable, Identifiable {
     public var id: String
     public var name: String
@@ -295,13 +322,18 @@ public struct Project: Codable, Hashable {
     public var loop: Loop
     public var tracks: [Track]
     public var returns: [Return]
+    /// The room the orchestra plays in (`Hall.all`).
+    public var hall: String
+
+    /// 2: the players sit on the stage.
+    public static let currentVersion = 2
 
     public init(title: String = "Untitled", tempo: Double = 110, meter: [Int] = [4, 4], key: Key = Key(), bars: Int = 32) {
-        version = 1; self.title = title; self.tempo = tempo; self.meter = meter; self.key = key
-        self.bars = bars; loop = Loop(); tracks = []; returns = []
+        version = Project.currentVersion; self.title = title; self.tempo = tempo; self.meter = meter; self.key = key
+        self.bars = bars; loop = Loop(); tracks = []; returns = []; hall = Hall.concert.id
     }
 
-    enum CodingKeys: String, CodingKey { case version, title, tempo, meter, key, bars, loop, tracks, returns }
+    enum CodingKeys: String, CodingKey { case version, title, tempo, meter, key, bars, loop, tracks, returns, hall }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -315,6 +347,11 @@ public struct Project: Codable, Hashable {
         loop = try c.decodeIfPresent(Loop.self, forKey: .loop) ?? Loop()
         tracks = try c.decodeIfPresent([Track].self, forKey: .tracks) ?? []
         returns = try c.decodeIfPresent([Return].self, forKey: .returns) ?? []
+        hall = try c.decodeIfPresent(String.self, forKey: .hall) ?? Hall.concert.id
+        if version < 2 {
+            seatTheOrchestra()
+            version = Project.currentVersion
+        }
     }
 
     // ------------------------------------------------------------- time --

@@ -48,6 +48,9 @@ enum ChordLane {
     }
 }
 
+/// The chosen player's part across the song - and the parts of any players
+/// chosen beside them - under the bars, the loop and the chords: where clips
+/// are made, moved and cut, and bars chosen for generated music.
 struct ArrangeView: View {
     @EnvironmentObject var s: Session
     @EnvironmentObject var studio: Studio
@@ -75,6 +78,11 @@ struct ArrangeView: View {
     }
 
     var pxb: CGFloat { s.arrangeZoom }
+    /// The players shown: the chosen one first.
+    var rows: [Track] { ArrangeView.rows(s) }
+    @MainActor static func rows(_ s: Session) -> [Track] {
+        ((s.selection.trackID.map { [$0] } ?? []) + s.selection.others).compactMap { id in s.project.tracks.first { $0.id == id } }
+    }
     func x(_ beat: Double) -> CGFloat { CGFloat(beat) * pxb - scrollX }
     func beat(_ x: CGFloat) -> Double { Double((x + scrollX) / pxb) }
 
@@ -82,17 +90,7 @@ struct ArrangeView: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 HStack {
-                    Menu {
-                        ForEach(["pno", "synth", "kit", "vln1", "vla", "vc", "fl", "cl", "tpt", "hn", "gtr", "ebass"], id: \.self) { id in
-                            Button(studio.instrument(id)?.name ?? id) { s.addTrack(id) }
-                        }
-                        Divider()
-                        Menu("An Ensemble") {
-                            ForEach(ensembles, id: \.name) { e in Button(e.name) { s.addEnsemble(e.name, e.ids) } }
-                        }
-                    } label: { Label("Add Track", systemImage: "plus") }
-                    .menuStyle(.borderlessButton).fixedSize()
-                    .help("Add a track (⌥⌘N)")
+                    Text(rows.count > 1 ? "\(rows.count) Parts" : "Part").foregroundStyle(Theme.label)
                     Spacer()
                 }
                 .padding(.horizontal, 8)
@@ -112,7 +110,7 @@ struct ArrangeView: View {
             if mods.contains(.command) || mods.contains(.option) { zoom(by: 1 + dy / 200, at: hover.x) }
             else {
                 scrollX = max(0, scrollX - (mods.contains(.shift) ? dy : dx))
-                if !mods.contains(.shift) { scrollY = max(0, min(scrollY - dy, max(0, CGFloat(s.project.tracks.count) * trackHeight - 100))) }
+                if !mods.contains(.shift) { scrollY = max(0, min(scrollY - dy, max(0, CGFloat(rows.count) * trackHeight - trackHeight))) }
             }
         }, magnify: { m, p in zoom(by: 1 + m, at: p.x - headWidth) })
         .onChange(of: s.position) { _, pos in followPlayhead(pos) }
@@ -134,7 +132,7 @@ struct ArrangeView: View {
     var heads: some View {
         GeometryReader { g in
             VStack(spacing: 0) {
-                ForEach(s.project.tracks) { t in
+                ForEach(rows) { t in
                     TrackHead(track: t, selected: t.id == s.selection.trackID)
                         .frame(height: trackHeight)
                 }
@@ -214,9 +212,10 @@ struct ArrangeView: View {
 
     func hit(_ p: CGPoint) -> (track: Int, clip: Clip?, edge: Bool) {
         let ti = trackIndex(at: p.y)
-        guard ti >= 0, ti < s.project.tracks.count else { return (ti, nil, false) }
+        let rows = self.rows
+        guard ti >= 0, ti < rows.count else { return (ti, nil, false) }
         let b = beat(p.x)
-        if let c = s.project.tracks[ti].clips.first(where: { b >= $0.start && b < $0.end }) {
+        if let c = rows[ti].clips.first(where: { b >= $0.start && b < $0.end }) {
             return (ti, c, x(c.end) - p.x < 7)
         }
         return (ti, nil, false)
@@ -224,6 +223,7 @@ struct ArrangeView: View {
 
     var timeline: some View {
         let p = s.project
+        let rows = self.rows
         return Canvas { g, size in
             let bpb = p.beatsPerBar
             // beats and bars
@@ -237,12 +237,16 @@ struct ArrangeView: View {
             // the chosen bars
             if let r = s.selection.range {
                 for id in r.tracks {
-                    guard let ti = p.trackIndex(id) else { continue }
+                    guard let ti = rows.firstIndex(where: { $0.id == id }) else { continue }
                     g.fill(Path(CGRect(x: x(r.start), y: CGFloat(ti) * trackHeight - scrollY, width: x(r.end) - x(r.start), height: trackHeight)),
                            with: .color(Theme.accent.opacity(0.16)))
                 }
             }
-            for (ti, t) in p.tracks.enumerated() {
+            if rows.isEmpty {
+                g.draw(Text("Choose a player on the stage.").font(.system(size: 13)).foregroundColor(Theme.textDim),
+                       at: CGPoint(x: size.width / 2, y: trackHeight / 2))
+            }
+            for (ti, t) in rows.enumerated() {
                 let y0 = CGFloat(ti) * trackHeight - scrollY
                 guard y0 + trackHeight > 0, y0 < size.height else { continue }
                 if t.id == s.selection.trackID { g.fill(Path(CGRect(x: 0, y: y0, width: size.width, height: trackHeight)), with: .color(Theme.ground.opacity(0.35))) }
@@ -306,7 +310,7 @@ struct ArrangeView: View {
             return (d.trackIndex, d.clipStart, len)
         }
         let start = max(0, p.snap(d.clipStart + dBeat, grid: grid))
-        let ti = max(0, min(p.tracks.count - 1, trackIndex(at: d.current.y)))
+        let ti = max(0, min(rows.count - 1, trackIndex(at: d.current.y)))
         return (ti, start, d.clipLength)
     }
 
@@ -314,16 +318,15 @@ struct ArrangeView: View {
         if drag == nil {
             clicks.register(v.startLocation)
             let h = hit(v.startLocation)
-            let p = s.project
-            if h.track >= 0, h.track < p.tracks.count { s.select(track: p.tracks[h.track].id) }
+            let rows = self.rows
             if clicks.count == 2 {
-                if let c = h.clip { s.select(clip: c.id, on: p.tracks[h.track].id); s.editor = s.editor == .mixer ? .roll : s.editor }
-                else if h.track >= 0, h.track < p.tracks.count { s.newClip(on: p.tracks[h.track].id, at: beat(v.startLocation.x)) }
+                if let c = h.clip { s.select(clip: c.id, on: rows[h.track].id) }
+                else if h.track >= 0, h.track < rows.count { s.newClip(on: rows[h.track].id, at: beat(v.startLocation.x)) }
                 drag = Drag(kind: .caret, start: v.startLocation, trackIndex: h.track, current: v.location)
                 return
             }
             if let c = h.clip {
-                s.select(clip: c.id, on: p.tracks[h.track].id)
+                s.select(clip: c.id, on: rows[h.track].id)
                 drag = Drag(kind: h.edge ? .resize : .move, start: v.startLocation, trackIndex: h.track, clipID: c.id,
                             clipStart: c.start, clipLength: c.length, copy: Clicks.modifiers.contains(.option), current: v.location)
             } else {
@@ -338,13 +341,15 @@ struct ArrangeView: View {
         guard let d = drag else { return }
         let moved = hypot(v.translation.width, v.translation.height) > 3
         let p = s.project
+        let rows = self.rows
         switch d.kind {
         case .caret: break
         case .move, .resize:
             guard moved, let id = d.clipID, let loc = p.clipLocation(id) else { return }
             let target = moveTarget(d)
             _ = loc
-            let toTrack = p.tracks[target.track].id
+            guard target.track < rows.count else { return }
+            let toTrack = rows[target.track].id
             var newID = id
             s.commit(d.copy ? "Copy Clip" : (d.kind == .resize ? "Resize Clip" : "Move Clip")) { q in
                 guard let src = q.clipLocation(id) else { return }
@@ -366,20 +371,21 @@ struct ArrangeView: View {
                 return
             }
             let a = max(0, min(trackIndex(at: d.start.y), trackIndex(at: v.location.y)))
-            let b = min(p.tracks.count - 1, max(trackIndex(at: d.start.y), trackIndex(at: v.location.y)))
+            let b = min(rows.count - 1, max(trackIndex(at: d.start.y), trackIndex(at: v.location.y)))
             guard a <= b else { return }
             let s0 = p.snap(beat(min(d.start.x, v.location.x)), grid: p.beatsPerBar)
             var s1 = p.snap(beat(max(d.start.x, v.location.x)), grid: p.beatsPerBar)
             if s1 <= s0 { s1 = s0 + p.beatsPerBar }
-            s.choose(range: Array(p.tracks[a...b].map(\.id)), from: s0, to: s1)
+            s.choose(range: Array(rows[a...b].map(\.id)), from: s0, to: s1)
             s.caret = s0
         }
     }
 
     @ViewBuilder var contextMenu: some View {
         let h = hit(hover)
-        if let c = h.clip, h.track < s.project.tracks.count {
-            let tid = s.project.tracks[h.track].id
+        let rows = self.rows
+        if let c = h.clip, h.track < rows.count {
+            let tid = rows[h.track].id
             Button("Vary…") { s.select(clip: c.id, on: tid); s.inspector = .generate; GenerateModel.request = "midi-variator" }
             Button("Suggest…") { s.select(clip: c.id, on: tid); s.inspector = .generate; GenerateModel.request = "midi-suggester" }
             Menu("Transform") {
@@ -393,13 +399,11 @@ struct ArrangeView: View {
             Button("Export as MIDI…") { s.select(clip: c.id, on: tid); s.exportMIDI(clipOnly: true) }
             Divider()
             Button("Delete") { s.select(clip: c.id, on: tid); s.deleteSelection() }
-        } else if h.track >= 0 && h.track < s.project.tracks.count {
-            let tid = s.project.tracks[h.track].id
+        } else if h.track >= 0 && h.track < rows.count {
+            let tid = rows[h.track].id
             Button("New Clip Here") { s.newClip(on: tid, at: beat(hover.x)) }
             Button("Generate Here…") { s.select(track: tid); s.caret = s.project.snap(beat(hover.x), grid: s.project.beatsPerBar, floor: true); s.inspector = .generate }
             if s.canPaste { Button("Paste") { s.select(track: tid); s.caret = beat(hover.x); s.paste() } }
-        } else {
-            Button("Add Track") { s.addTrack("pno") }
         }
     }
 }
@@ -435,7 +439,7 @@ struct TrackHead: View {
                         Image(systemName: "circle.fill").font(.system(size: 9))
                     }
                     .house(on: track.arm, compact: true).help("Record into this track").accessibilityLabel("Arm \(track.name)")
-                    Text(soundName).font(.system(size: 11)).foregroundStyle(Theme.textDim).lineLimit(1)
+                    Text(soundName).font(.system(size: 11)).foregroundStyle(Theme.textDim).lineLimit(1).help("Where the player sits")
                 }
             }
             .padding(.horizontal, 6)
@@ -449,21 +453,14 @@ struct TrackHead: View {
         .onTapGesture { s.select(track: track.id) }
         .contextMenu {
             Button("Rename…") { name = track.name; renaming = true }
-            Button("Duplicate Track") { s.duplicateTrack(track.id) }
-            Button("Delete Track") { s.deleteTrack(track.id) }
+            Button("Duplicate the Player") { s.duplicateTrack(track.id) }
+            Button("Remove the Player") { s.deleteTrack(track.id) }
             Divider()
             Button("Generate Here…") { s.select(track: track.id); s.inspector = .generate }
         }
     }
 
-    var soundName: String {
-        switch track.sound.device {
-        case "kit": return "Drum Kit"
-        case "sampler": return "Instant Instrument"
-        case "synth": return SynthPresetName.name(track.sound.preset)
-        default: return track.sound.device
-        }
-    }
+    var soundName: String { Stage.seat(track.seat)?.name ?? "Front" }
 }
 
 enum SynthPresetName {

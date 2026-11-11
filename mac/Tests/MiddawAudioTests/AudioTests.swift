@@ -50,15 +50,101 @@ final class AudioTests: XCTestCase {
         XCTAssertEqual(rms(Bounce.render(q, sampleRate: 24000, tail: 0).left[...]), 0, accuracy: 1e-9)
     }
 
-    func testTheReverbSendIsHeardAfterTheNoteEnds() {
-        var dry = song(), wet = song()
-        dry.tracks[0].clips[0].notes = [Note(start: 0, len: 0.25, pitch: 72)]
-        wet.tracks[0].clips[0].notes = dry.tracks[0].clips[0].notes
-        wet.tracks[0].send = 1
-        dry.tracks[0].sound.preset = "organ"; wet.tracks[0].sound.preset = "organ"
-        let rate = 24000.0, after = Int(rate * 1.0)
-        let d = Bounce.render(dry, sampleRate: rate, tail: 1), w = Bounce.render(wet, sampleRate: rate, tail: 1)
-        XCTAssertGreaterThan(rms(w.left[after..<(after + 6000)]), rms(d.left[after..<(after + 6000)]) * 3 + 1e-4)
+    // ------------------------------------------------------------- stage --
+    /// A note on pitch 64, which Middaw Synth itself pans to the middle.
+    func seated(_ seat: String?, preset: String = "organ", hall: String = "concert") -> Project {
+        var p = song(preset: preset)
+        p.tracks[0].clips[0].notes = [Note(start: 0, len: 0.5, pitch: 64)]
+        p.tracks[0].seat = seat
+        p.hall = hall
+        return p
+    }
+
+    /// At the front nothing is added: no hall after the note, no side.
+    func testTheFrontIsDryAndInTheMiddle() {
+        let rate = 24000.0
+        let out = Bounce.render(seated(nil), sampleRate: rate, tail: 1)
+        XCTAssertEqual(out.left, out.right)
+        let after = Int(rate * 0.75)                        // the organ's release is 60 ms
+        XCTAssertLessThan(rms(out.left[after...]), 1e-4)
+    }
+
+    /// The first violins sit on the left; the cellos on the right; both are
+    /// heard in the hall after the note ends.
+    func testASeatIsHeardFromWhereItIsInTheHall() {
+        let rate = 24000.0
+        let violins = Bounce.render(seated("vln1"), sampleRate: rate, tail: 1)
+        let cellos = Bounce.render(seated("vc"), sampleRate: rate, tail: 1)
+        let note = 0..<Int(rate * 0.25)
+        XCTAssertGreaterThan(rms(violins.left[note]), rms(violins.right[note]) * 1.5)
+        XCTAssertGreaterThan(rms(cellos.right[note]), rms(cellos.left[note]) * 1.5)
+        let after = Int(rate * 0.75)..<Int(rate * 1.25)
+        XCTAssertGreaterThan(rms(violins.left[after]), 1e-4)
+        XCTAssertTrue(violins.left.allSatisfy { $0.isFinite && abs($0) <= 1 })
+    }
+
+    /// The timpani are further away than the violins: less direct sound for
+    /// the same hall, so the hall is a larger share of what is heard.
+    func testTheBackOfTheStageIsFurtherAway() {
+        let rate = 24000.0
+        func ratio(_ seat: String) -> Double {
+            let out = Bounce.render(seated(seat), sampleRate: rate, tail: 1)
+            let both = zip(out.left, out.right).map { ($0 + $1) / 2 }
+            let direct = rms(both[0..<Int(rate * 0.25)])
+            let hall = rms(both[Int(rate * 0.6)..<Int(rate * 1.2)])
+            return hall / direct
+        }
+        XCTAssertGreaterThan(ratio("timp"), ratio("vln1") * 1.3)
+    }
+
+    /// A drier room leaves less behind.
+    func testTheStudioIsDrierThanTheConcertHall() {
+        let rate = 24000.0
+        let concert = Bounce.render(seated("ob1", hall: "concert"), sampleRate: rate, tail: 1.5)
+        let studio = Bounce.render(seated("ob1", hall: "studio"), sampleRate: rate, tail: 1.5)
+        let late = Int(rate * 1.2)..<Int(rate * 1.8)
+        XCTAssertGreaterThan(rms(concert.left[late]), rms(studio.left[late]) * 4)
+    }
+
+    /// The convolver is the convolution: against the sum written out, for a
+    /// response with a head and a tail, fed in blocks of any size.
+    func testTheConvolverIsExactAndOnTime() {
+        var seed: UInt32 = 7
+        func random() -> Float { seed = seed &* 1664525 &+ 1013904223; return Float(seed >> 8) / Float(1 << 24) - 0.5 }
+        let ir = (0..<1500).map { _ in random() }
+        let x = (0..<5000).map { _ in random() }
+        var expected = [Float](repeating: 0, count: x.count)
+        for t in 0..<x.count { var acc: Float = 0; for m in 0..<min(ir.count, t + 1) { acc += ir[m] * x[t - m] }; expected[t] = acc }
+        let conv = Convolver(ir: ir, block: 64)
+        var got = [Float](repeating: 0, count: x.count)
+        var at = 0, k = 0
+        let sizes = [1, 7, 64, 100, 3, 250, 64, 1]
+        x.withUnsafeBufferPointer { xs in
+            got.withUnsafeMutableBufferPointer { ys in
+                while at < x.count {
+                    let n = min(sizes[k % sizes.count], x.count - at)
+                    conv.process(n, xs.baseAddress! + at, ys.baseAddress! + at)
+                    at += n; k += 1
+                }
+            }
+        }
+        for t in 0..<x.count { XCTAssertEqual(got[t], expected[t], accuracy: 1e-3, "sample \(t)") }
+    }
+
+    /// An Audio Unit plays a seat: Apple's own DLS synth, which every Mac has.
+    func testAnAudioUnitPlaysInASeat() throws {
+        let ref = PluginRef(type: PluginRef.code("aumu"), subtype: PluginRef.code("dls "), manufacturer: PluginRef.code("appl"),
+                            name: "DLSMusicDevice", maker: "Apple")
+        guard PluginCatalog.instruments().contains(where: { $0.subtype == ref.subtype && $0.manufacturer == ref.manufacturer }) else {
+            throw XCTSkip("Apple's DLS synth is not on this Mac")
+        }
+        var p = seated("ob1")
+        p.tracks[0].sound = Device(device: "au")
+        p.tracks[0].sound.plugin = ref
+        p.tracks[0].clips[0].notes = [Note(start: 0, len: 1, pitch: 72, vel: 110)]
+        let out = Bounce.render(p, sampleRate: 48000, tail: 0.5)
+        XCTAssertGreaterThan(rms(out.left[0..<24000]), 1e-4)
+        XCTAssertTrue(out.left.allSatisfy { $0.isFinite })
     }
 
     func testTheLoopGoesRoundAgain() {

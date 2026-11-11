@@ -144,7 +144,8 @@ final class GenerateModel: ObservableObject {
                     let chords = part.name.lowercased().contains("chord")
                     let bass = part.name.lowercased().contains("bass")
                     let instID = part.drums ? "kit" : (bass ? "ubass" : (chords ? "pno" : t.instrument))
-                    var nt = s.makeTrack(instID, name: part.name.isEmpty ? "Suggestion" : part.name, in: q)
+                    // Beside a seated player, an orchestral part takes a seat too.
+                    var nt = s.makeTrack(instID, name: part.name.isEmpty ? "Suggestion" : part.name, stage: t.seat != nil, in: q)
                     nt.role = chords ? "chords" : (bass ? "bass" : "melody")
                     if chords { nt.sound.preset = "epiano" }
                     q.tracks.insert(nt, at: at + 1)
@@ -189,6 +190,15 @@ final class GenerateModel: ObservableObject {
         Pass.shared.event("notes", r.notes.count)
     }
 
+    /// Who plays each of the composer's parts. With no drums it is written
+    /// for the orchestra: the tune on the first violins, the second voice on
+    /// the violas, the harmony on the harp (it comps, rolls and arpeggiates
+    /// alike), the bass on the cellos. With drums it is a band, at the front.
+    static func players(orchestral: Bool) -> [String: String] {
+        orchestral ? ["melody": "vln1", "counter": "vla", "chords": "harp", "bass": "vc", "drums": "kit"]
+                   : ["melody": "pno", "counter": "vla", "chords": "pno", "bass": "ubass", "drums": "kit"]
+    }
+
     /// The composition becomes the song - or is added to it at the caret.
     func useComposed(in s: Session, replace: Bool) {
         guard let c = composed else { return }
@@ -205,19 +215,31 @@ final class GenerateModel: ObservableObject {
                 q.key = c.key
                 q.title = String(c.spec.prompt?.prefix(60) ?? "Composed")
             }
+            let orchestral = !c.song.tracks.contains { $0.role == "drums" && !$0.notes.isEmpty }
+            let players = GenerateModel.players(orchestral: orchestral)
             for part in c.song.tracks where !part.notes.isEmpty {
                 let role = part.role == "harmony" ? "chords" : (part.role == "countermelody" ? "counter" : part.role)
-                let inst = ["melody": "pno", "counter": "vla", "chords": "pno", "bass": "ubass", "drums": "kit"][role] ?? "pno"
-                var t = s.makeTrack(inst, name: part.name + (part.detail.isEmpty ? "" : " (\(part.detail))"), in: q)
-                t.role = role
-                if role == "chords" { t.sound.preset = "epiano" }
-                if role == "melody" { t.sound.preset = "piano" }
-                q.tracks.append(t)
+                let inst = players[role] ?? "pno"
+                var notes = part.notes
+                let id: String
+                if orchestral, role != "drums", let seat = Stage.freeSeat(for: inst, taken: []), let there = q.track(inSeat: seat.id) {
+                    // The seat is taken: its player plays this part too.
+                    id = there.id
+                    notes = GenerateModel.fit(notes, to: Studio.shared.instrument(there.instrument), bass: role == "bass")
+                } else {
+                    var t = s.makeTrack(inst, name: part.name + (part.detail.isEmpty ? "" : " (\(part.detail))"), stage: orchestral, in: q)
+                    t.role = role
+                    if !orchestral && role == "chords" { t.sound.preset = "epiano" }
+                    if !orchestral && role == "melody" { t.sound.preset = "piano" }
+                    if t.seat != nil { notes = GenerateModel.fit(notes, to: Studio.shared.instrument(inst), bass: role == "bass") }
+                    q.tracks.append(t)
+                    id = t.id
+                }
                 let bars = Double(c.spec.bars ?? Int((c.song.lengthBeats / bpbAfter).rounded(.up)))
-                q.place(part.notes, on: t.id, at: at, length: bars * q.beatsPerBar,
+                q.place(notes, on: id, at: at, length: bars * q.beatsPerBar,
                         name: (c.spec.formName ?? "Composed").replacingOccurrences(of: "_", with: " ").capitalized,
                         source: ClipSource(generator: "Compose", title: c.spec.prompt, seed: c.spec.seed))
-                if first == nil { first = t.id }
+                if first == nil { first = id }
             }
             q.bars = max(q.bars, Int((q.endOfMusic / q.beatsPerBar).rounded(.up)) + 4)
         }

@@ -16,11 +16,7 @@ final class SongDocument: ReferenceFileDocument, ObservableObject {
     static var readableContentTypes: [UTType] { [.middawSong, .midi, .json] }
     static var writableContentTypes: [UTType] { [.middawSong] }
 
-    init() {
-        var p = Project()
-        p.returns = [Return(audioFx: [])]
-        project = p
-    }
+    init() { project = Project() }
 
     init(project: Project) { self.project = project }
 
@@ -74,8 +70,8 @@ final class SongDocument: ReferenceFileDocument, ObservableObject {
         undo?.setActionName(label)
     }
 
-    /// A Standard MIDI File as a song: a track per MIDI track with notes, the
-    /// kit on channel 10.
+    /// A Standard MIDI File as a song: a player per MIDI track with notes, at
+    /// the front, the kit on channel 10.
     static func importMIDI(_ data: Data, title: String) throws -> Project {
         let file = try MIDIFile.read(data)
         var p = Project(title: (title as NSString).deletingPathExtension, tempo: file.tempo.rounded(), meter: [file.meter.0, file.meter.1],
@@ -96,7 +92,6 @@ final class SongDocument: ReferenceFileDocument, ObservableObject {
             p.tracks.append(track)
         }
         p.bars = max(p.bars, Int((p.endOfMusic / bpb).rounded(.up)) + 4)
-        p.returns = [Return(audioFx: [])]
         return p
     }
 }

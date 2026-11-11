@@ -81,7 +81,8 @@ enum Snapshot {
     }
 }
 
-/// The song's window: browser, tracks over the editor, inspector.
+/// The song's window: browser; the stage over the chosen player's part and
+/// its editor; inspector.
 struct SongWindow: View {
     @ObservedObject var document: SongDocument
     @StateObject private var session: Session
@@ -101,10 +102,14 @@ struct SongWindow: View {
                     BrowserView().frame(minWidth: 190, idealWidth: 220, maxWidth: 320)
                 }
                 VSplitView {
-                    ArrangeView().frame(minHeight: 120, idealHeight: 320)
-                    EditorView().frame(minHeight: 160, idealHeight: 360)
+                    StageView().frame(minHeight: 260, idealHeight: 400)
+                    VStack(spacing: 0) {
+                        ArrangeView().frame(height: 40 + 58 * CGFloat(max(1, min(3, ArrangeView.rows(session).count))))
+                        EditorView()
+                    }
+                    .frame(minHeight: 280, idealHeight: 440)
                 }
-                .frame(minWidth: 420)
+                .frame(minWidth: 560)
                 InspectorView().frame(minWidth: 260, idealWidth: 290, maxWidth: 380)
             }
         }
@@ -180,14 +185,6 @@ struct SongToolbar: ToolbarContent {
         ToolbarItem(placement: .principal) { Readout() }
         ToolbarItemGroup(placement: .primaryAction) {
             Toggle(isOn: $s.follow) { Text("Follow") }.help("Follow the music (F)")
-            Picker("Editor", selection: $s.editor) {
-                Text("Piano Roll").tag(EditorTab.roll)
-                Text("Score").tag(EditorTab.score)
-                Text("Mixer").tag(EditorTab.mixer)
-                Text("Devices").tag(EditorTab.devices)
-            }
-            .pickerStyle(.segmented)
-            .help("Piano roll, score, mixer or the track’s devices (M for the mixer)")
             Button { s.inspector = s.inspector == .generate ? .track : .generate } label: { Label("Generate", systemImage: "sparkles") }
                 .help("Generate (G)")
             PassButton()
@@ -341,10 +338,12 @@ struct MiddawCommands: Commands {
             }
             .disabled(s?.clip == nil)
         }
-        CommandMenu("Track") {
-            Button("New Track") { s?.addTrack("pno") }.keyboardShortcut("n", modifiers: [.command, .option])
-            Button("Duplicate Track") { if let id = s?.selection.trackID { s?.duplicateTrack(id) } }.disabled(s?.selection.trackID == nil)
-            Button("Delete Track") { if let id = s?.selection.trackID { s?.deleteTrack(id) } }.disabled(s?.selection.trackID == nil)
+        CommandMenu("Player") {
+            Button("New Player at the Front") { s?.addTrack("synth") }.keyboardShortcut("n", modifiers: [.command, .option])
+            Button("Duplicate the Player") { if let id = s?.selection.trackID { s?.duplicateTrack(id) } }.disabled(s?.selection.trackID == nil)
+            Button("Remove the Player") { if let id = s?.selection.trackID { s?.deleteTrack(id) } }.disabled(s?.selection.trackID == nil)
+            Divider()
+            Menu("Hall") { ForEach(Hall.all) { h in Button(h.name) { s?.setHall(h.id) } } }.disabled(s == nil)
         }
         CommandMenu("Transport") {
             Button(s?.playing == true ? "Stop" : "Play") { s?.playStop() }
@@ -355,9 +354,10 @@ struct MiddawCommands: Commands {
         }
         CommandGroup(after: .sidebar) {
             Button("Show or Hide the Browser") { s?.showBrowser.toggle() }.keyboardShortcut("b", modifiers: [.command, .option])
-            Button("Mixer") { s?.editor = .mixer }.keyboardShortcut("m", modifiers: [.command, .option])
+            Button("MIDI") { s?.editor = .roll }.keyboardShortcut("p", modifiers: [.command, .option])
+            Button("Drum MIDI") { s?.editor = .drums }
+            Button("Step Sequencer") { s?.editor = .steps }
             Button("Score") { s?.editor = .score }.keyboardShortcut("s", modifiers: [.command, .option])
-            Button("Piano Roll") { s?.editor = .roll }.keyboardShortcut("p", modifiers: [.command, .option])
             Button("Devices") { s?.editor = .devices }
         }
     }

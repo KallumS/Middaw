@@ -5,40 +5,83 @@ import MiddawCore
 import MiddawEngines
 import MiddawAudio
 
-enum EditorTab: String { case roll, score, mixer, devices }
+/// The editor under the stage: the chosen player's notes as MIDI (a piano
+/// roll), as drum MIDI (a lane per drum), in a step sequencer, as a score, or
+/// its devices.
+enum EditorTab: String, CaseIterable { case roll, drums, steps, score, devices
+    var name: String {
+        switch self {
+        case .roll: return "MIDI"
+        case .drums: return "Drum MIDI"
+        case .steps: return "Step Sequencer"
+        case .score: return "Score"
+        case .devices: return "Devices"
+        }
+    }
+}
 enum InspectorTab: String { case track, generate }
 
 struct Selection: Equatable {
     var trackID: String?
+    /// Players chosen beside it (Shift-click on the stage): their parts are
+    /// shown together, and bars chosen across them are where music goes.
+    var others: [String] = []
     var clipID: String?
     var notes: Set<Int> = []
     /// Bars chosen across tracks: where generated music goes (Miderator 0019).
     var range: (tracks: [String], start: Double, end: Double)?
     static func == (a: Selection, b: Selection) -> Bool {
-        a.trackID == b.trackID && a.clipID == b.clipID && a.notes == b.notes &&
+        a.trackID == b.trackID && a.others == b.others && a.clipID == b.clipID && a.notes == b.notes &&
             a.range?.tracks == b.range?.tracks && a.range?.start == b.range?.start && a.range?.end == b.range?.end
     }
 }
 
-/// The ensembles Noterator builds, by Midi Catalogue's instrument ids.
-let ensembles: [(name: String, ids: [String])] = [
-    ("Piano", ["pno"]),
-    ("String Quartet", ["vln1", "vln2", "vla", "vc"]),
-    ("Wind Quintet", ["fl", "ob", "cl", "hn", "bsn"]),
-    ("Brass Quintet", ["tpt", "tpt", "hn", "tbn", "tuba"]),
-    ("Choir", ["sop", "alto", "ten", "bass"]),
-    ("Band", ["pno", "gtr", "ebass", "kit"]),
-    ("Jazz Combo", ["tpt", "tsax", "pno", "ubass", "kit"]),
-    ("Beat Maker", ["synth", "pno", "ebass", "kit"]),
-    ("Full Strings", ["vln1", "vln2", "vla", "vc", "cb"]),
-    ("Full Woodwinds", ["picc", "fl", "fl", "ob", "ob", "eh", "cl", "cl", "bcl", "bsn", "bsn", "cbsn"]),
-    ("Full Brass", ["hn", "hn", "hn", "hn", "tpt", "tpt", "tpt", "tbn", "tbn", "btbn", "tuba"]),
-    ("Orchestral Percussion", ["timp", "glock", "xyl", "mar", "vib"]),
-    ("Chamber Orchestra", ["fl", "ob", "cl", "bsn", "hn", "tpt", "timp", "vln1", "vln2", "vla", "vc", "cb"]),
+/// The ensembles Noterator builds, by Midi Catalogue's instrument ids. An
+/// orchestral one takes its seats on the stage; a band plays at the front.
+let ensembles: [(name: String, ids: [String], stage: Bool)] = [
+    ("Piano", ["pno"], true),
+    ("String Quartet", ["vln1", "vln2", "vla", "vc"], true),
+    ("Wind Quintet", ["fl", "ob", "cl", "hn", "bsn"], true),
+    ("Brass Quintet", ["tpt", "tpt", "hn", "tbn", "tuba"], true),
+    ("Choir", ["sop", "alto", "ten", "bass"], true),
+    ("Band", ["pno", "gtr", "ebass", "kit"], false),
+    ("Jazz Combo", ["tpt", "tsax", "pno", "ubass", "kit"], false),
+    ("Beat Maker", ["synth", "pno", "ebass", "kit"], false),
+    ("Full Strings", ["vln1", "vln2", "vla", "vc", "cb"], true),
+    ("Full Woodwinds", ["picc", "fl", "fl", "ob", "ob", "eh", "cl", "cl", "bcl", "bsn", "bsn", "cbsn"], true),
+    ("Full Brass", ["hn", "hn", "hn", "hn", "tpt", "tpt", "tpt", "tbn", "tbn", "btbn", "tuba"], true),
+    ("Orchestral Percussion", ["timp", "glock", "xyl", "mar", "vib"], true),
+    ("Chamber Orchestra", ["fl", "ob", "cl", "bsn", "hn", "tpt", "timp", "vln1", "vln2", "vla", "vc", "cb"], true),
     ("Full Orchestra", ["picc", "fl", "fl", "ob", "ob", "cl", "cl", "bsn", "bsn", "hn", "hn", "hn", "hn", "tpt", "tpt", "tpt",
-                        "tbn", "tbn", "btbn", "tuba", "timp", "glock", "harp", "vln1", "vln2", "vla", "vc", "cb"]),
-    ("Big Band", ["asax", "asax", "tsax", "tsax", "bsax", "tpt", "tpt", "tpt", "tpt", "tbn", "tbn", "tbn", "btbn", "gtr", "pno", "ubass", "kit"]),
+                        "tbn", "tbn", "btbn", "tuba", "timp", "glock", "harp", "vln1", "vln2", "vla", "vc", "cb"], true),
+    ("Big Band", ["asax", "asax", "tsax", "tsax", "bsax", "tpt", "tpt", "tpt", "tpt", "tbn", "tbn", "tbn", "btbn", "gtr", "pno", "ubass", "kit"], false),
 ]
+
+/// What can play a seat or a place at the front: Middaw's own sounds, the
+/// family's instruments, or an Audio Unit on this Mac.
+enum SoundChoice: Hashable {
+    case synth(String), kit, sampler, jsfx(String), plugin(PluginRef)
+
+    var name: String {
+        switch self {
+        case .synth(let p): return "Middaw Synth: \(SynthPresetName.name(p))"
+        case .kit: return "Drum Kit"
+        case .sampler: return "Instant Instrument"
+        case .jsfx(let id): return DeviceCatalog.info(id)?.name ?? id
+        case .plugin(let r): return r.name
+        }
+    }
+
+    func device() -> Device {
+        switch self {
+        case .synth(let p): return Device(device: "synth", preset: p)
+        case .kit: return Device(device: "kit")
+        case .sampler: return Device(device: "sampler")
+        case .jsfx(let id): return Session.makeDevice(id)
+        case .plugin(let r): var d = Device(device: "au"); d.plugin = r; return d
+        }
+    }
+}
 
 /// Which of Middaw Synth's presets suits each instrument of the orchestra.
 let presetFor: [String: String] = [
@@ -108,22 +151,36 @@ final class Session: ObservableObject {
     }
 
     // --------------------------------------------------------- choosing --
-    func select(track id: String?) {
+    func select(track id: String?, extending: Bool = false) {
+        if extending, let cur = selection.trackID, let id, id != cur {
+            if selection.others.contains(id) { selection.others.removeAll { $0 == id } } else { selection.others.append(id) }
+            return
+        }
         selection.trackID = id
+        selection.others = []
         selection.range = nil
+        // A kit's notes are drums: they open as drum MIDI, and a tune's as MIDI.
+        if let t = track {
+            if t.drums && editor == .roll { editor = .drums } else if !t.drums && editor == .drums { editor = .roll }
+        }
         if let t = track, selection.clipID == nil || !t.clips.contains(where: { $0.id == selection.clipID }) {
             selection.clipID = (t.clip(at: caret) ?? t.clips.first)?.id
             selection.notes = []
         }
     }
     func select(clip id: String, on trackID: String) {
-        selection = Selection(trackID: trackID, clipID: id)
+        // Within the players shown together, the others stay shown.
+        var others = selection.others
+        if let cur = selection.trackID, cur != trackID {
+            if others.contains(trackID) { others.removeAll { $0 == trackID }; others.insert(cur, at: 0) } else { others = [] }
+        }
+        selection = Selection(trackID: trackID, others: others, clipID: id)
     }
     func choose(range tracks: [String], from s: Double, to e: Double) {
         selection.range = tracks.isEmpty || e <= s ? nil : (tracks, s, e)
         selection.clipID = nil
         selection.notes = []
-        if let first = tracks.first { selection.trackID = first }
+        if let first = tracks.first, !tracks.contains(selection.trackID ?? "") { selection.trackID = first }
     }
 
     // ------------------------------------------------------- transport --
@@ -187,49 +244,130 @@ final class Session: ObservableObject {
     }
 
     // --------------------------------------------------------- tracks ---
-    func makeTrack(_ instrumentID: String, name: String? = nil, in p: Project) -> Track {
+    /// A player for an instrument, played by Middaw Synth's sound for it.
+    /// With `stage`, an orchestral instrument takes the first free seat for
+    /// it (and that seat's name); otherwise, or with no seat free, it plays
+    /// at the front.
+    func makeTrack(_ instrumentID: String, name: String? = nil, stage: Bool = false, in p: Project) -> Track {
         let inst = Studio.shared.instrument(instrumentID)
         let drums = instrumentID == "kit" || (inst?.isDrums ?? false)
-        let base = name ?? inst?.name ?? "Track"
+        let seat = stage ? Stage.freeSeat(for: instrumentID, taken: p.takenSeats) : nil
+        let base = name ?? seat?.name ?? inst?.name ?? "Track"
         let count = p.tracks.filter { $0.instrument == instrumentID }.count
-        return Track(name: name == nil && count > 0 ? "\(base) \(count + 1)" : base, instrument: instrumentID, drums: drums,
-                     sound: Device(device: drums ? "kit" : "synth", preset: drums ? nil : (presetFor[instrumentID] ?? "keys")))
+        return Track(name: name == nil && seat == nil && count > 0 ? "\(base) \(count + 1)" : base, instrument: instrumentID, drums: drums,
+                     seat: seat?.id, sound: Device(device: drums ? "kit" : "synth", preset: drums ? nil : (presetFor[instrumentID] ?? "keys")))
     }
 
+    /// A new player at the front, on Middaw Synth.
     func addTrack(_ instrumentID: String) {
         var id: String?
-        commit("Add Track") { p in let t = makeTrack(instrumentID, in: p); p.tracks.append(t); id = t.id }
+        commit("Add a Player") { p in let t = makeTrack(instrumentID, in: p); p.tracks.append(t); id = t.id }
         select(track: id)
     }
 
-    func addEnsemble(_ name: String, _ ids: [String]) {
+    /// An instrument from the browser: into its seat if it has one free.
+    func addPlayer(_ instrumentID: String) {
+        var id: String?, seated = false
+        commit("Add a Player") { p in
+            let t = makeTrack(instrumentID, stage: true, in: p); p.tracks.append(t); id = t.id; seated = t.seat != nil
+        }
+        select(track: id)
+        if let t = track { say(seated ? "\(t.name) took a seat." : "\(t.name) plays at the front.", undoable: true) }
+    }
+
+    func addEnsemble(_ name: String, _ ids: [String], stage: Bool) {
         var first: String?
         commit("Add \(name)") { p in
-            for i in ids { let t = makeTrack(i, in: p); p.tracks.append(t); if first == nil { first = t.id } }
+            for i in ids { let t = makeTrack(i, stage: stage, in: p); p.tracks.append(t); if first == nil { first = t.id } }
             if p.title == "Untitled" { p.title = name }
         }
         select(track: first)
-        say("Added \(name): \(ids.count) \(ids.count == 1 ? "track" : "tracks").", undoable: true)
+        say("Added \(name): \(ids.count) \(ids.count == 1 ? "player" : "players").", undoable: true)
     }
 
     func deleteTrack(_ id: String) {
-        let name = project.tracks.first { $0.id == id }?.name ?? "the track"
-        commit("Delete Track") { p in p.tracks.removeAll { $0.id == id } }
+        let name = project.tracks.first { $0.id == id }?.name ?? "the player"
+        commit("Remove the Player") { p in p.tracks.removeAll { $0.id == id } }
         if selection.trackID == id { selection = Selection() }
-        say("Deleted \(name).", undoable: true)
+        selection.others.removeAll { $0 == id }
+        say("Removed \(name) and their part.", undoable: true)
     }
 
+    /// A copy of a player and their part: in the next free seat for the
+    /// instrument, else at the front.
     func duplicateTrack(_ id: String) {
         var nid: String?
-        commit("Duplicate Track") { p in
+        commit("Duplicate the Player") { p in
             guard let i = p.trackIndex(id) else { return }
             var c = p.tracks[i]
-            c.id = makeID("t"); c.name += " copy"
+            c.id = makeID("t")
+            if let seat = Stage.freeSeat(for: c.instrument, taken: p.takenSeats), c.seat != nil {
+                c.seat = seat.id; c.name = seat.name
+            } else {
+                c.seat = nil; c.name += " copy"
+            }
             for k in c.clips.indices { c.clips[k].id = makeID("c") }
             c.sound.id = makeID("d")
             p.tracks.insert(c, at: i + 1); nid = c.id
         }
         select(track: nid)
+    }
+
+    // ---------------------------------------------------------- the stage --
+    /// A seat filled, or its player's sound changed: whatever plays it now
+    /// plays its part.
+    func fill(seat: Seat, with choice: SoundChoice) {
+        var id: String?
+        if let t = project.track(inSeat: seat.id) {
+            updateTrack(t.id, "Change the \(seat.name)’s Sound") { $0.sound = choice.device() }
+            id = t.id
+        } else {
+            commit("Seat the \(seat.name)") { p in
+                var t = makeTrack(seat.instrument, name: seat.name, in: p)
+                t.seat = seat.id
+                t.drums = seat.instrument == "kit"
+                t.sound = choice.device()
+                p.tracks.append(t)
+                id = t.id
+            }
+        }
+        select(track: id)
+    }
+
+    /// A player at the front: a synth, a sampler, a drum machine. As many as
+    /// you like, dry and in the middle.
+    func addToFront(_ choice: SoundChoice, drums: Bool) {
+        var id: String?
+        commit(drums ? "Add a Drum Machine" : "Add an Instrument") { p in
+            var t = makeTrack(drums ? "kit" : "synth", name: choice.name.replacingOccurrences(of: "Middaw Synth: ", with: ""), in: p)
+            t.sound = choice.device()
+            t.drums = drums
+            p.tracks.append(t)
+            id = t.id
+        }
+        select(track: id)
+    }
+
+    /// A player's sound changed, wherever they sit.
+    func setSound(_ trackID: String, _ choice: SoundChoice) {
+        updateTrack(trackID, "Change Sound") { t in
+            t.sound = choice.device()
+            if case .kit = choice { t.drums = true }
+        }
+    }
+
+    /// A player moved to a seat, or to the front (nil).
+    func place(_ trackID: String, seat: String?) {
+        let to = Stage.seat(seat)
+        commit(to.map { "Move to the \($0.name)’s Seat" } ?? "Move to the Front") { p in
+            guard let i = p.trackIndex(trackID) else { return }
+            if let to, let other = p.tracks.firstIndex(where: { $0.seat == to.id }), other != i { p.tracks[other].seat = nil }
+            p.tracks[i].seat = to?.id
+        }
+    }
+
+    func setHall(_ id: String) {
+        commit("Play in the \(Hall.named(id).name)") { $0.hall = id }
     }
 
     func setInstrument(_ trackID: String, _ instrumentID: String) {
@@ -486,7 +624,6 @@ final class Session: ObservableObject {
         case "c": toggleMetronome()
         case "f": follow.toggle()
         case "g": inspector = inspector == .generate ? .track : .generate
-        case "m": editor = editor == .mixer ? .roll : .mixer
         case "b": showBrowser.toggle()
         case "d": drawing.toggle()
         case "q": quantize()

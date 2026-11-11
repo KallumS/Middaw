@@ -20,6 +20,10 @@ final class Studio: ObservableObject {
     @Published private(set) var position: Double = 0
     @Published private(set) var isPlaying = false
     @Published private(set) var held: Set<Int> = []
+    /// The Audio Unit instruments on this Mac, for the seats' menus.
+    @Published private(set) var plugins: [PluginRef] = []
+    /// Bumped when a plug-in finishes opening, so the stage redraws.
+    @Published private(set) var pluginsReady = 0
 
     /// The window whose song the sound card is playing.
     weak var active: Session?
@@ -32,6 +36,16 @@ final class Studio: ObservableObject {
         do { try audio.start() } catch { problem = "The sound card would not start: \(error.localizedDescription)" }
         midi.onMessage = { s, d1, d2 in Task { @MainActor in Studio.shared.fromKeyboard(s, d1, d2) } }
         midi.start()
+        plugins = PluginCatalog.instruments()
+        audio.plugins.onLoaded = {
+            MainActor.assumeIsolated {
+                let st = Studio.shared
+                st.pluginsReady += 1
+                guard let s = st.active else { return }
+                st.sync(s.document.project)
+                for t in s.project.tracks { if let why = st.audio.plugins.failures[t.sound.id] { s.say(why, warning: true) } }
+            }
+        }
         let root = Engines.defaultRoot()
         Task.detached(priority: .userInitiated) {
             do {
@@ -61,6 +75,9 @@ final class Studio: ObservableObject {
     }
 
     func instrument(_ id: String) -> Engines.Instrument? { instruments.first { $0.id == id } }
+
+    /// Look again for Audio Units: one installed while Middaw is open.
+    func rescanPlugins() { plugins = PluginCatalog.instruments() }
 
     // ------------------------------------------------------- transport --
     func becameActive(_ s: Session) {

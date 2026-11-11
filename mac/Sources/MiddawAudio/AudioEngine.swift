@@ -9,6 +9,8 @@ public final class AudioEngine {
     public let renderer: Renderer
     /// Results heard before they are used, mixed in beside the song.
     public let preview: Renderer
+    /// The Audio Units the song's players use.
+    public let plugins: PluginHost
     let engine = AVAudioEngine()
     var source: AVAudioSourceNode?
     var scratchL = [Float](repeating: 0, count: Renderer.maxFrames)
@@ -19,6 +21,8 @@ public final class AudioEngine {
         let rate = engine.outputNode.outputFormat(forBus: 0).sampleRate
         renderer = Renderer(sampleRate: rate > 0 ? rate : 48000)
         preview = Renderer(sampleRate: rate > 0 ? rate : 48000)
+        plugins = PluginHost(sampleRate: renderer.sampleRate)
+        renderer.plugins = plugins
     }
 
     func render(_ frames: Int, _ l: UnsafeMutablePointer<Float>, _ r: UnsafeMutablePointer<Float>) {

@@ -3,24 +3,32 @@ import AppKit
 import MiddawCore
 import MiddawEngines
 
-/// Under the tracks: the chosen clip in the piano roll, as a score, or the mixer.
+/// Under the stage: the chosen player's notes as MIDI, drum MIDI or steps,
+/// as a score, or their devices.
 struct EditorView: View {
     @EnvironmentObject var s: Session
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: Theme.gap) {
+                Picker("Editor", selection: $s.editor) {
+                    ForEach(EditorTab.allCases, id: \.self) { tab in Text(tab.name).tag(tab) }
+                }
+                .pickerStyle(.segmented).labelsHidden().fixedSize()
+                .help("MIDI, drum MIDI, the step sequencer, the score, or the player’s devices")
                 Text(s.clip.map { $0.name.isEmpty ? (s.track?.name ?? "") : "\(s.track?.name ?? "") — \($0.name)" } ?? (s.track?.name ?? ""))
                     .foregroundStyle(Theme.textDim).lineLimit(1)
                 Spacer()
-                if s.editor == .roll {
-                    Toggle(isOn: $s.drawing) { Label("Draw", systemImage: "pencil") }.toggleStyle(.button).help("Draw notes (D)")
+                if [.roll, .drums, .steps].contains(s.editor) {
+                    if s.editor == .roll {
+                        Toggle(isOn: $s.drawing) { Label("Draw", systemImage: "pencil") }.toggleStyle(.button).help("Draw notes (D)")
+                    }
                     Picker("Grid", selection: $s.grid) {
                         Text("1 bar").tag(4.0); Text("1/2").tag(2.0); Text("1/4").tag(1.0); Text("1/8").tag(0.5)
                         Text("1/16").tag(0.25); Text("1/32").tag(0.125)
                         Text("1/8T").tag(1.0 / 3); Text("1/16T").tag(1.0 / 6)
                     }
                     .frame(width: 110)
-                    .help("Grid (1-6)")
+                    .help(s.editor == .steps ? "Step length (1-6)" : "Grid (1-6)")
                     Button("Quantize") { s.quantize() }.house().disabled(s.clip == nil).help("Quantize (Q)")
                 }
             }
@@ -30,8 +38,9 @@ struct EditorView: View {
             case .roll:
                 BlocksBar()
                 PianoRoll()
+            case .drums: DrumEditor()
+            case .steps: StepSequencer()
             case .score: ScoreView()
-            case .mixer: MixerView()
             case .devices: DevicesView()
             }
         }

@@ -6,13 +6,16 @@ import os
 #endif
 
 /// The audio thread's whole world: every track's notes as MIDI events in
-/// beats, its device chain, its level, pan and reverb send; the transport;
-/// the metronome; the reverb return. `render` is called with a block of
-/// frames and plays them sample-accurately.
+/// beats, its device chain, its level and its seat; the transport; the
+/// metronome; the hall. `render` is called with a block of frames and plays
+/// them sample-accurately.
 ///
 /// A track's block is a chain, as Bitwig and Ableton run one: the notes due
 /// in it become MIDI with sample offsets, go through the track's MIDI effects,
 /// are played by its instrument, and the sound goes through its audio effects.
+/// Then the stage: a player with a seat is heard from it, in the hall
+/// (`SeatVoice`, `HallTail`); a player at the front is heard as it is, dry and
+/// in the middle.
 ///
 /// The app changes it from the main thread only through `update`, `play`,
 /// `stop` and `live`, which hand changes over under a lock the audio thread
@@ -23,14 +26,17 @@ public final class Renderer {
     public final class Channel {
         public let id: String
         public let signature: String
-        /// Middaw's own instrument, or nil when a JSFX plays the track.
+        /// Middaw's own instrument, or nil when a JSFX or an Audio Unit plays the track.
         let instrument: Instrument?
         let jsfxInstrument: JSFXDevice?
+        let plugin: PluginInstance?
+        /// The hall's sound from the player's seat; nil at the front.
+        let seat: SeatVoice?
         let midiFx: [JSFXDevice]
         let audioFx: [JSFXDevice]
         let midiChannel: UInt8
         var events: [Event] = []
-        var gainL: Float = 1, gainR: Float = 1, send: Float = 0
+        var gain: Float = 1
         var next = 0
         /// The notes the sequence has started and not yet ended.
         var held = [Bool](repeating: false, count: 128)
@@ -47,9 +53,10 @@ public final class Renderer {
         var liveCount = 0
         public internal(set) var peak: Float = 0
 
-        init(id: String, signature: String, instrument: Instrument?, jsfx: JSFXDevice?, midiFx: [JSFXDevice], audioFx: [JSFXDevice],
-             drums: Bool, capacity: Int) {
+        init(id: String, signature: String, instrument: Instrument?, jsfx: JSFXDevice?, plugin: PluginInstance?, seat: SeatVoice?,
+             midiFx: [JSFXDevice], audioFx: [JSFXDevice], drums: Bool, capacity: Int) {
             self.id = id; self.signature = signature; self.instrument = instrument; self.jsfxInstrument = jsfx
+            self.plugin = plugin; self.seat = seat
             self.midiFx = midiFx; self.audioFx = audioFx
             midiChannel = drums ? 9 : 0
             bufL = .allocate(capacity: capacity); bufR = .allocate(capacity: capacity); zero = .allocate(capacity: capacity)
@@ -98,7 +105,7 @@ public final class Renderer {
 
     // Owned by the audio thread.
     var channels: [Channel] = []
-    var returnFx: [JSFXDevice] = []
+    var tail: HallTail?
     var playing = false
     var beat = 0.0
     var tempo = 120.0
@@ -107,24 +114,25 @@ public final class Renderer {
     var loop: Loop? = nil
     var metronome = false
     let click: Click
-    let reverb: Reverb
     let clickL: UnsafeMutablePointer<Float>, clickR: UnsafeMutablePointer<Float>
-    let sendL: UnsafeMutablePointer<Float>, sendR: UnsafeMutablePointer<Float>
-    let returnIns: UnsafeMutablePointer<UnsafePointer<Float>?>
-    let returnOuts: UnsafeMutablePointer<UnsafeMutablePointer<Float>?>
+    /// What every seat sends to the hall's tail, this block.
+    let tailIn: UnsafeMutablePointer<Float>
     struct Segment { var from: Int; var count: Int; var beat: Double }
     var segments: [Segment] = []
     /// What the audio thread let go of, for the main thread to free.
     var retired: [Channel] = []
-    var retiredFx: [JSFXDevice] = []
-    /// The channels as last built on the main thread, for reading meters.
+    var retiredTails: [HallTail] = []
+    /// The channels and the tail as last built on the main thread, for reading
+    /// meters and keeping what has not changed.
     var built: [Channel] = []
-    var builtReturn: [JSFXDevice] = []
+    var builtTail: HallTail?
+    /// The Audio Units the song's players use; nil plays them silent.
+    public var plugins: PluginHost?
 
     // Handed over from the main thread.
     var lock = os_unfair_lock_s()
     var pendingChannels: [Channel]? = nil
-    var pendingReturn: [JSFXDevice]? = nil
+    var pendingTail: HallTail?? = nil
     var pendingTransport: (playing: Bool, beat: Double)? = nil
     var pendingSettings: (tempo: Double, beatsPerBar: Double, loop: Loop?, metronome: Bool)? = nil
     var pendingMeter: (Double, Double)? = nil
@@ -138,23 +146,17 @@ public final class Renderer {
     public init(sampleRate: Double) {
         self.sampleRate = sampleRate
         click = Click(sampleRate: sampleRate)
-        reverb = Reverb(sampleRate: sampleRate)
         let n = Renderer.maxFrames
-        clickL = .allocate(capacity: n); clickR = .allocate(capacity: n)
-        sendL = .allocate(capacity: n); sendR = .allocate(capacity: n)
-        for b in [clickL, clickR, sendL, sendR] { b.initialize(repeating: 0, count: n) }
-        returnIns = .allocate(capacity: 2); returnOuts = .allocate(capacity: 2)
-        returnIns[0] = UnsafePointer(sendL); returnIns[1] = UnsafePointer(sendR)
-        returnOuts[0] = sendL; returnOuts[1] = sendR
+        clickL = .allocate(capacity: n); clickR = .allocate(capacity: n); tailIn = .allocate(capacity: n)
+        for b in [clickL, clickR, tailIn] { b.initialize(repeating: 0, count: n) }
         liveQueue.reserveCapacity(1024)
         segments.reserveCapacity(2)
         retired.reserveCapacity(1024)
-        retiredFx.reserveCapacity(64)
+        retiredTails.reserveCapacity(16)
     }
 
     deinit {
-        for b in [clickL, clickR, sendL, sendR] { b.deallocate() }
-        returnIns.deallocate(); returnOuts.deallocate()
+        for b in [clickL, clickR, tailIn] { b.deallocate() }
     }
 
     // ------------------------------------------------------- main thread --
@@ -164,17 +166,16 @@ public final class Renderer {
     public func update(_ p: Project) {
         os_unfair_lock_lock(&lock)
         let existing = pendingChannels ?? channels
-        let existingReturn = pendingReturn ?? returnFx
         // what the audio thread has let go of is freed here, not there
-        let dead = retired, deadFx = retiredFx
+        let dead = retired, deadTails = retiredTails
         retired.removeAll(keepingCapacity: true)
-        retiredFx.removeAll(keepingCapacity: true)
+        retiredTails.removeAll(keepingCapacity: true)
         os_unfair_lock_unlock(&lock)
-        _ = dead; _ = deadFx
+        _ = dead; _ = deadTails
         var byID: [String: Channel] = [:]
         var devices: [String: JSFXDevice] = [:]
         for c in existing { byID[c.id] = c; for d in c.devices { devices[d.modelID] = d } }
-        for d in existingReturn { devices[d.modelID] = d }
+        let hall = Hall.named(p.hall)
         let rate = sampleRate
         func device(_ d: Device) -> JSFXDevice? {
             if let old = devices[d.id], old.signature == JSFXDevice.signature(d) { old.sync(d); return old }
@@ -185,27 +186,34 @@ public final class Renderer {
         for t in p.tracks {
             let sig = Renderer.signature(t)
             let isJSFX = DeviceCatalog.info(t.sound.device) != nil
-            let builtIn: Instrument? = isJSFX ? nil :
+            let isPlugin = t.sound.device == "au"
+            let builtIn: Instrument? = isJSFX || isPlugin ? nil :
                 ((byID[t.id].flatMap { $0.signature == sig ? $0.instrument : nil }) ?? Renderer.makeInstrument(t, sampleRate: rate))
+            var voice: SeatVoice? = nil
+            if let seat = Stage.seat(t.seat) {
+                let key = seat.id + "@" + hall.id
+                voice = byID[t.id]?.seat.flatMap { $0.key == key ? $0 : nil } ?? SeatVoice(seat: seat, hall: hall, sampleRate: rate)
+            }
             let c = Channel(id: t.id, signature: sig, instrument: builtIn, jsfx: isJSFX ? device(t.sound) : nil,
+                            plugin: isPlugin ? plugins?.instance(for: t.sound) : nil, seat: voice,
                             midiFx: t.midiFx.compactMap(device), audioFx: t.audioFx.compactMap(device),
                             drums: t.drums, capacity: Renderer.maxFrames)
             if let old = byID[t.id], old.signature == sig { c.held = old.held }
             c.events = Renderer.events(t)
             let audible = !t.mute && (!anySolo || t.solo)
-            let g = audible ? Renderer.gain(t.volume) : 0
-            let pan = max(-1, min(1, t.pan))
-            c.gainL = Float(Double(g) * cos((pan + 1) * .pi / 4) * sqrt(2))
-            c.gainR = Float(Double(g) * sin((pan + 1) * .pi / 4) * sqrt(2))
-            c.send = Float(max(0, min(1, t.send)))
+            c.gain = audible ? Renderer.gain(t.volume) : 0
             fresh.append(c)
         }
-        let ret = (p.returns.first?.audioFx ?? []).compactMap(device)
+        plugins?.keep(only: Set(p.tracks.filter { $0.sound.device == "au" }.map(\.sound.id)))
+        // The hall's tail, made again only when the hall changes.
+        let seated = fresh.contains { $0.seat != nil }
+        let tailNow: HallTail? = !seated ? nil : (builtTail?.id == hall.id ? builtTail : HallTail(hall: hall, sampleRate: rate))
+        let tailChanged = tailNow !== builtTail
         built = fresh
-        builtReturn = ret
+        builtTail = tailNow
         os_unfair_lock_lock(&lock)
         pendingChannels = fresh
-        pendingReturn = ret
+        if tailChanged { pendingTail = .some(tailNow) }
         pendingSettings = (p.tempo, p.beatsPerBar, p.loop.on && p.loop.end > p.loop.start ? p.loop : nil, pendingSettings?.metronome ?? metronome)
         pendingMeter = (Double(p.meter.first ?? 4), Double(p.meter.count > 1 ? p.meter[1] : 4))
         os_unfair_lock_unlock(&lock)
@@ -237,13 +245,15 @@ public final class Renderer {
     /// A device as it is playing now, by its id in the song.
     public func device(_ id: String) -> JSFXDevice? {
         for c in built { for d in c.devices where d.modelID == id { return d } }
-        return builtReturn.first { $0.modelID == id }
+        return nil
     }
     /// Every device's saved state, by its id in the song: what Save keeps.
     public func deviceStates() -> [String: JSONValue] {
         var out: [String: JSONValue] = [:]
-        for c in built { for d in c.devices { out[d.modelID] = d.state() } }
-        for d in builtReturn { out[d.modelID] = d.state() }
+        for c in built {
+            for d in c.devices { out[d.modelID] = d.state() }
+            if let pl = c.plugin, let st = pl.state() { out[pl.modelID] = st }
+        }
         return out
     }
 
@@ -254,7 +264,7 @@ public final class Renderer {
     }
 
     static func signature(_ t: Track) -> String {
-        var s = t.sound.device + ":" + (t.sound.preset ?? "")
+        var s = t.sound.device + ":" + (t.sound.preset ?? "") + (t.drums ? ":drums" : "")
         if let sample = t.sound.sample { s += ":" + sample.name + ":\(sample.data.count):\(sample.root ?? 60)" }
         return s
     }
@@ -317,10 +327,10 @@ public final class Renderer {
             for c in channels { c.seek(beat) }
             pendingChannels = nil
         }
-        if let r = pendingReturn {
-            if retiredFx.count + returnFx.count <= retiredFx.capacity { retiredFx.append(contentsOf: returnFx) }
-            returnFx = r
-            pendingReturn = nil
+        if let t = pendingTail {
+            if let old = tail, retiredTails.count < retiredTails.capacity { retiredTails.append(old) }
+            tail = t
+            pendingTail = nil
         }
         if let s = pendingSettings {
             tempo = max(1, s.tempo); beatsPerBar = s.beatsPerBar; loop = s.loop; metronome = s.metronome
@@ -359,7 +369,7 @@ public final class Renderer {
 
     func renderBlock(_ n: Int, _ outL: UnsafeMutablePointer<Float>, _ outR: UnsafeMutablePointer<Float>) {
         takePending()
-        for i in 0..<n { outL[i] = 0; outR[i] = 0; sendL[i] = 0; sendR[i] = 0; clickL[i] = 0; clickR[i] = 0 }
+        for i in 0..<n { outL[i] = 0; outR[i] = 0; tailIn[i] = 0; clickL[i] = 0; clickR[i] = 0 }
         let beatsPerFrame = tempo / 60 / sampleRate
 
         // The block in up to two pieces: up to the loop's end, then from its start.
@@ -419,6 +429,8 @@ public final class Renderer {
                     c.dispatch(e.data.0, e.data.1, e.data.2)
                 }
                 if n > pos { inst.render(n - pos, L + pos, R + pos) }
+            } else if let pl = c.plugin {
+                pl.render(n, L, R, midi, count, time)
             } else if let j = c.jsfxInstrument {
                 c.ins[0] = UnsafePointer(c.zero); c.ins[1] = UnsafePointer(c.zero)
                 c.outs[0] = L; c.outs[1] = R
@@ -432,14 +444,16 @@ public final class Renderer {
                 for d in c.audioFx { _ = d.process(n, UnsafePointer(c.ins), 2, UnsafePointer(c.outs), 2, nil, 0, time) }
             }
 
+            // 5. The stage: from the seat, in the hall; or at the front, as it is.
             var pk: Float = 0
-            for i in 0..<n {
-                let l = L[i] * c.gainL, r = R[i] * c.gainR
-                outL[i] += l; outR[i] += r
-                sendL[i] += l * c.send; sendR[i] += r * c.send
-                pk = max(pk, abs(l), abs(r))
+            for i in 0..<n { pk = max(pk, abs(L[i]), abs(R[i])) }
+            c.peak = max(pk * c.gain, c.peak * 0.9)
+            if let seat = c.seat {
+                seat.process(n, L, R, gain: c.gain, outL, outR, tailIn)
+            } else {
+                let g = c.gain
+                for i in 0..<n { outL[i] += L[i] * g; outR[i] += R[i] * g }
             }
-            c.peak = max(pk, c.peak * 0.9)
         }
 
         // The metronome: a click on every beat, higher on the bar's first.
@@ -459,13 +473,10 @@ public final class Renderer {
         }
         if n > pos { click.render(n - pos, clickL + pos, clickR + pos) }
 
-        // The return: the song's own effects on it if it has any (Reverberator,
-        // fully wet), else Middaw's reverb.
-        if returnFx.isEmpty {
-            reverb.process(n, sendL, sendR, outL, outR)
-        } else {
-            for d in returnFx { _ = d.process(n, UnsafePointer(returnIns), 2, UnsafePointer(returnOuts), 2, nil, 0, time) }
-            for i in 0..<n { outL[i] += sendL[i]; outR[i] += sendR[i] }
+        // The hall's tail, from every seat at once.
+        if let t = tail {
+            t.left.process(n, tailIn, outL)
+            t.right.process(n, tailIn, outR)
         }
         for i in 0..<n {
             outL[i] = Renderer.soften((outL[i] + clickL[i]) * 0.9)
@@ -485,56 +496,6 @@ public final class Renderer {
         if a <= 0.9 { return x }
         let y = 0.9 + 0.1 * tanh((a - 0.9) / 0.1)
         return x < 0 ? -y : y
-    }
-}
-
-/// Middaw's own reverb return: Freeverb's eight combs and four all-passes a
-/// side - the shared space every track's Reverb send feeds.
-final class Reverb {
-    final class Comb {
-        var buf: [Float]; var idx = 0; var store: Float = 0
-        init(_ n: Int) { buf = [Float](repeating: 0, count: n) }
-        @inline(__always) func process(_ x: Float, feedback: Float, damp: Float) -> Float {
-            let y = buf[idx]
-            store = y * (1 - damp) + store * damp
-            buf[idx] = x + store * feedback
-            idx += 1; if idx >= buf.count { idx = 0 }
-            return y
-        }
-    }
-    final class AllPass {
-        var buf: [Float]; var idx = 0
-        init(_ n: Int) { buf = [Float](repeating: 0, count: n) }
-        @inline(__always) func process(_ x: Float) -> Float {
-            let b = buf[idx]
-            buf[idx] = x + b * 0.5
-            idx += 1; if idx >= buf.count { idx = 0 }
-            return b - x
-        }
-    }
-    var combsL: [Comb], combsR: [Comb], apL: [AllPass], apR: [AllPass]
-    var size: Float = 0.84, damp: Float = 0.3, wet: Float = 0.9
-
-    init(sampleRate: Double) {
-        let scale = sampleRate / 44100
-        let combs = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], aps = [556, 441, 341, 225]
-        combsL = combs.map { Comb(Int(Double($0) * scale)) }
-        combsR = combs.map { Comb(Int(Double($0 + 23) * scale)) }
-        apL = aps.map { AllPass(Int(Double($0) * scale)) }
-        apR = aps.map { AllPass(Int(Double($0 + 23) * scale)) }
-    }
-
-    func process(_ n: Int, _ inL: UnsafeMutablePointer<Float>, _ inR: UnsafeMutablePointer<Float>,
-                 _ outL: UnsafeMutablePointer<Float>, _ outR: UnsafeMutablePointer<Float>) {
-        for i in 0..<n {
-            let x = (inL[i] + inR[i]) * 0.015
-            var l: Float = 0, r: Float = 0
-            for c in combsL { l += c.process(x, feedback: size, damp: damp) }
-            for c in combsR { r += c.process(x, feedback: size, damp: damp) }
-            for a in apL { l = a.process(l) }
-            for a in apR { r = a.process(r) }
-            outL[i] += l * wet; outR[i] += r * wet
-        }
     }
 }
 
@@ -576,6 +537,11 @@ public enum SampleCodec {
 public enum Bounce {
     public static func render(_ p: Project, sampleRate: Double = 48000, tail: Double = 3) -> (left: [Float], right: [Float]) {
         let r = Renderer(sampleRate: sampleRate)
+        if p.tracks.contains(where: { $0.sound.device == "au" }) {
+            let host = PluginHost(sampleRate: sampleRate)
+            host.loadAll(p)
+            r.plugins = host
+        }
         r.update(p)
         r.play(from: 0)
         let seconds = p.seconds(max(4, p.endOfMusic)) + tail

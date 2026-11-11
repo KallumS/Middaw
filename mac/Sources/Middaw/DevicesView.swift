@@ -34,7 +34,7 @@ struct DevicesView: View {
             }
             .background(Theme.ground)
         } else {
-            Text("Choose a track.").foregroundStyle(Theme.textDim).frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.ground)
+            Text("Choose a player on the stage.").foregroundStyle(Theme.textDim).frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.ground)
         }
     }
 }
@@ -50,7 +50,7 @@ struct BuiltInCard: View {
     let track: Track
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(builtInName(track.sound.device)).heading()
+            Text(track.sound.device == "au" ? (track.sound.plugin?.name ?? "Audio Unit") : builtInName(track.sound.device)).heading()
             SoundPanel(track: track)
         }
         .padding(10)

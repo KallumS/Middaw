@@ -7,14 +7,15 @@ import MiddawEngines
 import MiddawAudio
 
 // ------------------------------------------------------------- inspector --
-/// The chosen track: what it is, what plays it, how loud - and what
-/// Orchestration Helper says about it. Generate shares the same column.
+/// The chosen player: what they play, where they sit, what plays them, how
+/// loud - and what Orchestration Helper says about the instrument. Generate
+/// shares the same column.
 struct InspectorView: View {
     @EnvironmentObject var s: Session
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $s.inspector) {
-                Text("Track").tag(InspectorTab.track)
+                Text("Player").tag(InspectorTab.track)
                 Text("Generate").tag(InspectorTab.generate)
             }
             .pickerStyle(.segmented).labelsHidden()
@@ -37,8 +38,6 @@ struct TrackInspector: View {
     @EnvironmentObject var studio: Studio
     @State private var name = ""
     @State private var volume = 0.8
-    @State private var pan = 0.0
-    @State private var send = 0.0
 
     var body: some View {
         if let t = s.track {
@@ -59,6 +58,16 @@ struct TrackInspector: View {
                 if let i = studio.instrument(t.instrument), let lo = i.low, let hi = i.high {
                     Text(rangeText(i, lo, hi)).foregroundStyle(Theme.textDim).font(.system(size: 12))
                 }
+                Row(label: "Sits") {
+                    Picker("", selection: Binding(get: { t.seat ?? "" }, set: { s.place(t.id, seat: $0.isEmpty ? nil : $0) })) {
+                        Text("At the Front").tag("")
+                        ForEach(StageSection.allCases, id: \.self) { sec in
+                            let open = Stage.seats.filter { $0.section == sec && ($0.id == t.seat || !s.project.takenSeats.contains($0.id)) }
+                            if !open.isEmpty { Section(sec.name) { ForEach(open) { seat in Text(seat.name).tag(seat.id) } } }
+                        }
+                    }.labelsHidden()
+                }
+                Text(placeText(t)).foregroundStyle(Theme.textDim).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
             }
             .onAppear { load(t) }
             .onChange(of: t.id) { _, _ in load(t) }
@@ -92,13 +101,9 @@ struct TrackInspector: View {
                 Slider(value: $volume, in: 0...1) { editing in if !editing { s.updateTrack(t.id, "Change Level") { $0.volume = volume } } }
                 Text(dbText(volume)).frame(width: 52, alignment: .trailing).foregroundStyle(Theme.text).monospacedDigit()
             }
-            Row(label: "Pan") {
-                Slider(value: $pan, in: -1...1) { editing in if !editing { s.updateTrack(t.id, "Change Pan") { $0.pan = pan } } }
-                Text(panText(pan)).frame(width: 52, alignment: .trailing).foregroundStyle(Theme.text)
-            }
-            Row(label: "Reverb") {
-                Slider(value: $send, in: 0...1) { editing in if !editing { s.updateTrack(t.id, "Change Reverb Send") { $0.send = send } } }
-                Text("\(Int((send * 100).rounded()))%").frame(width: 52, alignment: .trailing).foregroundStyle(Theme.text).monospacedDigit()
+            HStack(spacing: 4) {
+                Button("Mute") { s.updateTrack(t.id, t.mute ? "Unmute" : "Mute") { $0.mute.toggle() } }.house(on: t.mute, compact: true)
+                Button("Solo") { s.updateTrack(t.id, t.solo ? "Unsolo" : "Solo") { $0.solo.toggle() } }.house(on: t.solo, compact: true)
             }
 
             if let entry = OrchestrationGuide.shared.entry(for: t.instrument, name: studio.instrument(t.instrument)?.name) {
@@ -107,11 +112,21 @@ struct TrackInspector: View {
                 Text(entry.summary).foregroundStyle(Theme.text).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
             }
         } else {
-            Text("Add a track, or describe some music in Generate.").foregroundStyle(Theme.textDim)
+            Text("Choose a player on the stage, or describe some music in Generate.").foregroundStyle(Theme.textDim)
         }
     }
 
-    func load(_ t: Track) { name = t.name; volume = t.volume; pan = t.pan; send = t.send }
+    func load(_ t: Track) { name = t.name; volume = t.volume }
+
+    /// Where the player is heard from: the seat's distance and side in the hall.
+    func placeText(_ t: Track) -> String {
+        guard let seat = Stage.seat(t.seat) else { return "Heard as it is: no hall, in the middle." }
+        let hall = Hall.named(s.project.hall)
+        let sound = Stage.sound(seat, in: hall)
+        let db = 20 * log10(sound.direct)
+        return String(format: "%.1f m from the microphones, %@, direct sound %.1f dB, in the %@.",
+                      sound.distance, panText(sound.pan).lowercased(), db, hall.name)
+    }
 
     var families: [(String, [Engines.Instrument])] {
         var order: [String] = []
@@ -142,15 +157,17 @@ func dbText(_ v: Double) -> String {
     return String(format: "%@%.1f dB", db > 0.05 ? "+" : "", db)
 }
 func panText(_ p: Double) -> String {
-    abs(p) < 0.01 ? "Centre" : (p < 0 ? "L \(Int((-p * 100).rounded()))" : "R \(Int((p * 100).rounded()))")
+    abs(p) < 0.05 ? "Centre" : (p < 0 ? "Left \(Int((-p * 100).rounded()))" : "Right \(Int((p * 100).rounded()))")
 }
 
 /// What plays the track: Middaw Synth's presets, the kit, or the Instant
 /// Instrument - a sound dropped on the track, played across the keyboard.
 struct SoundPanel: View {
     @EnvironmentObject var s: Session
+    @EnvironmentObject var studio: Studio
     let track: Track
     @State private var dropping = false
+    @State private var choosing = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -160,7 +177,23 @@ struct SoundPanel: View {
                     Text("Drum Kit").tag("kit")
                     Text("Instant Instrument").tag("sampler")
                     ForEach(DeviceCatalog.of(.instrument), id: \.id) { d in Text(d.name).tag(d.id) }
+                    if track.sound.device == "au" { Text(track.sound.plugin?.name ?? "Audio Unit").tag("au") }
                 }.labelsHidden()
+            }
+            HStack(spacing: 6) {
+                Button("Audio Units…") { choosing = true }.house()
+                    .help("Play this part with an Audio Unit instrument on this Mac")
+                    .popover(isPresented: $choosing) {
+                        SoundMenu(title: track.name, instrument: track.instrument, section: Stage.seat(track.seat)?.section,
+                                  drums: track.drums, current: track.sound) { c in choosing = false; s.setSound(track.id, c) }
+                            .environmentObject(studio)
+                    }
+                if track.sound.device == "au" {
+                    Button("Show Its Window") { PluginWindows.shared.show(track.sound.id, title: "\(track.name) – \(track.sound.plugin?.name ?? "")") }.house()
+                }
+            }
+            if let why = studio.audio.plugins.failures[track.sound.id] {
+                Text(why).foregroundStyle(Theme.warnText).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
             }
             if DeviceCatalog.info(track.sound.device) != nil {
                 Button("Show Its Controls") { s.select(track: track.id); s.editor = .devices }.house()
@@ -198,6 +231,7 @@ struct SoundPanel: View {
     }
 
     func setDevice(_ d: String) {
+        guard d != "au" else { return }
         s.updateTrack(track.id, "Change Sound") { t in
             t.sound = DeviceCatalog.info(d) != nil ? Session.makeDevice(d) : Device(device: d, preset: d == "synth" ? (presetFor[t.instrument] ?? "keys") : nil)
             t.drums = d == "kit" ? true : (t.instrument == "kit")
@@ -231,118 +265,6 @@ struct SoundPanel: View {
     }
 }
 
-// ----------------------------------------------------------- the mixer --
-struct MixerView: View {
-    @EnvironmentObject var s: Session
-    @EnvironmentObject var studio: Studio
-    var body: some View {
-        ScrollView(.horizontal) {
-            HStack(alignment: .top, spacing: 2) {
-                ForEach(s.project.tracks) { t in Strip(track: t) }
-                ReturnStrip()
-            }
-            .padding(8)
-        }
-        .background(Theme.ground)
-    }
-}
-
-/// The reverb return every track's Reverb sends to: Middaw's own reverb,
-/// or Reverberator, fully wet.
-struct ReturnStrip: View {
-    @EnvironmentObject var s: Session
-    @State private var showing = false
-    var verb: Device? { s.project.returns.first?.audioFx.first { $0.device == "reverberator" } }
-    var body: some View {
-        VStack(spacing: 8) {
-            Text("Reverb").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.text)
-            Picker("Reverb", selection: Binding(get: { verb == nil ? "middaw" : "reverberator" }, set: { set($0) })) {
-                Text("Middaw Reverb").tag("middaw")
-                Text("Reverberator").tag("reverberator")
-            }
-            .labelsHidden()
-            if let v = verb {
-                Button("Controls") { showing = true }.house()
-                    .popover(isPresented: $showing) { DeviceCard(device: v, trackID: nil).environmentObject(s).padding(4) }
-            }
-        }
-        .padding(8)
-        .frame(width: 150)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Theme.sunken))
-    }
-    func set(_ v: String) {
-        s.commit(v == "middaw" ? "Use Middaw Reverb" : "Use Reverberator") { p in
-            if p.returns.isEmpty { p.returns = [Return(audioFx: [])] }
-            if v == "middaw" { p.returns[0].audioFx = [] }
-            else {
-                var d = Session.makeDevice("reverberator")
-                d.sliders[2] = 100        // a return is all reverb
-                p.returns[0].audioFx = [d]
-            }
-        }
-    }
-}
-
-struct Strip: View {
-    @EnvironmentObject var s: Session
-    @EnvironmentObject var studio: Studio
-    let track: Track
-    @State private var volume = 0.8
-    @State private var pan = 0.0
-    @State private var send = 0.0
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Text(track.name).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.text).lineLimit(1)
-            VStack(spacing: 2) {
-                Text("Reverb").font(.system(size: 11)).foregroundStyle(Theme.label)
-                Slider(value: $send, in: 0...1) { e in if !e { s.updateTrack(track.id, "Change Reverb Send") { $0.send = send } } }
-            }
-            VStack(spacing: 2) {
-                Text(panText(pan)).font(.system(size: 11)).foregroundStyle(Theme.label)
-                Slider(value: $pan, in: -1...1) { e in if !e { s.updateTrack(track.id, "Change Pan") { $0.pan = pan } } }
-            }
-            HStack(alignment: .bottom, spacing: 6) {
-                Slider(value: $volume, in: 0...1) { e in if !e { s.updateTrack(track.id, "Change Level") { $0.volume = volume } } }
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: 150, height: 28)
-                    .frame(width: 28, height: 150)
-                    .accessibilityLabel("\(track.name) level")
-                Meter(trackID: track.id).frame(width: 8, height: 150)
-            }
-            Text(dbText(volume)).font(.system(size: 11).monospacedDigit()).foregroundStyle(Theme.text)
-            HStack(spacing: 4) {
-                Button("M") { s.updateTrack(track.id, "Mute") { $0.mute.toggle() } }.house(on: track.mute, compact: true)
-                Button("S") { s.updateTrack(track.id, "Solo") { $0.solo.toggle() } }.house(on: track.solo, compact: true)
-            }
-        }
-        .padding(8)
-        .frame(width: 92)
-        .background(RoundedRectangle(cornerRadius: 6).fill(track.id == s.selection.trackID ? Theme.raised : Theme.sunken))
-        .onTapGesture { s.select(track: track.id) }
-        .onAppear { volume = track.volume; pan = track.pan; send = track.send }
-        .onChange(of: track) { _, t in volume = t.volume; pan = t.pan; send = t.send }
-    }
-}
-
-struct Meter: View {
-    @EnvironmentObject var studio: Studio
-    let trackID: String
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { _ in
-            Canvas { g, size in
-                g.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Theme.sunken))
-                let v = studio.audio.renderer.peak(of: trackID)
-                let db = v > 0 ? 20 * log10(Double(v)) : -60
-                let f = max(0, min(1, (db + 60) / 66))
-                g.fill(Path(CGRect(x: 0, y: size.height * (1 - f), width: size.width, height: size.height * f)),
-                       with: .color(db > -0.5 ? Theme.warn : Theme.control))
-            }
-        }
-        .accessibilityHidden(true)
-    }
-}
-
 // ----------------------------------------------------------- the browser --
 /// Ensembles and instruments to add; Midi Catalogue's ideas; Orchestration
 /// Helper's guide.
@@ -372,14 +294,16 @@ struct BrowserView: View {
         List {
             Section("Ensembles") {
                 ForEach(ensembles, id: \.name) { e in
-                    Button(e.name) { s.addEnsemble(e.name, e.ids) }.buttonStyle(.plain)
-                        .help("Add \(e.ids.count) \(e.ids.count == 1 ? "track" : "tracks")")
+                    Button(e.name) { s.addEnsemble(e.name, e.ids, stage: e.stage) }.buttonStyle(.plain)
+                        .help(e.stage ? "Seat \(e.ids.count) \(e.ids.count == 1 ? "player" : "players") on the stage"
+                                      : "Add \(e.ids.count) \(e.ids.count == 1 ? "player" : "players") at the front")
                 }
             }
             ForEach(families, id: \.0) { fam, list in
                 Section(fam) {
                     ForEach(list) { i in
-                        Button(i.name) { s.addTrack(i.id) }.buttonStyle(.plain).help("Add a track for the \(i.name)")
+                        Button(i.name) { s.addPlayer(i.id) }.buttonStyle(.plain)
+                            .help(Stage.isOrchestral(i.id) ? "Seat a \(i.name) on the stage" : "Add a \(i.name) at the front")
                     }
                 }
             }

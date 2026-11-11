@@ -63,16 +63,6 @@ final class DeviceTests: XCTestCase {
         XCTAssertTrue(wet.left.allSatisfy { $0.isFinite })
     }
 
-    func testReverberatorOnTheReturn() {
-        var p = song(sound: Device(device: "synth", preset: "organ"), notes: [Note(start: 0, len: 0.25, pitch: 72)])
-        p.tracks[0].send = 1
-        var verb = Device(device: "reverberator"); verb.sliders = [2: 100]
-        p.returns = [Return(audioFx: [verb])]
-        let out = Bounce.render(p, sampleRate: 48000, tail: 1)
-        XCTAssertGreaterThan(rms(out.left[36000..<48000]), 1e-4)
-        XCTAssertTrue(out.left.allSatisfy { $0.isFinite })
-    }
-
     func testMidiEvolverPlaysAHeldChordThroughTheSynth() {
         let chord = [60, 64, 67].map { Note(start: 0, len: 8, pitch: $0) }
         let p = song(sound: Device(device: "synth", preset: "keys"), notes: chord, midiFx: [Device(device: "evolver")])
