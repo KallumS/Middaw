@@ -29,15 +29,17 @@ final class SeatVoice {
         left = Float(g.left * sound.direct); right = Float(g.right * sound.direct)
         width = Float(sound.width)
         air = Float(1 - exp(-2 * .pi * min(sound.airCutoff, sampleRate * 0.45) / sampleRate))
-        taps = sound.reflections.count
-        delays = .allocate(capacity: max(1, taps))
-        gainsL = .allocate(capacity: max(1, taps)); gainsR = .allocate(capacity: max(1, taps))
+        let count = sound.reflections.count
+        let d = UnsafeMutablePointer<Int>.allocate(capacity: max(1, count))
+        let gl = UnsafeMutablePointer<Float>.allocate(capacity: max(1, count))
+        let gr = UnsafeMutablePointer<Float>.allocate(capacity: max(1, count))
         var longest = 0
         for (k, r) in sound.reflections.enumerated() {
-            delays[k] = max(1, Int((r.delay * sampleRate).rounded()))
-            gainsL[k] = Float(r.left); gainsR[k] = Float(r.right)
-            longest = max(longest, delays[k])
+            d[k] = max(1, Int((r.delay * sampleRate).rounded()))
+            gl[k] = Float(r.left); gr[k] = Float(r.right)
+            longest = max(longest, d[k])
         }
+        taps = count; delays = d; gainsL = gl; gainsR = gr
         var size = 1
         while size < longest + 1 { size <<= 1 }
         mask = size - 1

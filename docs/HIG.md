@@ -25,8 +25,10 @@ and menus are the Mac's own.
 
 ## Not met
 
-- **VoiceOver inside the drawn views.** The arrange view, piano roll and
-  score are drawn, so VoiceOver reads each as one element. Every action on
+- **VoiceOver inside the drawn views.** The part lane, piano roll, drum
+  MIDI, step sequencer and score are drawn, so VoiceOver reads each as one
+  element. The stage is not: every seat is a control that VoiceOver names
+  ("Oboe 1, empty"; "Violins I, Middaw Synth: Strings"). Every action on
   them is also a menu item or a key, but the notes cannot be read out yet.
 - **Dynamic Type** does not reach the drawn views' labels.
 - **Right to left.** English only; time runs left to right, as in every DAW.

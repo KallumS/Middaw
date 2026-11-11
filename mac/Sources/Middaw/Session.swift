@@ -6,15 +6,17 @@ import MiddawEngines
 import MiddawAudio
 
 /// The editor under the stage: the chosen player's notes as MIDI (a piano
-/// roll), as drum MIDI (a lane per drum), in a step sequencer, as a score, or
-/// its devices.
-enum EditorTab: String, CaseIterable { case roll, drums, steps, score, devices
+/// roll), as notation, as drums (a lane per drum), in a step sequencer - or
+/// the player's devices.
+enum EditorTab: String, CaseIterable { case roll, score, drums, steps, devices
+    /// The four ways of looking at the notes, as the editor's tabs.
+    static let notes: [EditorTab] = [.roll, .score, .drums, .steps]
     var name: String {
         switch self {
         case .roll: return "MIDI"
-        case .drums: return "Drum MIDI"
+        case .score: return "Notation"
+        case .drums: return "Drums"
         case .steps: return "Step Sequencer"
-        case .score: return "Score"
         case .devices: return "Devices"
         }
     }
@@ -159,7 +161,7 @@ final class Session: ObservableObject {
         selection.trackID = id
         selection.others = []
         selection.range = nil
-        // A kit's notes are drums: they open as drum MIDI, and a tune's as MIDI.
+        // A kit's notes are drums: they open in Drums, and a tune's as MIDI.
         if let t = track {
             if t.drums && editor == .roll { editor = .drums } else if !t.drums && editor == .drums { editor = .roll }
         }

@@ -8,7 +8,8 @@ reintroduce it.
 
 Two halves: the **composer** (`middaw/`, Python, everything below about
 specs, cadences and dice) and the **app** (`mac/`, Swift, see "The app" at
-the end and `docs/DAW.md`). It was a browser app until 30 October 2026;
+the end, `docs/DAW.md` and `docs/STAGE.md`: an orchestra stage whose seats
+hold Audio Units, not a list of tracks). It was a browser app until 30 October 2026;
 `docs/BROWSER-DAW.md` is the record of that and how to bring it back.
 
 ## Working here
@@ -476,5 +477,20 @@ dataset and a liability. See `docs/DATASET.md`.
   7:1 on every surface, ink 7:1 on every button, cool greys; on is the accent
   *and* a bar; red never for words; the status line at the top.
   `docs/COLOUR.md` and `docs/HIG.md` are the record.
+- **The stage is the mixer** (`docs/STAGE.md`). A player with a seat is
+  heard from it in the hall: panned, distanced, reflected and given the
+  hall's tail by `Stage.sound` and `Stage.tail` in MiddawCore, which are
+  calculated from the seat's coordinates and the hall's size and RT60, never
+  set by ear. A player at the front (`seat == nil`) is heard as it is: no
+  hall, no pan. Track `pan` and `send` and the Reverb return are only kept so
+  older songs round-trip; nothing reads them.
+- **Seats are unique**: one player per seat, and an orchestral instrument
+  takes the first free automatic seat for it. Piano and kit never seat
+  themselves (`Stage.isOrchestral`); a song from before the stage
+  (`version` < 2) is seated by `seatTheOrchestra` when it opens.
+- **Plug-ins are Audio Units**, through Core Audio only (`Plugins.swift`):
+  made on the main thread, played inside the renderer's own block with MIDI
+  at sample offsets. Nothing on that path allocates; a plug-in that has not
+  opened yet is silent, never waited for.
 - **No explainer text.** A label is a word or two; how a control works goes
   in its tooltip (`.help`), if anywhere.

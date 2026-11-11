@@ -69,8 +69,8 @@ struct NoPart: View {
     }
 }
 
-// --------------------------------------------------------- drum MIDI --
-/// Drum MIDI, as Cubase's and Logic's drum editors show it: a lane per drum,
+// ------------------------------------------------------------- drums --
+/// Drums, as Cubase's and Logic's drum editors show them: a lane per drum,
 /// a hit as a diamond where it starts. Click or drag along a lane to add
 /// hits on the grid, start on a hit to take them away; Option-click a hit to
 /// make it an accent, a normal hit or a ghost.
@@ -224,15 +224,15 @@ struct StepSequencer: View {
 
     var body: some View {
         if let c = s.clip, let t = s.track {
-            let rows = rows(c, track: t)
+            let lanes = rows(c, track: t)
             let count = max(1, Int((c.length / step - 1e-9).rounded(.up)))
             let width = CGFloat(count) * cell.width
-            let height = header + CGFloat(rows.count) * cell.height
+            let height = header + CGFloat(lanes.count) * cell.height
             ScrollView(.vertical) {
                 HStack(alignment: .top, spacing: 0) {
                     VStack(alignment: .leading, spacing: 0) {
                         Color.clear.frame(height: header)
-                        ForEach(Array(rows.enumerated()), id: \.offset) { _, r in
+                        ForEach(Array(lanes.enumerated()), id: \.offset) { _, r in
                             Text(r.name).font(.system(size: 11)).foregroundStyle(Theme.label)
                                 .frame(width: namesWidth - 8, height: cell.height, alignment: .leading).padding(.leading, 8)
                                 .contentShape(Rectangle())
@@ -242,10 +242,10 @@ struct StepSequencer: View {
                     }
                     .frame(width: namesWidth)
                     ScrollView(.horizontal) {
-                        cells(c, rows: rows, count: count)
+                        cells(c, rows: lanes, count: count)
                             .frame(width: width, height: height)
                             .gesture(DragGesture(minimumDistance: 0)
-                                .onChanged { v in changed(v, c, rows, count: count, track: t) }
+                                .onChanged { v in changed(v, c, lanes, count: count, track: t) }
                                 .onEnded { _ in ended() })
                     }
                 }

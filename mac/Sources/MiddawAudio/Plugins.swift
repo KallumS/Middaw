@@ -76,7 +76,7 @@ public final class PluginInstance {
             return true
         }
         unit.transportStateBlock = { flags, position, cycleStart, cycleEnd in
-            flags?.pointee = clock.playing ? .moving : []
+            flags?.pointee = clock.playing ? AUHostTransportStateFlags.moving : AUHostTransportStateFlags()
             position?.pointee = clock.sample
             cycleStart?.pointee = 0
             cycleEnd?.pointee = 0

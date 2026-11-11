@@ -48,9 +48,10 @@ public final class Convolver {
             p.initialize(repeating: 0, count: n)
             return p
         }
-        headRev = zeros(B)
+        let head = zeros(B)
         var any = false
-        for m in 0..<min(B, ir.count) where ir[m] != 0 { headRev[B - 1 - m] = ir[m]; any = true }
+        for m in 0..<min(B, ir.count) where ir[m] != 0 { head[B - 1 - m] = ir[m]; any = true }
+        headRev = head
         hasHead = any
         parts = (max(0, ir.count - B) + B - 1) / B
         let cap = max(1, parts) * B

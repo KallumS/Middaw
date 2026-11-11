@@ -355,9 +355,9 @@ struct MiddawCommands: Commands {
         CommandGroup(after: .sidebar) {
             Button("Show or Hide the Browser") { s?.showBrowser.toggle() }.keyboardShortcut("b", modifiers: [.command, .option])
             Button("MIDI") { s?.editor = .roll }.keyboardShortcut("p", modifiers: [.command, .option])
-            Button("Drum MIDI") { s?.editor = .drums }
+            Button("Notation") { s?.editor = .score }.keyboardShortcut("s", modifiers: [.command, .option])
+            Button("Drums") { s?.editor = .drums }
             Button("Step Sequencer") { s?.editor = .steps }
-            Button("Score") { s?.editor = .score }.keyboardShortcut("s", modifiers: [.command, .option])
             Button("Devices") { s?.editor = .devices }
         }
     }

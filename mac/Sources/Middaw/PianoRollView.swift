@@ -3,18 +3,21 @@ import AppKit
 import MiddawCore
 import MiddawEngines
 
-/// Under the stage: the chosen player's notes as MIDI, drum MIDI or steps,
-/// as a score, or their devices.
+/// Under the stage: the chosen player's notes as MIDI, notation, drums or
+/// steps - or their devices.
 struct EditorView: View {
     @EnvironmentObject var s: Session
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: Theme.gap) {
                 Picker("Editor", selection: $s.editor) {
-                    ForEach(EditorTab.allCases, id: \.self) { tab in Text(tab.name).tag(tab) }
+                    ForEach(EditorTab.notes, id: \.self) { tab in Text(tab.name).tag(tab) }
                 }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
-                .help("MIDI, drum MIDI, the step sequencer, the score, or the player’s devices")
+                .help("The part as MIDI, notation, drums or steps")
+                Button { s.editor = s.editor == .devices ? .roll : .devices } label: { Label("Devices", systemImage: "slider.horizontal.3") }
+                    .house(on: s.editor == .devices, compact: true)
+                    .help("The player’s instrument and effects")
                 Text(s.clip.map { $0.name.isEmpty ? (s.track?.name ?? "") : "\(s.track?.name ?? "") — \($0.name)" } ?? (s.track?.name ?? ""))
                     .foregroundStyle(Theme.textDim).lineLimit(1)
                 Spacer()
