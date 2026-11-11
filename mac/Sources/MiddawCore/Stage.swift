@@ -25,7 +25,10 @@ public enum StageSection: String, CaseIterable, Codable {
     }
 }
 
-/// One place on the stage, for one player or one section.
+/// One place on the stage, for one player or one section: a wedge of the
+/// fan the orchestra sits in, between two angles and two radii around the
+/// conductor. Where it is drawn is where it is heard from: its position is
+/// the middle of its wedge.
 public struct Seat: Hashable, Identifiable {
     public let id: String
     public let name: String
@@ -33,8 +36,10 @@ public struct Seat: Hashable, Identifiable {
     /// Midi Catalogue's instrument id: range, clef, how many notes at once.
     public let instrument: String
     public let section: StageSection
-    public let x: Double
-    public let depth: Double
+    /// Degrees from straight ahead of the conductor, negative to the left.
+    public let from: Double, to: Double
+    /// Metres from the conductor.
+    public let inner: Double, outer: Double
     public let height: Double
     /// How much of a plug-in's own stereo is kept: a section is wide, a solo
     /// wind is a point.
@@ -44,10 +49,18 @@ public struct Seat: Hashable, Identifiable {
     public let automatic: Bool
 
     public init(_ id: String, _ name: String, _ short: String, _ instrument: String, _ section: StageSection,
-                x: Double, depth: Double, height: Double, width: Double, automatic: Bool = true) {
+                from: Double, to: Double, inner: Double, outer: Double, height: Double, width: Double, automatic: Bool = true) {
         self.id = id; self.name = name; self.short = short; self.instrument = instrument; self.section = section
-        self.x = x; self.depth = depth; self.height = height; self.width = width; self.automatic = automatic
+        self.from = from; self.to = to; self.inner = inner; self.outer = outer
+        self.height = height; self.width = width; self.automatic = automatic
     }
+
+    public var angle: Double { (from + to) / 2 }
+    public var radius: Double { (inner + outer) / 2 }
+    /// Across the stage, negative to the left as the audience sees it.
+    public var x: Double { radius * sin(angle * .pi / 180) }
+    /// Back from the front edge of the stage, where the conductor stands.
+    public var depth: Double { radius * cos(angle * .pi / 180) }
 }
 
 /// A room the orchestra plays in. Its size and reverberation time decide its
@@ -76,7 +89,7 @@ public struct Hall: Hashable, Identifiable {
 
     public static let concert = Hall("concert", "Concert Hall", width: 26, length: 44, height: 18, rt60: 2.0)
     public static let scoring = Hall("scoring", "Scoring Stage", width: 30, length: 40, height: 12, rt60: 1.4)
-    public static let studio = Hall("studio", "Studio", width: 20, length: 25, height: 8, rt60: 0.6)
+    public static let studio = Hall("studio", "Studio", width: 24, length: 25, height: 8, rt60: 0.6)
     public static let all = [concert, scoring, studio]
 
     public static func named(_ id: String) -> Hall { all.first { $0.id == id } ?? concert }
@@ -104,58 +117,54 @@ public struct SeatSound: Hashable {
 }
 
 public enum Stage {
-    /// American seating, as most orchestras sit now: first violins on the
-    /// conductor's left, cellos on the right, violas and seconds inside them,
-    /// basses behind the cellos, woodwinds in the middle, horns to the left
-    /// of the brass, percussion at the back and the choir on risers behind.
-    public static let seats: [Seat] = [
-        Seat("vln1", "Violins I", "Vln I", "vln1", .strings, x: -5.0, depth: 1.8, height: 1.1, width: 0.5),
-        Seat("vln2", "Violins II", "Vln II", "vln2", .strings, x: -2.4, depth: 4.2, height: 1.1, width: 0.4),
-        Seat("vla", "Violas", "Vla", "vla", .strings, x: 2.4, depth: 4.2, height: 1.1, width: 0.4),
-        Seat("vc", "Cellos", "Vc", "vc", .strings, x: 5.0, depth: 2.0, height: 0.9, width: 0.4),
-        Seat("cb", "Basses", "Cb", "cb", .strings, x: 7.2, depth: 5.4, height: 1.0, width: 0.35),
+    /// American seating, as most orchestras sit now, in a fan around the
+    /// conductor: first violins on the left and cellos on the right, both
+    /// reaching the edge of the stage; seconds and violas inside them; flutes
+    /// and oboes, then clarinets and bassoons; harp and piano on the left of
+    /// the brass, horns on the left of the trumpets, trombones and tuba on the
+    /// right with the basses beyond them; percussion with the timpani in the
+    /// middle at the back; the choir on risers behind.
+    public static let seats: [Seat] = {
+        var out: [Seat] = []
+        /// Seats side by side across one ring, each an equal slice.
+        func ring(_ section: StageSection, _ from: Double, _ to: Double, _ inner: Double, _ outer: Double, height: Double, width: Double,
+                  _ list: [(String, String, String, String)]) {
+            let step = (to - from) / Double(list.count)
+            for (k, s) in list.enumerated() {
+                out.append(Seat(s.0, s.1, s.2, s.3, section, from: from + Double(k) * step, to: from + Double(k + 1) * step,
+                                inner: inner, outer: outer, height: height, width: width, automatic: s.0 != "perc"))
+            }
+        }
+        out.append(Seat("vln1", "Violins I", "Vln I", "vln1", .strings, from: -90, to: -60, inner: 2.5, outer: 8.0, height: 1.1, width: 0.5))
+        ring(.strings, -60, 60, 2.5, 5.0, height: 1.1, width: 0.4,
+             [("vln2", "Violins II", "Vln II", "vln2"), ("vla", "Violas", "Vla", "vla")])
+        out.append(Seat("vc", "Cellos", "Vc", "vc", .strings, from: 60, to: 90, inner: 2.5, outer: 6.5, height: 0.9, width: 0.4))
+        out.append(Seat("cb", "Basses", "Cb", "cb", .strings, from: 60, to: 90, inner: 6.5, outer: 9.5, height: 1.0, width: 0.35))
+        ring(.woodwinds, -60, 60, 5.0, 6.5, height: 1.4, width: 0.1,
+             [("picc", "Piccolo", "Picc", "picc"), ("fl2", "Flute 2", "Fl 2", "fl"), ("fl1", "Flute 1", "Fl 1", "fl"),
+              ("ob1", "Oboe 1", "Ob 1", "ob"), ("ob2", "Oboe 2", "Ob 2", "ob"), ("eh", "Cor Anglais", "C.a.", "eh")])
+        ring(.woodwinds, -60, 60, 6.5, 8.0, height: 1.5, width: 0.1,
+             [("bcl", "Bass Clarinet", "B.cl", "bcl"), ("cl2", "Clarinet 2", "Cl 2", "cl"), ("cl1", "Clarinet 1", "Cl 1", "cl"),
+              ("bsn1", "Bassoon 1", "Bsn 1", "bsn"), ("bsn2", "Bassoon 2", "Bsn 2", "bsn"), ("cbsn", "Contrabassoon", "Cbsn", "cbsn")])
+        ring(.keys, -90, -60, 8.0, 9.5, height: 1.1, width: 0.2, [("harp", "Harp", "Hp", "harp"), ("pno", "Piano", "Pno", "pno")])
+        ring(.brass, -60, -20, 8.0, 9.5, height: 1.7, width: 0.1,
+             [("hn4", "Horn 4", "Hn 4", "hn"), ("hn3", "Horn 3", "Hn 3", "hn"), ("hn2", "Horn 2", "Hn 2", "hn"), ("hn1", "Horn 1", "Hn 1", "hn")])
+        ring(.brass, -20, 10, 8.0, 9.5, height: 1.8, width: 0.1,
+             [("tpt3", "Trumpet 3", "Tpt 3", "tpt"), ("tpt2", "Trumpet 2", "Tpt 2", "tpt"), ("tpt1", "Trumpet 1", "Tpt 1", "tpt")])
+        ring(.brass, 10, 60, 8.0, 9.5, height: 1.8, width: 0.1,
+             [("tbn1", "Trombone 1", "Tbn 1", "tbn"), ("tbn2", "Trombone 2", "Tbn 2", "tbn"),
+              ("btbn", "Bass Trombone", "B.tbn", "btbn"), ("tuba", "Tuba", "Tba", "tuba")])
+        ring(.percussion, -90, 90, 9.5, 11.0, height: 1.6, width: 0.2,
+             [("cel", "Celesta", "Cel", "cel"), ("perc", "Percussion", "Perc", "kit"), ("glock", "Glockenspiel", "Glk", "glock"),
+              ("timp", "Timpani", "Timp", "timp"), ("xyl", "Xylophone", "Xyl", "xyl"), ("mar", "Marimba", "Mar", "mar"),
+              ("vib", "Vibraphone", "Vib", "vib")])
+        ring(.choir, -60, 60, 11.0, 12.5, height: 2.4, width: 0.45,
+             [("sop", "Sopranos", "S", "sop"), ("alto", "Altos", "A", "alto"), ("ten", "Tenors", "T", "ten"), ("choir-bass", "Basses", "B", "bass")])
+        return out
+    }()
 
-        Seat("pno", "Piano", "Pno", "pno", .keys, x: -7.6, depth: 2.4, height: 1.0, width: 0.3),
-        Seat("harp", "Harp", "Hp", "harp", .keys, x: -7.2, depth: 5.0, height: 1.2, width: 0.15),
-        Seat("cel", "Celesta", "Cel", "cel", .keys, x: -7.4, depth: 7.4, height: 1.0, width: 0.1),
-
-        Seat("fl1", "Flute 1", "Fl 1", "fl", .woodwinds, x: -0.8, depth: 6.6, height: 1.4, width: 0.1),
-        Seat("fl2", "Flute 2", "Fl 2", "fl", .woodwinds, x: -1.8, depth: 6.6, height: 1.4, width: 0.1),
-        Seat("picc", "Piccolo", "Picc", "picc", .woodwinds, x: -2.8, depth: 6.6, height: 1.4, width: 0.1),
-        Seat("ob1", "Oboe 1", "Ob 1", "ob", .woodwinds, x: 0.8, depth: 6.6, height: 1.3, width: 0.1),
-        Seat("ob2", "Oboe 2", "Ob 2", "ob", .woodwinds, x: 1.8, depth: 6.6, height: 1.3, width: 0.1),
-        Seat("eh", "Cor Anglais", "C.a.", "eh", .woodwinds, x: 2.8, depth: 6.6, height: 1.3, width: 0.1),
-        Seat("cl1", "Clarinet 1", "Cl 1", "cl", .woodwinds, x: -0.8, depth: 7.9, height: 1.5, width: 0.1),
-        Seat("cl2", "Clarinet 2", "Cl 2", "cl", .woodwinds, x: -1.8, depth: 7.9, height: 1.5, width: 0.1),
-        Seat("bcl", "Bass Clarinet", "B.cl", "bcl", .woodwinds, x: -2.8, depth: 7.9, height: 1.4, width: 0.1),
-        Seat("bsn1", "Bassoon 1", "Bsn 1", "bsn", .woodwinds, x: 0.8, depth: 7.9, height: 1.5, width: 0.1),
-        Seat("bsn2", "Bassoon 2", "Bsn 2", "bsn", .woodwinds, x: 1.8, depth: 7.9, height: 1.5, width: 0.1),
-        Seat("cbsn", "Contrabassoon", "Cbsn", "cbsn", .woodwinds, x: 2.8, depth: 7.9, height: 1.5, width: 0.1),
-
-        Seat("hn1", "Horn 1", "Hn 1", "hn", .brass, x: -3.7, depth: 9.4, height: 1.7, width: 0.1),
-        Seat("hn2", "Horn 2", "Hn 2", "hn", .brass, x: -4.6, depth: 9.4, height: 1.7, width: 0.1),
-        Seat("hn3", "Horn 3", "Hn 3", "hn", .brass, x: -5.5, depth: 9.4, height: 1.7, width: 0.1),
-        Seat("hn4", "Horn 4", "Hn 4", "hn", .brass, x: -6.4, depth: 9.4, height: 1.7, width: 0.1),
-        Seat("tpt1", "Trumpet 1", "Tpt 1", "tpt", .brass, x: 0.4, depth: 9.4, height: 1.8, width: 0.1),
-        Seat("tpt2", "Trumpet 2", "Tpt 2", "tpt", .brass, x: -0.5, depth: 9.4, height: 1.8, width: 0.1),
-        Seat("tpt3", "Trumpet 3", "Tpt 3", "tpt", .brass, x: -1.4, depth: 9.4, height: 1.8, width: 0.1),
-        Seat("tbn1", "Trombone 1", "Tbn 1", "tbn", .brass, x: 1.4, depth: 9.4, height: 1.8, width: 0.1),
-        Seat("tbn2", "Trombone 2", "Tbn 2", "tbn", .brass, x: 2.3, depth: 9.4, height: 1.8, width: 0.1),
-        Seat("btbn", "Bass Trombone", "B.tbn", "btbn", .brass, x: 3.2, depth: 9.4, height: 1.8, width: 0.1),
-        Seat("tuba", "Tuba", "Tba", "tuba", .brass, x: 4.2, depth: 9.4, height: 1.7, width: 0.15),
-
-        Seat("perc", "Percussion", "Perc", "kit", .percussion, x: -6.0, depth: 11.0, height: 1.6, width: 0.3, automatic: false),
-        Seat("glock", "Glockenspiel", "Glk", "glock", .percussion, x: -4.5, depth: 11.0, height: 1.6, width: 0.15),
-        Seat("xyl", "Xylophone", "Xyl", "xyl", .percussion, x: -3.0, depth: 11.0, height: 1.6, width: 0.2),
-        Seat("timp", "Timpani", "Timp", "timp", .percussion, x: 0.0, depth: 11.0, height: 1.8, width: 0.25),
-        Seat("mar", "Marimba", "Mar", "mar", .percussion, x: 3.0, depth: 11.0, height: 1.6, width: 0.25),
-        Seat("vib", "Vibraphone", "Vib", "vib", .percussion, x: 4.5, depth: 11.0, height: 1.6, width: 0.2),
-
-        Seat("sop", "Sopranos", "S", "sop", .choir, x: -4.5, depth: 12.4, height: 2.4, width: 0.45),
-        Seat("alto", "Altos", "A", "alto", .choir, x: -1.5, depth: 12.4, height: 2.4, width: 0.45),
-        Seat("ten", "Tenors", "T", "ten", .choir, x: 1.5, depth: 12.4, height: 2.4, width: 0.45),
-        Seat("choir-bass", "Basses", "B", "bass", .choir, x: 4.5, depth: 12.4, height: 2.4, width: 0.45),
-    ]
+    /// The fan's outer edge, in metres from the conductor.
+    public static let radius = 12.5
 
     /// Metres from the front edge of the stage to the back wall of its shell.
     public static let depth = 13.0

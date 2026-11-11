@@ -38,14 +38,28 @@ struct EditorView: View {
             }
             .padding(.horizontal, 10).frame(height: 40)
             .overlay(alignment: .bottom) { Rectangle().fill(Theme.rule).frame(height: 1) }
-            switch s.editor {
-            case .roll:
-                BlocksBar()
-                PianoRoll()
-            case .drums: DrumEditor()
-            case .steps: StepSequencer()
-            case .score: ScoreView()
-            case .devices: DevicesView()
+            HStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    switch s.editor {
+                    case .roll:
+                        BlocksBar()
+                        PianoRoll()
+                    case .drums: DrumEditor()
+                    case .steps: StepSequencer()
+                    case .score: ScoreView()
+                    case .devices: DevicesView()
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                if s.generating {
+                    // The generators beside the notes they write, as Ableton shows its own.
+                    ScrollView {
+                        GenerateView(model: s.generate).padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(width: 300)
+                    .background(Theme.ground)
+                    .overlay(alignment: .leading) { Rectangle().fill(Theme.rule).frame(width: 1) }
+                }
             }
         }
         .background(Theme.ground)

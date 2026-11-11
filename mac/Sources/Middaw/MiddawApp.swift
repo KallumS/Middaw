@@ -185,7 +185,7 @@ struct SongToolbar: ToolbarContent {
         ToolbarItem(placement: .principal) { Readout() }
         ToolbarItemGroup(placement: .primaryAction) {
             Toggle(isOn: $s.follow) { Text("Follow") }.help("Follow the music (F)")
-            Button { s.inspector = s.inspector == .generate ? .track : .generate } label: { Label("Generate", systemImage: "sparkles") }
+            Toggle(isOn: $s.generating) { Label("Generate", systemImage: "sparkles") }
                 .help("Generate (G)")
             PassButton()
         }

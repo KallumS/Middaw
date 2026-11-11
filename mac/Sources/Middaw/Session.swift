@@ -21,7 +21,6 @@ enum EditorTab: String, CaseIterable { case roll, score, drums, steps, devices
         }
     }
 }
-enum InspectorTab: String { case track, generate }
 
 struct Selection: Equatable {
     var trackID: String?
@@ -106,7 +105,8 @@ final class Session: ObservableObject {
     @Published var selection = Selection()
     @Published var caret: Double = 0
     @Published var editor: EditorTab = .roll
-    @Published var inspector: InspectorTab = .track
+    /// The generators, shown to the right of the editor (as Ableton shows its own).
+    @Published var generating = false
     @Published var grid: Double = 0.25
     @Published var drawing = false
     @Published var follow = true
@@ -120,7 +120,7 @@ final class Session: ObservableObject {
     @Published var showBrowser = true
     @Published var position: Double = 0
     @Published var playing = false
-    /// The Generate panel's state, kept while the inspector switches tabs.
+    /// The Generate panel's state, kept while it is hidden.
     let generate = GenerateModel()
 
     private var take: [Note] = []
@@ -625,7 +625,7 @@ final class Session: ObservableObject {
         case "l": toggleLoop()
         case "c": toggleMetronome()
         case "f": follow.toggle()
-        case "g": inspector = inspector == .generate ? .track : .generate
+        case "g": generating.toggle()
         case "b": showBrowser.toggle()
         case "d": drawing.toggle()
         case "q": quantize()

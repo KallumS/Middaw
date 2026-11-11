@@ -8,22 +8,17 @@ import MiddawAudio
 
 // ------------------------------------------------------------- inspector --
 /// The chosen player: what they play, where they sit, what plays them, how
-/// loud - and what Orchestration Helper says about the instrument. Generate
-/// shares the same column.
+/// loud - and what Orchestration Helper says about the instrument.
 struct InspectorView: View {
     @EnvironmentObject var s: Session
     var body: some View {
         VStack(spacing: 0) {
-            Picker("", selection: $s.inspector) {
-                Text("Player").tag(InspectorTab.track)
-                Text("Generate").tag(InspectorTab.generate)
-            }
-            .pickerStyle(.segmented).labelsHidden()
-            .padding(10)
+            Text(s.track?.name ?? "Player").heading().lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 12).frame(height: 40)
             Divider().overlay(Theme.rule)
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    if s.inspector == .generate { GenerateView(model: s.generate) } else { TrackInspector() }
+                    TrackInspector()
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -81,8 +76,8 @@ struct TrackInspector: View {
                     Text("Made with \(g)\(src.title.map { ": \($0)" } ?? "")").foregroundStyle(Theme.textDim).font(.system(size: 12)).lineLimit(2)
                 }
                 HStack(spacing: 6) {
-                    Button("Vary…") { s.inspector = .generate; GenerateModel.request = "midi-variator" }.house()
-                    Button("Suggest…") { s.inspector = .generate; GenerateModel.request = "midi-suggester" }.house()
+                    Button("Vary…") { s.generating = true; GenerateModel.request = "midi-variator" }.house()
+                    Button("Suggest…") { s.generating = true; GenerateModel.request = "midi-suggester" }.house()
                     Menu("More") {
                         Menu("Transform") { ForEach(Session.Shape.allCases, id: \.self) { sh in Button(sh.rawValue) { s.transform(sh) } } }
                         Button("Draw Dynamics with AutoCC") { s.drawDynamics() }

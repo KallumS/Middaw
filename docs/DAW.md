@@ -8,8 +8,8 @@ on what is already there.
 
 ## The window
 
-Not a list of tracks: **an orchestra seen from above** (`docs/STAGE.md`).
-Every player has a seat; click an empty one and choose what plays it - an
+Not a list of tracks: **an orchestra seen from above**, a fan of rings
+around the conductor (`docs/STAGE.md`). Every player has a wedge of it; click an empty one and choose what plays it - an
 Audio Unit instrument on the Mac, or one of Middaw's own sounds. Where the
 seat is decides the hall's sound on it: the first violins close and on the
 left, the timpani far back in the middle, each with its own reflections and
@@ -20,7 +20,9 @@ Under the stage, the chosen player's **part** (their clips across the song,
 the bars, the loop and the chords) and its editor, in four tabs: **MIDI**
 (the piano roll), **Notation** (Starting Blocks Notation's engraving),
 **Drums** (a lane per drum) and the **Step Sequencer** - with the player's
-**Devices** a button beside them. Shift-click more players to show their parts
+**Devices** a button beside them. **Generate** (G, or the toolbar) opens
+the generators to the right of the editor, beside the notes they write, as
+Ableton shows its own; the inspector on the far right is the chosen player. Shift-click more players to show their parts
 together and choose bars across them.
 
 (It was a browser app until 30 October 2026; `docs/BROWSER-DAW.md` says what

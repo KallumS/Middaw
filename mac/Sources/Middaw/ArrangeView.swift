@@ -386,8 +386,8 @@ struct ArrangeView: View {
         let rows = self.rows
         if let c = h.clip, h.track < rows.count {
             let tid = rows[h.track].id
-            Button("Vary…") { s.select(clip: c.id, on: tid); s.inspector = .generate; GenerateModel.request = "midi-variator" }
-            Button("Suggest…") { s.select(clip: c.id, on: tid); s.inspector = .generate; GenerateModel.request = "midi-suggester" }
+            Button("Vary…") { s.select(clip: c.id, on: tid); s.generating = true; GenerateModel.request = "midi-variator" }
+            Button("Suggest…") { s.select(clip: c.id, on: tid); s.generating = true; GenerateModel.request = "midi-suggester" }
             Menu("Transform") {
                 ForEach(Session.Shape.allCases, id: \.self) { shape in Button(shape.rawValue) { s.select(clip: c.id, on: tid); s.transform(shape) } }
             }
@@ -402,7 +402,7 @@ struct ArrangeView: View {
         } else if h.track >= 0 && h.track < rows.count {
             let tid = rows[h.track].id
             Button("New Clip Here") { s.newClip(on: tid, at: beat(hover.x)) }
-            Button("Generate Here…") { s.select(track: tid); s.caret = s.project.snap(beat(hover.x), grid: s.project.beatsPerBar, floor: true); s.inspector = .generate }
+            Button("Generate Here…") { s.select(track: tid); s.caret = s.project.snap(beat(hover.x), grid: s.project.beatsPerBar, floor: true); s.generating = true }
             if s.canPaste { Button("Paste") { s.select(track: tid); s.caret = beat(hover.x); s.paste() } }
         }
     }
@@ -456,7 +456,7 @@ struct TrackHead: View {
             Button("Duplicate the Player") { s.duplicateTrack(track.id) }
             Button("Remove the Player") { s.deleteTrack(track.id) }
             Divider()
-            Button("Generate Here…") { s.select(track: track.id); s.inspector = .generate }
+            Button("Generate Here…") { s.select(track: track.id); s.generating = true }
         }
     }
 

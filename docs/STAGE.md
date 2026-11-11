@@ -9,21 +9,20 @@ underneath, as MIDI, notation, drums or a step sequencer. Where a player sits
 decides how the hall sounds on them; at the front nothing is added.
 
 ```
-┌ Stage ─────────────────────────────── Concert Hall ▾ ┐
-│        S        A        T        B          (choir) │
-│  Perc Glk Xyl      Timp      Mar Vib     (percussion) │
-│ Hn4 Hn3 Hn2 Hn1 Tpt3 Tpt2 Tpt1 Tbn1 Tbn2 B.tbn Tba    │
-│ Cel     B.cl Cl2 Cl1   Bsn1 Bsn2 Cbsn                 │
-│        Picc Fl2 Fl1   Ob1 Ob2 C.a.                    │
-│ Hp                                          Cb        │
-│      Vln II                    Vla                    │
-│ Pno  Vln I                          Vc                │
-│ ─────────────────── (podium) ──────────────────────── │
-│ Front  [Synth Lead] [Drum Machine]  + Instrument  + Drum Machine │
-└────────────────────────────────────────────────────────┘
-  Part   ▭▭▭▭▭▭▭▭   (the chosen player's clips over the song)
-  [MIDI | Notation | Drums | Step Sequencer]   Devices
+                         S     A     T     B                    (choir)
+             Cel   Perc   Glk   Timp   Xyl   Mar   Vib          (percussion)
+        Hp  Pno  Hn4 Hn3 Hn2 Hn1  Tpt3 Tpt2 Tpt1  Tbn1 Tbn2 B.tbn Tba   Cb
+     Vln I      B.cl  Cl 2  Cl 1   Bsn 1  Bsn 2  Cbsn
+                Picc  Fl 2  Fl 1   Ob 1   Ob 2   C.a.             Vc
+                  Violins II   |   Violas
+                           ( Concert Hall )                 the podium: the hall
+ Front  [Synth Lead] [Drum Machine]                 + Instrument  + Drum Machine
+ Part   ▭▭▭▭▭▭▭▭   (the chosen player's clips over the song)
+ [MIDI | Notation | Drums | Step Sequencer]  Devices          | Generate (beside)
 ```
+
+The orchestra is drawn as a fan of rings around the conductor, as seating
+charts draw it: each seat a wedge between two angles and two radii.
 
 ## Where it came from
 
@@ -46,20 +45,26 @@ copied from any of them; no impulse response here was recorded anywhere.
 
 ## The seating
 
-American seating, as most orchestras sit today (`Stage.seats` in
-`mac/Sources/MiddawCore/Stage.swift`): first violins on the conductor's left,
-cellos on the right, seconds and violas inside them, basses behind the
-cellos; harp, piano and celesta on the left; flutes and oboes in front of
-clarinets and bassoons, the principals in the middle; horns to the left of
-the brass, trumpets in the middle, trombones and tuba to the right;
-percussion and timpani at the back; the choir on risers behind. Strings and
-choir are a seat per section (a section library is one plug-in); winds and
-brass a seat per player.
+American seating, as most orchestras sit today, in a fan around the
+conductor (`Stage.seats` in `mac/Sources/MiddawCore/Stage.swift`):
 
-Coordinates are metres seen from the audience, `x` across, `depth` back
-from the stage's front edge, `height` where the instrument sounds from. The
-stage is 13 m deep. The listener is the main microphone pair, 3 m in front
-of the stage and 3.5 m up, where a Decca tree hangs over the conductor.
+| ring (metres from the conductor) | from the left |
+| --- | --- |
+| 2.5–5 | Violins II, Violas - with Violins I (2.5–8) outside them on the left and Cellos (2.5–6.5) on the right |
+| 5–6.5 | Piccolo, Flute 2, Flute 1, Oboe 1, Oboe 2, Cor Anglais |
+| 6.5–8 | Bass Clarinet, Clarinet 2, Clarinet 1, Bassoon 1, Bassoon 2, Contrabassoon - Basses (6.5–9.5) beyond the cellos |
+| 8–9.5 | Harp, Piano, Horns 4–1, Trumpets 3–1, Trombones 1–2, Bass Trombone, Tuba |
+| 9.5–11 | Celesta, Percussion, Glockenspiel, Timpani, Xylophone, Marimba, Vibraphone |
+| 11–12.5 | Sopranos, Altos, Tenors, Basses (the choir, on risers) |
+
+Strings and choir are a seat per section (a section library is one
+plug-in); winds and brass a seat per player, the principals in the middle.
+
+**Where a seat is drawn is where it is heard from**: its position is the
+middle of its wedge, `x` across the stage (negative to the left) and `depth`
+back from the front edge where the conductor stands; `height` is where the
+instrument sounds from. The listener is the main microphone pair, 3 m in
+front of the conductor and 3.5 m up, where a Decca tree hangs.
 
 An orchestral instrument asked for by name (the browser, an ensemble,
 Compose, a song from before the stage) takes the first free seat for it. The
@@ -100,16 +105,16 @@ the song with it:
 What comes out, in the Concert Hall (26 × 44 × 18 m, RT60 2.0 s, critical
 distance 8.2 m):
 
-| seat | distance | pan | direct | direct against the tail |
-| --- | --- | --- | --- | --- |
-| Violins I | 7.3 m | left 90 | −0.4 dB | +0.9 dB |
-| Cellos | 7.5 m | right 88 | −0.6 dB | +0.7 dB |
-| Oboe 1 | 9.9 m | right 10 | −3.0 dB | −1.6 dB |
-| Harp | 11.0 m | left 84 | −3.9 dB | −2.6 dB |
-| Basses | 11.3 m | right 81 | −4.2 dB | −2.8 dB |
-| Horn 1 | 13.1 m | left 36 | −5.4 dB | −4.1 dB |
-| Timpani | 14.1 m | centre | −6.1 dB | −4.7 dB |
-| Sopranos | 16.1 m | left 35 | −7.2 dB | −5.9 dB |
+| seat | position | distance | pan | direct | direct against the tail |
+| --- | --- | --- | --- | --- | --- |
+| Cellos | +4.3, 1.2 m | 6.6 m | right 90 | +0.0 dB | +1.4 dB |
+| Violins I | −5.1, 1.4 m | 7.1 m | left 95 | −0.1 dB | +1.2 dB |
+| Oboe 1 | +1.0, 5.7 m | 9.0 m | right 14 | −2.2 dB | −0.8 dB |
+| Basses | +7.7, 2.1 m | 9.6 m | right 100 | −2.7 dB | −1.4 dB |
+| Harp | −8.7, 1.1 m | 9.9 m | left 100 | −3.0 dB | −1.7 dB |
+| Horn 1 | −3.7, 7.9 m | 11.7 m | left 40 | −4.4 dB | −3.1 dB |
+| Timpani | 0.0, 10.2 m | 13.4 m | centre | −5.6 dB | −4.3 dB |
+| Sopranos | −8.3, 8.3 m | 14.1 m | left 74 | −6.1 dB | −4.7 dB |
 
 The halls:
 
@@ -117,7 +122,7 @@ The halls:
 | --- | --- | --- | --- |
 | Concert Hall | 26 × 44 × 18 m | 2.0 s | 8.2 m |
 | Scoring Stage | 30 × 40 × 12 m | 1.4 s | 8.2 m |
-| Studio | 20 × 25 × 8 m | 0.6 s | 6.6 m |
+| Studio | 24 × 25 × 8 m | 0.6 s | 7.2 m |
 
 ## The front
 
@@ -142,7 +147,7 @@ code.
 
 ## What it cannot do yet
 
-- **The seating is fixed.** A seat cannot be dragged; a player can move to
+- **The seating is fixed.** A wedge cannot be dragged; a player can move to
   any free seat or to the front, from the inspector or the seat's menu.
 - **No directivity.** Every instrument radiates the same way in every
   direction; a horn's bell pointing backwards is not modelled.

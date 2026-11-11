@@ -5,47 +5,31 @@ import MiddawEngines
 import MiddawAudio
 import CoreAudioKit
 
-/// The stage, seen from above with the audience at the bottom: a seat for
-/// every player of the orchestra, and the front, where anything that is not
-/// part of an orchestra plays. Click an empty seat to choose what plays it;
-/// click a player to edit their part underneath. Where a player sits decides
-/// how the hall sounds on them (`docs/STAGE.md`); at the front nothing is
-/// added.
+/// The stage, seen from above with the audience at the bottom: the
+/// orchestra in a fan around the conductor, a wedge for every player, and
+/// the front, where anything that is not part of an orchestra plays. Click
+/// an empty seat to choose what plays it; click a player to edit their part
+/// underneath. Where a seat is drawn is where it is heard from
+/// (`docs/STAGE.md`); at the front nothing is added.
 struct StageView: View {
     @EnvironmentObject var s: Session
     @EnvironmentObject var studio: Studio
     @State private var menuSeat: String?
 
-    /// Metres of stage shown across and front to back.
-    let span = (left: -8.7, right: 8.7, front: -0.9, back: 13.2)
-
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: Theme.gap) {
-                Text("Stage").heading()
-                Text("\(s.project.takenSeats.count) of \(Stage.seats.count) seats").foregroundStyle(Theme.textDim)
-                Spacer()
-                Menu {
-                    ForEach(Hall.all) { h in
-                        Button(h.name) { s.setHall(h.id) }
-                    }
-                } label: { Label(Hall.named(s.project.hall).name, systemImage: "building.columns") }
-                .fixedSize()
-                .help("The room the orchestra plays in")
-            }
-            .padding(.horizontal, 10).frame(height: 36)
-            .overlay(alignment: .bottom) { Rectangle().fill(Theme.rule).frame(height: 1) }
             GeometryReader { g in
-                let size = g.size
+                let fan = Fan(size: g.size)
                 ZStack(alignment: .topLeading) {
-                    floor(size)
                     ForEach(Stage.seats) { seat in
                         let t = s.project.track(inSeat: seat.id)
-                        SeatChip(seat: seat, track: t, chosen: t.map { isChosen($0.id) } ?? false,
-                                 size: chipSize(size), menuOpen: Binding(get: { menuSeat == seat.id }, set: { menuSeat = $0 ? seat.id : nil }))
-                            .position(point(seat, size))
+                        SeatWedge(seat: seat, fan: fan, track: t, chosen: t.map { isChosen($0.id) } ?? false,
+                                  menuOpen: Binding(get: { menuSeat == seat.id }, set: { menuSeat = $0 ? seat.id : nil }))
                     }
+                    chosenEdges(fan)
+                    podium(fan)
                 }
+                .frame(width: g.size.width, height: g.size.height)
             }
             .background(Theme.roll)
             .clipped()
@@ -56,80 +40,121 @@ struct StageView: View {
 
     func isChosen(_ id: String) -> Bool { s.selection.trackID == id || s.selection.others.contains(id) }
 
-    func scale(_ size: CGSize) -> (x: CGFloat, y: CGFloat) {
-        (size.width / CGFloat(span.right - span.left), size.height / CGFloat(span.back - span.front))
-    }
-    func point(x: Double, depth: Double, _ size: CGSize) -> CGPoint {
-        let k = scale(size)
-        return CGPoint(x: CGFloat(x - span.left) * k.x, y: CGFloat(span.back - depth) * k.y)
-    }
-    func point(_ seat: Seat, _ size: CGSize) -> CGPoint { point(x: seat.x, depth: seat.depth, size) }
-    /// As wide as the closest seats allow (0.9 m apart in the brass), never
-    /// taller than a control.
-    func chipSize(_ size: CGSize) -> CGSize {
-        let k = scale(size)
-        return CGSize(width: min(86, k.x * 0.86), height: min(Theme.controlHeight + 4, max(20, k.y * 1.15)))
+    /// Where the conductor stands: the hall the orchestra plays in is chosen here.
+    func podium(_ fan: Fan) -> some View {
+        ZStack(alignment: .topLeading) {
+            Path { p in
+                for k in 0...36 {
+                    let pt = fan.point(2.0, -90 + Double(k) * 5)
+                    if k == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+                }
+                p.closeSubpath()
+            }
+            .fill(Theme.raised)
+            .allowsHitTesting(false)
+            Menu {
+                ForEach(Hall.all) { h in Button(h.name) { s.setHall(h.id) } }
+            } label: { Text(Hall.named(s.project.hall).name).font(.system(size: 11, weight: .semibold)) }
+            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+            .position(fan.point(0.8, 0))
+            .help("The room the orchestra plays in")
+        }
     }
 
-    /// The stage's edge, its risers and the podium.
-    func floor(_ size: CGSize) -> some View {
-        Canvas { g, _ in
-            let k = scale(size)
-            let centre = point(x: 0, depth: -3, size)
-            func arc(_ radius: Double, _ colour: Color, _ width: CGFloat) {
-                var p = Path()
-                p.addEllipse(in: CGRect(x: centre.x - CGFloat(radius) * k.x, y: centre.y - CGFloat(radius) * k.y,
-                                        width: CGFloat(radius * 2) * k.x, height: CGFloat(radius * 2) * k.y))
-                g.stroke(p, with: .color(colour), lineWidth: width)
-            }
-            // the risers: woodwinds, brass, percussion, choir
-            for r in [8.6, 11.6, 13.4, 14.9] { arc(r, Theme.beat, 1) }
-            // the front of the stage
-            let front = point(x: 0, depth: 0, size).y
-            g.fill(Path(CGRect(x: 0, y: front, width: size.width, height: 1)), with: .color(Theme.rule))
-            let podium = point(x: 0, depth: -0.4, size)
-            g.fill(Path(roundedRect: CGRect(x: podium.x - 9, y: podium.y - 6, width: 18, height: 12), cornerRadius: 3), with: .color(Theme.rule))
+    /// The chosen players' edges, over every wedge's.
+    func chosenEdges(_ fan: Fan) -> some View {
+        ForEach(Stage.seats.filter { seat in s.project.track(inSeat: seat.id).map { isChosen($0.id) } ?? false }) { seat in
+            WedgeShape(seat: seat, fan: fan).stroke(Theme.accent, lineWidth: 2.5).allowsHitTesting(false)
         }
-        .accessibilityHidden(true)
     }
 }
 
-/// One seat: its short name, empty or played. The chosen player is framed in
-/// the accent with a bar under the name (on is the accent and a bar).
-struct SeatChip: View {
+/// The fan in points: the conductor at the bottom middle, the outer edge as
+/// large as the space allows.
+struct Fan {
+    let centre: CGPoint
+    let scale: CGFloat          // points per metre
+
+    init(size: CGSize) {
+        let margin: CGFloat = 6
+        let radius = max(40, min(size.width / 2 - margin, size.height - margin * 2))
+        scale = radius / CGFloat(Stage.radius)
+        centre = CGPoint(x: size.width / 2, y: (size.height + radius) / 2)
+    }
+
+    func point(_ metres: Double, _ degrees: Double) -> CGPoint {
+        let a = degrees * .pi / 180
+        return CGPoint(x: centre.x + CGFloat(metres * sin(a)) * scale, y: centre.y - CGFloat(metres * cos(a)) * scale)
+    }
+
+    func wedge(_ seat: Seat) -> Path {
+        var p = Path()
+        let steps = max(4, Int((seat.to - seat.from) / 3))
+        for k in 0...steps {
+            let pt = point(seat.outer, seat.from + (seat.to - seat.from) * Double(k) / Double(steps))
+            if k == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+        }
+        for k in 0...steps { p.addLine(to: point(seat.inner, seat.to - (seat.to - seat.from) * Double(k) / Double(steps))) }
+        p.closeSubpath()
+        return p
+    }
+
+    /// The seat's label goes in the middle of its wedge.
+    func middle(_ seat: Seat) -> CGPoint { point(seat.radius, seat.angle) }
+    /// How much room the label has: the wedge's width at its middle and its depth.
+    func room(_ seat: Seat) -> CGSize {
+        CGSize(width: CGFloat(seat.radius * (seat.to - seat.from) * .pi / 180) * scale, height: CGFloat(seat.outer - seat.inner) * scale)
+    }
+}
+
+struct WedgeShape: Shape {
+    let seat: Seat
+    let fan: Fan
+    func path(in rect: CGRect) -> Path { fan.wedge(seat) }
+}
+
+/// One seat: its wedge, its short name, empty or played. The chosen player is
+/// edged in the accent with a bar under the name (on is the accent and a
+/// bar); a player lights up as they play.
+struct SeatWedge: View {
     @EnvironmentObject var s: Session
     @EnvironmentObject var studio: Studio
     let seat: Seat
+    let fan: Fan
     let track: Track?
     let chosen: Bool
-    let size: CGSize
     @Binding var menuOpen: Bool
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 5)
-                .fill(track == nil ? Theme.ground.opacity(0.5) : (chosen ? Theme.raised : Theme.sunken))
-            RoundedRectangle(cornerRadius: 5)
-                .strokeBorder(chosen ? Theme.accent : Theme.edge,
-                              style: StrokeStyle(lineWidth: chosen ? 2 : 1, dash: track == nil ? [3, 3] : []))
-            Text(seat.short)
-                .font(.system(size: 11, weight: track == nil ? .regular : .semibold))
-                .foregroundStyle(track == nil ? Theme.textDim : (track!.mute ? Theme.textDim : Theme.text))
-                .strikethrough(track?.mute ?? false)
-                .lineLimit(1).minimumScaleFactor(0.7)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            if let t = track {
-                if chosen { Capsule().fill(Theme.accent).frame(width: size.width * 0.5, height: 2).padding(.bottom, 3) }
-                else { ActivityBar(trackID: t.id).frame(width: size.width * 0.6, height: 2).padding(.bottom, 3) }
+        let shape = WedgeShape(seat: seat, fan: fan)
+        let mid = fan.middle(seat), room = fan.room(seat)
+        let ring = [StageSection.strings, .brass, .choir].contains(seat.section)
+        ZStack(alignment: .topLeading) {
+            shape.fill(track != nil ? Theme.rule : (ring ? Theme.raised : Theme.sunken))
+            if let t = track { WedgeActivity(trackID: t.id, shape: shape) }
+            shape.stroke(Theme.roll, lineWidth: 2)
+            VStack(spacing: 1) {
+                Text(seat.short)
+                    .font(.system(size: 11, weight: track == nil ? .regular : .semibold))
+                    .foregroundStyle(track == nil || track!.mute ? Theme.textDim : Theme.text)
+                    .strikethrough(track?.mute ?? false)
+                if let t = track, room.height > 34, room.width > 70 {
+                    Text(soundName(t.sound)).font(.system(size: 10)).foregroundStyle(Theme.textDim)
+                }
+                if chosen { Capsule().fill(Theme.accent).frame(width: 18, height: 2) }
             }
+            .lineLimit(1).minimumScaleFactor(0.6)
+            .frame(width: max(24, min(room.width, 140)) - 4)
+            .position(mid)
+            .allowsHitTesting(false)
         }
-        .frame(width: size.width, height: size.height)
-        .contentShape(Rectangle())
+        .contentShape(shape)
         .onTapGesture(count: 2) { menuOpen = true }
         .onTapGesture {
             if let t = track { s.select(track: t.id, extending: Clicks.modifiers.contains(.shift)) } else { menuOpen = true }
         }
-        .popover(isPresented: $menuOpen, arrowEdge: .bottom) {
+        .popover(isPresented: $menuOpen, attachmentAnchor: .rect(.rect(CGRect(x: mid.x - 12, y: mid.y - 8, width: 24, height: 16))),
+                 arrowEdge: .bottom) {
             SoundMenu(title: seat.name, instrument: seat.instrument, section: seat.section, drums: seat.instrument == "kit",
                       current: track?.sound) { choice in
                 menuOpen = false
@@ -158,20 +183,18 @@ struct SeatChip: View {
     }
 }
 
-/// How loud a player is now, as a thin bar.
-struct ActivityBar: View {
+/// A player's wedge brightening with how loud they are now.
+struct WedgeActivity: View {
     @EnvironmentObject var studio: Studio
     let trackID: String
+    let shape: WedgeShape
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 20, paused: !studio.isPlaying)) { _ in
-            Canvas { g, size in
-                let v = studio.audio.renderer.peak(of: trackID)
-                let db = v > 0 ? 20 * log10(Double(v)) : -60
-                let f = max(0, min(1, (db + 48) / 48))
-                guard f > 0 else { return }
-                g.fill(Path(CGRect(x: 0, y: 0, width: size.width * f, height: size.height)), with: .color(Theme.control))
-            }
+            let v = studio.isPlaying ? studio.audio.renderer.peak(of: trackID) : 0
+            let db = v > 0 ? 20 * log10(Double(v)) : -60
+            shape.fill(Theme.control.opacity(0.28 * max(0, min(1, (db + 48) / 48))))
         }
+        .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
 }

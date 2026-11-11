@@ -53,3 +53,16 @@ other software looked at (`docs/STAGE.md`, "Where it came from").
 
 Nobody has listened to the halls on speakers, or opened a third-party
 library in a seat.
+
+## Afterwards, the same day
+
+- The editor's tabs became **MIDI, Notation, Drums, Step Sequencer**, as the
+  user asked, with Devices as a button beside them.
+- "It's looking busy": the generators moved out of the inspector to a panel
+  to the right of the editor, opened by Generate (G), as Ableton places its
+  own; the inspector is only the chosen player.
+- The stage was redrawn as a fan of rings around the conductor, after a
+  seating chart the user sent: each seat a wedge, the hall chosen on the
+  podium. The seats' positions are now the middles of their wedges, so what
+  is drawn is what is heard; the Studio became 24 m wide so the outermost
+  wedges sit inside it.
