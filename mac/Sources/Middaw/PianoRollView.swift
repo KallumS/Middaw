@@ -17,10 +17,11 @@ struct EditorView: View {
                 .help("The part as MIDI, notation, drums or steps")
                 Button { s.editor = s.editor == .devices ? .roll : .devices } label: { Label("Devices", systemImage: "slider.horizontal.3") }
                     .house(on: s.editor == .devices, compact: true)
+                    .fixedSize()
                     .help("The player’s instrument and effects")
                 Text(s.clip.map { $0.name.isEmpty ? (s.track?.name ?? "") : "\(s.track?.name ?? "") — \($0.name)" } ?? (s.track?.name ?? ""))
-                    .foregroundStyle(Theme.textDim).lineLimit(1)
-                Spacer()
+                    .foregroundStyle(Theme.textDim).lineLimit(1).layoutPriority(-1)
+                Spacer(minLength: 0)
                 if [.roll, .drums, .steps].contains(s.editor) {
                     if s.editor == .roll {
                         Toggle(isOn: $s.drawing) { Label("Draw", systemImage: "pencil") }.toggleStyle(.button).help("Draw notes (D)")
@@ -32,7 +33,7 @@ struct EditorView: View {
                     }
                     .frame(width: 110)
                     .help(s.editor == .steps ? "Step length (1-6)" : "Grid (1-6)")
-                    Button("Quantize") { s.quantize() }.house().disabled(s.clip == nil).help("Quantize (Q)")
+                    Button("Quantize") { s.quantize() }.house().fixedSize().disabled(s.clip == nil).help("Quantize (Q)")
                 }
             }
             .padding(.horizontal, 10).frame(height: 40)
