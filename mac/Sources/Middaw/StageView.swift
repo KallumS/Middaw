@@ -54,8 +54,9 @@ struct StageView: View {
             .allowsHitTesting(false)
             Menu {
                 ForEach(Hall.all) { h in Button(h.name) { s.setHall(h.id) } }
-            } label: { Text(Hall.named(s.project.hall).name).font(.system(size: 11, weight: .semibold)) }
+            } label: { Text(Hall.named(s.project.hall).name).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.text) }
             .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+            .tint(Theme.text)
             .position(fan.point(0.8, 0))
             .help("The room the orchestra plays in")
         }
