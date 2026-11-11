@@ -20,6 +20,7 @@ jobs:
         run: |
           swift test > test.log 2>&1 || { grep -E -A4 "error:|failed|Fatal|crash" test.log | head -250; exit 1; }
           grep -E "Executed [0-9]+ tests" test.log | tail -3
+          grep -E "skipped" test.log | head -10 || true
       - name: Build the app
         if: success() || failure()
         working-directory: mac

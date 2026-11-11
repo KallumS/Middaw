@@ -98,7 +98,11 @@ final class AudioTests: XCTestCase {
             var inL = [Float](repeating: 0, count: n), inR = inL, outL = inL, outR = inL, tail = inL
             inL[0] = 1; inR[0] = 1
             voice.process(n, inL, inR, gain: 1, &outL, &outR, &tail)
-            let both = zip(outL, outR).map { Double($0) * Double($0) + Double($1) * Double($1) }
+            var both = [Double](repeating: 0, count: n)
+            for i in 0..<n {
+                let l = Double(outL[i]), r = Double(outR[i])
+                both[i] = l * l + r * r
+            }
             let early = Int(rate * 0.0008)
             let direct = both[0..<early].reduce(0, +)
             let reflected = both[early...].reduce(0, +)
